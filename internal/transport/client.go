@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -180,9 +181,42 @@ func (c *Client) Unary(ctx context.Context, path string, req, resp any) error {
 // is returned; the caller must Close it. On non-2xx the response body is
 // consumed, parsed as an error envelope, and the returned error is *Error.
 func (c *Client) Stream(ctx context.Context, path string, req any) (*StreamReader, error) {
-	httpReq, err := c.buildRequest(ctx, path, req)
+	// Connect server-streaming wraps every message — request and response —
+	// in a 5-byte envelope `[flags:1][length:4BE][payload]`. application/json
+	// (the unary media type) gets rejected with 415.
+	var payload []byte
+	if req == nil {
+		payload = []byte("{}")
+	} else {
+		b, err := json.Marshal(req)
+		if err != nil {
+			return nil, fmt.Errorf("marshal request: %w", err)
+		}
+		payload = b
+	}
+	framed := make([]byte, 5+len(payload))
+	binary.BigEndian.PutUint32(framed[1:5], uint32(len(payload)))
+	copy(framed[5:], payload)
+
+	url := joinURL(c.baseURL, path)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(framed))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	httpReq.Header.Set("content-type", "application/connect+json")
+	httpReq.Header.Set("accept", "application/connect+json")
+	httpReq.Header.Set("connect-protocol-version", "1")
+	if c.userAgent != "" {
+		httpReq.Header.Set("User-Agent", c.userAgent)
+	}
+	if c.tokenFn != nil {
+		token, err := c.tokenFn(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("token: %w", err)
+		}
+		if token != "" {
+			httpReq.Header.Set("Authorization", "Bearer "+token)
+		}
 	}
 	httpResp, err := c.httpClient.Do(httpReq)
 	if err != nil {

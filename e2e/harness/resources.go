@@ -146,7 +146,10 @@ func (h *H) CreateAPIKey(suffix string) APIKeyHandle {
 		h.t.Logf("dryrun: create api key %q", name)
 		return APIKeyHandle{}
 	}
-	req := map[string]any{"name": name}
+	// Server rejects CreateApiKey without either assumedRoles or
+	// inheritAllRoles=true (Error 207). The e2e suite takes the simpler
+	// "inherit all member roles" path — matches the webapp's default.
+	req := map[string]any{"name": name, "inheritAllRoles": true}
 	var resp struct {
 		APIKey struct {
 			ID string `json:"id"`
@@ -216,6 +219,10 @@ func (h *H) revokeAPIKey(id string) {
 }
 
 // CreateServiceAccount posts CreateServiceAccount and defers DeleteServiceAccount.
+// Server mandates either assumedRoles or inheritAllRoles=true AND a real
+// ownerMemberId (Error 207), so we pre-fetch the caller's memberId via
+// GetMember and inherit the caller's roles rather than plumbing role UUIDs
+// through the suite.
 func (h *H) CreateServiceAccount(suffix string) string {
 	h.t.Helper()
 	name := h.ResourceName(suffix)
@@ -223,12 +230,46 @@ func (h *H) CreateServiceAccount(suffix string) string {
 		h.t.Logf("dryrun: create service account %q", name)
 		return ""
 	}
-	req := map[string]any{"name": name}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	var member struct {
+		Member struct {
+			MemberID string `json:"memberId"`
+		} `json:"member"`
+	}
+	const memberPath = "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember"
+	if err := h.client.Unary(ctx, memberPath, struct{}{}, &member); err != nil {
+		h.t.Fatalf("CreateServiceAccount: resolve caller memberId: %v", err)
+	}
+	// The error message mentions `assumed_roles` / `inherit_all_roles`, but
+	// the camelCase field this proto actually accepts is `roleIds` — the
+	// snake-case form and `assumedRoles` both fall through to the same
+	// validation error. Inherit the caller's roles so the SA can't outrank
+	// the creator.
+	var perms struct {
+		Roles []struct {
+			ID string `json:"id"`
+		} `json:"roles"`
+	}
+	const permsPath = "/rpc/public/textql.rpc.public.rbac.RBACService/GetCurrentMemberRolesAndPermissions"
+	if err := h.client.Unary(ctx, permsPath, struct{}{}, &perms); err != nil {
+		h.t.Fatalf("CreateServiceAccount: resolve caller roles: %v", err)
+	}
+	roleIDs := make([]string, 0, len(perms.Roles))
+	for _, r := range perms.Roles {
+		roleIDs = append(roleIDs, r.ID)
+	}
+	if len(roleIDs) == 0 {
+		h.t.Fatalf("CreateServiceAccount: caller has zero roles — cannot inherit")
+	}
+	req := map[string]any{
+		"name":          name,
+		"ownerMemberId": member.Member.MemberID,
+		"roleIds":       roleIDs,
+	}
 	var resp struct {
 		MemberID string `json:"memberId"`
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 	const path = "/rpc/public/textql.rpc.public.rbac.RBACService/CreateServiceAccount"
 	if err := h.client.Unary(ctx, path, req, &resp); err != nil {
 		h.t.Fatalf("CreateServiceAccount: %v", err)
