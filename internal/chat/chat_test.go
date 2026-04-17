@@ -804,6 +804,32 @@ func TestSendStreamOpenError(t *testing.T) {
 	}
 }
 
+// Regression: positionals BEFORE trailing flag must not drop the flag. The
+// stdlib fs.Parse stops at the first non-flag token, so the naive
+// implementation would silently ignore --wait-all here. 100% coverage on the
+// central cli.ParseFlags helper didn't catch the prod bug because the verb
+// wrapper was bypassing it — this explicit test locks in the verb-level path.
+func TestSendRegressionPositionalBeforeFlags(t *testing.T) {
+	// --wait-all appears AFTER both positionals; we must read past X's
+	// EXECUTED until Y also EXECUTEs. If the flag were dropped the loop would
+	// exit after frame 3 (X EXECUTED) and we'd consume fewer frames.
+	stream := &fakeStream{frames: []map[string]any{
+		{"id": "X", "lifecycle": "LIFECYCLE_CREATED", "mdCell": map[string]any{"content": "a"}},
+		{"id": "Y", "lifecycle": "LIFECYCLE_CREATED", "mdCell": map[string]any{"content": "b"}},
+		{"id": "X", "lifecycle": "LIFECYCLE_EXECUTED", "mdCell": map[string]any{"content": "c"}},
+		{"id": "Y", "lifecycle": "LIFECYCLE_EXECUTED", "mdCell": map[string]any{"content": "d"}},
+	}}
+	f, _ := sendFake("X", stream)
+	cmd := &sendCmd{deps: f.deps()}
+	stdio, _, _ := newIO(nil)
+	if err := cmd.Run(context.Background(), []string{"chat-id", "hello?", "--wait-all"}, stdio); err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if stream.i != 4 {
+		t.Errorf("--wait-all dropped when placed after positionals: consumed=%d want=4", stream.i)
+	}
+}
+
 func TestSendBadFlag(t *testing.T) {
 	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := newIO(nil)
