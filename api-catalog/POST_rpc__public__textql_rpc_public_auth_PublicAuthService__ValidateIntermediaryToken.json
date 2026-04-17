@@ -1,0 +1,32 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.auth.PublicAuthService/ValidateIntermediaryToken",
+  "host": "app.textql.com",
+  "description": "<REDACTED>",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.auth.PublicAuthService/ValidateIntermediaryToken",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json",
+        "connect-protocol-version": "1"
+      },
+      "requestBody": {
+        "intermediaryToken": "<REDACTED_JWT_iss=textql_exp=15min>"
+      },
+      "status": 200,
+      "responseBody": null,
+      "inferredRequestSchema": {
+        "intermediaryToken": "string"
+      },
+      "inferredResponseSchema": null
+    }
+  ],
+  "notes": [
+    "Intermediary JWT decoded: `{alg:EdDSA, iss:textql, email:<user>, iat:<now>, exp:<iat+~15min>}`. It is NOT a session cookie — it only unlocks the org selection step.",
+    "Fired from https://app.textql.com/auth/oauth/google/callback right after HandleGoogleOAuthCallback returns.",
+    "Response body not captured this probe — expected to return the user's email + the list of orgs they can select, but the actual list comes from a separate ListOrganizations call on the /org-selection page."
+  ]
+}

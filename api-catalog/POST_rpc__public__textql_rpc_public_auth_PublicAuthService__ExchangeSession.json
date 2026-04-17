@@ -1,0 +1,74 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.auth.PublicAuthService/ExchangeSession",
+  "host": "app.textql.com",
+  "description": "<REDACTED>",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.auth.PublicAuthService/ExchangeSession",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json",
+        "connect-protocol-version": "1"
+      },
+      "requestBody": {
+        "organizationId": "00000000-0000-0000-0000-000000000026"
+      },
+      "status": 200,
+      "responseBody": {
+        "member": {
+          "id": 4,
+          "orgId": "00000000-0000-0000-0000-000000000026",
+          "memberId": "00000000-0000-0000-0000-000000000361",
+          "role": "member",
+          "emailAddress": "user-1@example.com",
+          "name": "",
+          "isAdmin": true,
+          "roles": [
+            "<REDACTED>"
+          ],
+          "createdAt": "2026-04-14T17:52:35.414207Z",
+          "updatedAt": "2026-04-15T19:44:18.348079Z",
+          "paradigmParams": {
+            "webSearchEnabled": true,
+            "pythonEnabled": true,
+            "chatHistorySearchEnabled": true
+          },
+          "emailVerified": true
+        }
+      },
+      "inferredRequestSchema": {
+        "organizationId": "string"
+      },
+      "inferredResponseSchema": {
+        "member": {
+          "id": "number",
+          "orgId": "string",
+          "memberId": "string",
+          "role": "string",
+          "emailAddress": "string",
+          "name": "string",
+          "isAdmin": "boolean",
+          "roles": "array<string>",
+          "createdAt": "string",
+          "updatedAt": "string",
+          "paradigmParams": {
+            "webSearchEnabled": "boolean",
+            "pythonEnabled": "boolean",
+            "chatHistorySearchEnabled": "boolean"
+          },
+          "emailVerified": "boolean"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Org switch mechanism: session cookie is httpOnly and scoped server-side. Calling ExchangeSession with a new organizationId rewrites the session; the old org context is lost in the same browser tab.",
+    "No X-Org-ID header or client-redacted org cookie is used. Each request relies on the server-side session to know which org is active.",
+    "After ExchangeSession, the webapp re-issues GetMember, GetOrganization, ListOrganizations with the new context. CLI should do the same when implementing `ana org switch`.",
+    "Requires existing authenticated session (cookie). Returns 401 if unauthenticated.",
+    "memberId differs per org: same user has one memberId per (user, org) pair. `id` is an integer member row id; `memberId` is the UUID used in RBAC calls."
+  ]
+}

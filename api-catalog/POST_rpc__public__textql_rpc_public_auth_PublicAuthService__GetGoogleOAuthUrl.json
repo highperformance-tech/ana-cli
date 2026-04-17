@@ -1,0 +1,32 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetGoogleOAuthUrl",
+  "host": "app.textql.com",
+  "description": "<REDACTED>",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.auth.PublicAuthService/GetGoogleOAuthUrl",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json",
+        "connect-protocol-version": "1"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "authUrl": "https://accounts.google.com/o/oauth2/auth?client_id=740703950354-fgiscjjhb43q76ol8bvsd0tt6lj02kn3.apps.googleusercontent.com&code_challenge=6dRwiFECNY0-eJ1_TGTDPVx8MrBDgap0u318lM_ATnk&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fapp.textql.com%2Fauth%2Foauth%2Fgoogle%2Fcallback&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&state=jmUgmDvQ5GsiQ68L39UmveFabOS0YcHPQqV9jLEjbKI%3D"
+      },
+      "inferredRequestSchema": {},
+      "inferredResponseSchema": {
+        "authUrl": "string"
+      }
+    }
+  ],
+  "notes": [
+    "PKCE flow: server tracks the code_verifier/challenge state-side; client just opens authUrl.",
+    "CLI login cannot rely on this directly — browser-based OAuth is out of scope for v1. Use API keys instead.",
+    "New `state` value on every call; do not cache the URL."
+  ]
+}

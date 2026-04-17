@@ -1,0 +1,34 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.auth.PublicAuthService/HandleGoogleOAuthCallback",
+  "host": "app.textql.com",
+  "description": "<REDACTED>",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.auth.PublicAuthService/HandleGoogleOAuthCallback",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json",
+        "connect-protocol-version": "1"
+      },
+      "requestBody": {
+        "code": "<REDACTED>",
+        "state": "<REDACTED_OAUTH_STATE>"
+      },
+      "status": 200,
+      "responseBody": null,
+      "inferredRequestSchema": {
+        "code": "string",
+        "state": "string"
+      },
+      "inferredResponseSchema": null
+    }
+  ],
+  "notes": [
+    "Response body not captured in this probe — the webapp consumes it and then calls ValidateIntermediaryToken. Response is expected to contain an `intermediaryToken` (JWT, `iss=textql`).",
+    "Invoked from https://app.textql.com/auth/oauth/google/callback after Google redirects back with ?code=...&state=...",
+    "Short-lived: the callback page fires this immediately, validates the returned JWT, then posts to ExchangeIntermediaryToken with an organizationId."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.auth.PublicAuthService/ExchangeIntermediaryToken",
+  "host": "app.textql.com",
+  "description": "<REDACTED>",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.auth.PublicAuthService/ExchangeIntermediaryToken",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json",
+        "connect-protocol-version": "1"
+      },
+      "requestBody": {
+        "intermediaryToken": "<REDACTED_JWT_iss=textql>",
+        "organizationId": "00000000-0000-0000-0000-000000000027"
+      },
+      "status": 200,
+      "responseBody": null,
+      "inferredRequestSchema": {
+        "intermediaryToken": "string",
+        "organizationId": "string"
+      },
+      "inferredResponseSchema": null
+    }
+  ],
+  "notes": [
+    "Fired from https://app.textql.com/org-selection after the user clicks an org tile.",
+    "Sets an httpOnly session cookie scoped to the chosen org. The session is single-org: to change orgs later, call ExchangeSession (for an existing session) rather than redoing this flow.",
+    "Response body not captured — webapp ignores it and immediately navigates to /chat/new, relying on the new cookie for subsequent Connect-RPC calls.",
+    "The intermediaryToken is single-use-per-org: posting it twice with different organizationIds is probably allowed (not verified), but after success it is treated as spent by the webapp."
+  ]
+}
