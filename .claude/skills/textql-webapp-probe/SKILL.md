@@ -43,7 +43,7 @@ Open `https://app.textql.com`. If a login screen is shown, **pause and ask the u
 - `api-catalog/<METHOD>_<path-slug>.json` — one file per endpoint, schema in `references/catalog-schema.md`. Checked into git. Create the directory on first write.
 - `docs/features.md` — human-readable inventory of TextQL features and domain entities, with "last verified" dates. Format in `references/catalog-schema.md`. Create on first write.
 
-Before writing anything to disk, run it through `scripts/normalize_request.sh`, which strips `Authorization`, `Cookie`, and `Set-Cookie` headers. **Never** commit raw captures.
+Before writing anything to disk, run it through `scripts/normalize_request.sh`. It strips `Authorization` / `Cookie` / `Set-Cookie` headers AND recursively redacts string values under sensitive body keys (`apiKeyHash`, `password`, `*Token`, `*Secret`, `privateKey`, etc. — full list in `references/network-capture.md`). **Never** commit raw captures. After normalizing, eyeball the output for any remaining high-entropy strings or JWT-shaped values before writing to `api-catalog/`; if a new sensitive key name shows up, extend the script's list rather than editing a single file.
 
 ## Pointers
 
