@@ -1,0 +1,846 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.dataset.DatasetService/GetDatasets",
+  "host": "app.textql.com",
+  "description": "Connect-RPC dataset.DatasetService/GetDatasets",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.dataset.DatasetService/GetDatasets",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "datasets": [
+          {
+            "id": "00000000-0000-0000-0000-000000000110",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-27T00:38:15.258481Z",
+            "updatedAt": "2026-03-27T00:38:15.258481Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000111",
+            "type": "TYPE_TABULAR",
+            "name": "file-2.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-10T23:02:59.812657Z",
+            "updatedAt": "2026-03-10T23:02:59.812657Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "rowCount": "1465",
+              "columnCount": "32",
+              "sheetCount": 2
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000112",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-06T17:16:56.824901Z",
+            "updatedAt": "2026-03-06T17:16:56.824901Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000113",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-06T17:12:59.803742Z",
+            "updatedAt": "2026-03-06T17:12:59.803742Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000114",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-06T17:11:46.950945Z",
+            "updatedAt": "2026-03-06T17:11:46.950945Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000115",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-06T17:11:04.101335Z",
+            "updatedAt": "2026-03-06T17:11:04.101335Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000116",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-06T17:05:27.893410Z",
+            "updatedAt": "2026-03-06T17:05:27.893410Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000117",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-06T17:01:58.364646Z",
+            "updatedAt": "2026-03-06T17:01:58.364646Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000118",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-03-05T20:10:56.782836Z",
+            "updatedAt": "2026-03-05T20:10:56.782836Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000119",
+            "type": "TYPE_TABULAR",
+            "name": "file-3.csv",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-02-11T20:54:33.695866Z",
+            "updatedAt": "2026-02-11T20:54:33.695866Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_CSV",
+              "rowCount": "107031",
+              "columnCount": "13",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000120",
+            "type": "TYPE_TABULAR",
+            "name": "file-4.csv",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-02-11T20:41:51.692749Z",
+            "updatedAt": "2026-02-11T20:41:51.692749Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_CSV",
+              "rowCount": "107031",
+              "columnCount": "12",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000121",
+            "type": "TYPE_TEXT",
+            "name": "file-5.txt",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-02-11T19:42:04.878826Z",
+            "updatedAt": "2026-02-11T19:42:04.878826Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000122",
+            "type": "TYPE_TEXT",
+            "name": "file-6.json",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-01-23T20:27:21.686798Z",
+            "updatedAt": "2026-01-23T20:27:21.686798Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000123",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-7.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-01-07T21:20:06.862943Z",
+            "updatedAt": "2026-01-07T21:20:06.862943Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000124",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-8.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-01-07T21:20:06.862387Z",
+            "updatedAt": "2026-01-07T21:20:06.862387Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000125",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-9.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2026-01-07T21:20:06.862193Z",
+            "updatedAt": "2026-01-07T21:20:06.862193Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000126",
+            "type": "TYPE_TABULAR",
+            "name": "file-10.csv",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-20T16:51:33.753834Z",
+            "updatedAt": "2025-12-20T16:51:33.753834Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_CSV",
+              "rowCount": "1182",
+              "columnCount": "16",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000127",
+            "type": "TYPE_TABULAR",
+            "name": "file-11.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-20T16:49:54.132176Z",
+            "updatedAt": "2025-12-20T16:49:54.132176Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000128",
+            "type": "TYPE_TABULAR",
+            "name": "file-11.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-20T16:48:41.618606Z",
+            "updatedAt": "2025-12-20T16:48:41.618606Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000129",
+            "type": "TYPE_TABULAR",
+            "name": "file-12.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:33:05.571359Z",
+            "updatedAt": "2025-12-18T20:33:05.571359Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "rowCount": "32",
+              "columnCount": "25",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000130",
+            "type": "TYPE_TABULAR",
+            "name": "file-13.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:23:37.787142Z",
+            "updatedAt": "2025-12-18T20:23:37.787142Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "rowCount": "60",
+              "columnCount": "8",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000131",
+            "type": "TYPE_TABULAR",
+            "name": "file-12.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:23:37.783411Z",
+            "updatedAt": "2025-12-18T20:23:37.783411Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "rowCount": "60",
+              "columnCount": "24",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000132",
+            "type": "TYPE_TABULAR",
+            "name": "file-12.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:23:23.556580Z",
+            "updatedAt": "2025-12-18T20:23:23.556580Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX"
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000133",
+            "type": "TYPE_TABULAR",
+            "name": "file-13.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:23:23.547021Z",
+            "updatedAt": "2025-12-18T20:23:23.547021Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX"
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000134",
+            "type": "TYPE_TABULAR",
+            "name": "file-14.csv",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:20:47.220340Z",
+            "updatedAt": "2025-12-18T20:20:47.220340Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_CSV",
+              "rowCount": "2",
+              "columnCount": "2",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000135",
+            "type": "TYPE_TABULAR",
+            "name": "file-15.csv",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:20:47.219035Z",
+            "updatedAt": "2025-12-18T20:20:47.219035Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_CSV",
+              "rowCount": "2",
+              "columnCount": "2",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000136",
+            "type": "TYPE_TABULAR",
+            "name": "file-12.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:17:41.652698Z",
+            "updatedAt": "2025-12-18T20:17:41.652698Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "rowCount": "2",
+              "columnCount": "2",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000137",
+            "type": "TYPE_TABULAR",
+            "name": "file-13.xlsx",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-18T20:17:09.448621Z",
+            "updatedAt": "2025-12-18T20:17:09.448621Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLSX",
+              "rowCount": "2",
+              "columnCount": "2",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000138",
+            "type": "TYPE_TABULAR",
+            "name": "file-16.parquet",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000139"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-15T22:44:47.551580Z",
+            "updatedAt": "2025-12-15T22:44:47.551580Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_PARQUET",
+              "rowCount": "4078318",
+              "columnCount": "62",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000140",
+            "type": "TYPE_TABULAR",
+            "name": "file-17.parquet",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000139"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-15T22:27:17.246823Z",
+            "updatedAt": "2025-12-15T22:27:17.246823Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_PARQUET",
+              "rowCount": "5531451",
+              "columnCount": "190",
+              "sheetCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000141",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-18.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-03T17:20:31.688076Z",
+            "updatedAt": "2025-12-03T17:20:31.688076Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000142",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-19.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-03T17:18:40.359114Z",
+            "updatedAt": "2025-12-03T17:18:40.359114Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000143",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-20.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-03T17:18:40.355877Z",
+            "updatedAt": "2025-12-03T17:18:40.355877Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000144",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-18.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-03T17:18:40.185687Z",
+            "updatedAt": "2025-12-03T17:18:40.185687Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000145",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-21.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-03T17:18:40.185560Z",
+            "updatedAt": "2025-12-03T17:18:40.185560Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000146",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000093"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-12-03T16:17:24.625690Z",
+            "updatedAt": "2025-12-03T16:17:24.625690Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000147",
+            "type": "TYPE_TABULAR",
+            "name": "file-22.xls",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-24T16:38:32.094480Z",
+            "updatedAt": "2025-11-24T16:38:32.094480Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLS",
+              "rowCount": "10198",
+              "columnCount": "22",
+              "sheetCount": 3
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000148",
+            "type": "TYPE_TEXT",
+            "name": "file-23.txt",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-19T04:57:02.669898Z",
+            "updatedAt": "2025-11-19T04:57:02.669898Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000149",
+            "type": "TYPE_TABULAR",
+            "name": "file-22.xls",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-17T18:07:21.471363Z",
+            "updatedAt": "2025-11-17T18:07:21.471363Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLS",
+              "rowCount": "10198",
+              "columnCount": "22",
+              "sheetCount": 3
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000150",
+            "type": "TYPE_TABULAR",
+            "name": "file-22.xls",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000093"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-14T22:38:52.761174Z",
+            "updatedAt": "2025-11-14T22:38:52.761174Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLS",
+              "rowCount": "10198",
+              "columnCount": "22",
+              "sheetCount": 3
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000151",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-24.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000093"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-14T22:38:25.986270Z",
+            "updatedAt": "2025-11-14T22:38:25.986270Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000152",
+            "type": "TYPE_TABULAR",
+            "name": "file-22.xls",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-13T23:25:05.898689Z",
+            "updatedAt": "2025-11-13T23:25:05.898689Z",
+            "ephemeral": true,
+            "tabularFile": {
+              "category": "CATEGORY_XLS",
+              "rowCount": "10198",
+              "columnCount": "22",
+              "sheetCount": 3
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000153",
+            "type": "TYPE_DOCUMENT",
+            "name": "file-25.pdf",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-05T17:35:35.341717Z",
+            "updatedAt": "2025-11-05T17:35:35.341717Z",
+            "ephemeral": true,
+            "document": {}
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000154",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000092"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-04T18:43:57.197899Z",
+            "updatedAt": "2025-11-04T18:43:57.197899Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000155",
+            "type": "TYPE_IMAGE",
+            "name": "file-1.png",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000092"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-11-04T17:51:22.005799Z",
+            "updatedAt": "2025-11-04T17:51:22.005799Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000156",
+            "type": "TYPE_TEXT",
+            "name": "file-26.py",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-10-31T22:23:26.535074Z",
+            "updatedAt": "2025-10-31T22:23:26.535074Z",
+            "ephemeral": true,
+            "document": {
+              "previewUrl": "https://example.com/redacted/asset",
+              "pageCount": 1
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000157",
+            "type": "TYPE_TABLEAU",
+            "name": "Example Name 65",
+            "version": 1,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003"
+            },
+            "userPermissions": "PERMISSION_ADMIN",
+            "createdAt": "2025-10-31T19:40:54.558608Z",
+            "updatedAt": "2025-10-31T19:40:54.558608Z",
+            "tableauData": {
+              "connectorId": 502,
+              "projectId": "00000000-0000-0000-0000-000000000158",
+              "projectName": "<REDACTED>",
+              "views": [
+                {
+                  "id": "00000000-0000-0000-0000-000000000159",
+                  "name": "Overview",
+                  "workbookId": "00000000-0000-0000-0000-000000000160",
+                  "workbookName": "<REDACTED>"
+                }
+              ],
+              "datasources": [
+                {
+                  "id": "00000000-0000-0000-0000-000000000161",
+                  "name": "Example Name 66"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "datasets": "array<{'id': 'string', 'type': 'string', 'name': 'string', 'version': 'integer', 'owner': {'memberId': 'string'}, 'userPermissions': 'string', 'createdAt': 'string', 'updatedAt': 'string', 'ephemeral': 'boolean', 'document': {'previewUrl': 'string', 'pageCount': 'integer'}}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

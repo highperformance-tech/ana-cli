@@ -1,0 +1,51 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.slack.SlackService/ListUsers",
+  "host": "app.textql.com",
+  "description": "Connect-RPC slack.SlackService/ListUsers",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.slack.SlackService/ListUsers",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "users": [
+          {
+            "userId": "UREDACTED00002",
+            "name": "slug-2"
+          },
+          {
+            "userId": "UREDACTED00003",
+            "name": "slug-3"
+          },
+          {
+            "userId": "UREDACTED00004",
+            "name": "slug-4"
+          },
+          {
+            "userId": "UREDACTED00005",
+            "name": "slug-5"
+          },
+          {
+            "userId": "UREDACTED00006",
+            "name": "slug-6"
+          }
+        ]
+      },
+      "inferredRequestSchema": {},
+      "inferredResponseSchema": {
+        "users": "array<{'userId': 'string', 'name': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

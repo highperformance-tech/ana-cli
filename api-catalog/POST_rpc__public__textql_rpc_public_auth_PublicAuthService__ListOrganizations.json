@@ -1,0 +1,305 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.auth.PublicAuthService/ListOrganizations",
+  "host": "app.textql.com",
+  "description": "Connect-RPC auth.PublicAuthService/ListOrganizations",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.auth.PublicAuthService/ListOrganizations",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "organizations": [
+          {
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "organizationName": "<REDACTED>",
+            "createdAt": "0001-01-01T00:00:00Z",
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "organizationLogoUrl": "https://example.com/redacted/asset",
+            "emailAllowedDomains": [
+              "example.com",
+              "example.com"
+            ],
+            "theme": {
+              "bg": "#F8FAFC",
+              "headerBg": "#FFFFFF",
+              "cardBg": "#FFFFFF",
+              "primaryAccent": "#ED1C24",
+              "cardAccent": "#ED1C24",
+              "heading": "#2D3748",
+              "text": "#2D3748",
+              "cardHeading": "#2D3748",
+              "cardText": "#2D3748",
+              "logoUrl": "https://example.com/redacted/asset"
+            },
+            "defaultParadigmMode": "TYPE_UNIVERSAL",
+            "paradigmParams": {
+              "webSearchEnabled": true,
+              "pythonEnabled": true
+            },
+            "toolRestrictions": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "ontologyEnabled": true,
+              "ontologyEditingEnabled": true,
+              "pythonEnabled": true,
+              "powerbiEnabled": true,
+              "googleDriveEnabled": true,
+              "autoApproveEnabled": true,
+              "contextEditingEnabled": true,
+              "formEditorEnabled": true,
+              "tableauEnabled": true,
+              "fileUploadEnabled": true,
+              "multipleConnectorMode": true,
+              "playbookToolsEnabled": true,
+              "chatHistorySearchEnabled": true
+            },
+            "consoleAccess": true,
+            "methodologyEnabled": false,
+            "allowAllApiAccess": true,
+            "contextV2Enabled": false,
+            "bashEnabled": false,
+            "defaultRoutingEnabled": true,
+            "discoverable": false,
+            "observabilityEnabled": true,
+            "notificationsEnabled": true,
+            "clientDbOverrideEnabled": false,
+            "contextReviewRequired": false,
+            "googleConnectorEnabled": false
+          },
+          {
+            "orgId": "00000000-0000-0000-0000-000000000026",
+            "defaultConnectorId": 70,
+            "organizationName": "<REDACTED>",
+            "createdAt": "0001-01-01T00:00:00Z",
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "organizationLogoUrl": "",
+            "theme": {
+              "bg": "#F4F6F8",
+              "headerBg": "#FFFFFF",
+              "cardBg": "#FFFFFF",
+              "primaryAccent": "#0071C5",
+              "cardAccent": "#004977",
+              "heading": "#013A5C",
+              "text": "#1B2733",
+              "cardHeading": "#013A5C",
+              "cardText": "#1B2733",
+              "logoUrl": "https://example.com/redacted/asset"
+            },
+            "defaultParadigmMode": "TYPE_UNIVERSAL",
+            "paradigmParams": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "ontologyEnabled": true,
+              "pythonEnabled": true
+            },
+            "toolRestrictions": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "ontologyEnabled": true,
+              "ontologyEditingEnabled": true,
+              "pythonEnabled": true,
+              "powerbiEnabled": true,
+              "googleDriveEnabled": true,
+              "autoApproveEnabled": true,
+              "contextEditingEnabled": true,
+              "formEditorEnabled": true,
+              "tableauEnabled": true,
+              "fileUploadEnabled": true,
+              "multipleConnectorMode": true,
+              "playbookToolsEnabled": true,
+              "chatHistorySearchEnabled": true
+            },
+            "consoleAccess": true,
+            "defaultConnectorIds": [
+              70
+            ],
+            "methodologyEnabled": true,
+            "allowAllApiAccess": true,
+            "contextV2Enabled": false,
+            "bashEnabled": false,
+            "defaultRoutingEnabled": true,
+            "discoverable": false,
+            "observabilityEnabled": true,
+            "notificationsEnabled": false,
+            "clientDbOverrideEnabled": false,
+            "contextReviewRequired": false,
+            "googleConnectorEnabled": true
+          },
+          {
+            "orgId": "00000000-0000-0000-0000-000000000027",
+            "defaultConnectorId": 6434,
+            "organizationName": "<REDACTED>",
+            "createdAt": "0001-01-01T00:00:00Z",
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "organizationLogoUrl": "https://example.com/redacted/asset",
+            "emailAllowedDomains": [
+              "example.com"
+            ],
+            "theme": {
+              "bg": "#F8FAFC",
+              "headerBg": "#F8FAFC",
+              "cardBg": "#FFFFFF",
+              "primaryAccent": "#B8151B",
+              "cardAccent": "#B8151B",
+              "heading": "#ED1C24",
+              "text": "#3D3B3C",
+              "cardHeading": "#ED1C24",
+              "cardText": "#3D3B3C",
+              "logoUrl": "https://example.com/redacted/asset"
+            },
+            "defaultParadigmMode": "TYPE_UNIVERSAL",
+            "paradigmParams": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "pythonEnabled": true
+            },
+            "toolRestrictions": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "ontologyEnabled": true,
+              "ontologyEditingEnabled": true,
+              "pythonEnabled": true,
+              "powerbiEnabled": true,
+              "googleDriveEnabled": true,
+              "autoApproveEnabled": true,
+              "contextEditingEnabled": true,
+              "formEditorEnabled": true,
+              "tableauEnabled": true,
+              "fileUploadEnabled": true,
+              "multipleConnectorMode": true,
+              "playbookToolsEnabled": true,
+              "chatHistorySearchEnabled": true
+            },
+            "consoleAccess": true,
+            "defaultConnectorIds": [
+              6434
+            ],
+            "methodologyEnabled": true,
+            "allowAllApiAccess": false,
+            "contextV2Enabled": true,
+            "bashEnabled": false,
+            "defaultRoutingEnabled": true,
+            "discoverable": false,
+            "observabilityEnabled": true,
+            "notificationsEnabled": true,
+            "clientDbOverrideEnabled": false,
+            "contextReviewRequired": false,
+            "googleConnectorEnabled": false
+          },
+          {
+            "orgId": "00000000-0000-0000-0000-000000000028",
+            "organizationName": "<REDACTED>",
+            "createdAt": "0001-01-01T00:00:00Z",
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "organizationLogoUrl": "",
+            "orgMeta": "{\"organization_name\": \"<REDACTED>\", \"organization_slug\": \"<REDACTED>\", \"organization_logo_url\": \"\", \"theme\": {\"bg\": \"\", \"header_bg\": \"\", \"card_bg\": \"\", \"primary_accent\": \"\", \"card_accent\": \"\", \"heading\": \"\", \"text\": \"\", \"card_heading\": \"\", \"card_text\": \"\", \"logo_url\": \"\"}, \"email_allowed_domains\": null, \"created_at\": \"0001-01-01T00:00:00Z\", \"updated_at\": \"0001-01-01T00:00:00Z\"}",
+            "defaultParadigmMode": "TYPE_UNIVERSAL",
+            "paradigmParams": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "pythonEnabled": true
+            },
+            "toolRestrictions": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "ontologyEnabled": true,
+              "ontologyEditingEnabled": true,
+              "pythonEnabled": true,
+              "powerbiEnabled": true,
+              "googleDriveEnabled": true,
+              "autoApproveEnabled": true,
+              "contextEditingEnabled": true,
+              "formEditorEnabled": true,
+              "tableauEnabled": true,
+              "fileUploadEnabled": true,
+              "multipleConnectorMode": true,
+              "playbookToolsEnabled": true,
+              "chatHistorySearchEnabled": true
+            },
+            "consoleAccess": true,
+            "methodologyEnabled": false,
+            "allowAllApiAccess": true,
+            "contextV2Enabled": false,
+            "bashEnabled": false,
+            "defaultRoutingEnabled": true,
+            "discoverable": false,
+            "observabilityEnabled": true,
+            "notificationsEnabled": false,
+            "clientDbOverrideEnabled": false,
+            "contextReviewRequired": false,
+            "googleConnectorEnabled": false
+          },
+          {
+            "orgId": "00000000-0000-0000-0000-000000000029",
+            "organizationName": "<REDACTED>",
+            "createdAt": "0001-01-01T00:00:00Z",
+            "updatedAt": "0001-01-01T00:00:00Z",
+            "organizationLogoUrl": "https://example.com/redacted/asset",
+            "theme": {
+              "bg": "#F8FAFC",
+              "headerBg": "#FFFFFF",
+              "cardBg": "#FFFFFF",
+              "primaryAccent": "#000000",
+              "cardAccent": "#949494",
+              "heading": "#000000",
+              "text": "#2D3748",
+              "cardHeading": "#000000",
+              "cardText": "#000000",
+              "logoUrl": "https://example.com/redacted/asset"
+            },
+            "defaultParadigmMode": "TYPE_UNIVERSAL",
+            "paradigmParams": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "pythonEnabled": true
+            },
+            "toolRestrictions": {
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "ontologyEnabled": true,
+              "ontologyEditingEnabled": true,
+              "pythonEnabled": true,
+              "powerbiEnabled": true,
+              "googleDriveEnabled": true,
+              "autoApproveEnabled": true,
+              "contextEditingEnabled": true,
+              "formEditorEnabled": true,
+              "tableauEnabled": true,
+              "fileUploadEnabled": true,
+              "multipleConnectorMode": true,
+              "playbookToolsEnabled": true,
+              "chatHistorySearchEnabled": true
+            },
+            "consoleAccess": true,
+            "methodologyEnabled": false,
+            "allowAllApiAccess": true,
+            "contextV2Enabled": false,
+            "bashEnabled": false,
+            "defaultRoutingEnabled": true,
+            "discoverable": false,
+            "observabilityEnabled": true,
+            "notificationsEnabled": false,
+            "clientDbOverrideEnabled": false,
+            "contextReviewRequired": false,
+            "googleConnectorEnabled": false
+          }
+        ]
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "organizations": "array<{'orgId': 'string', 'organizationName': 'string', 'createdAt': 'string', 'updatedAt': 'string', 'organizationLogoUrl': 'string', 'emailAllowedDomains': 'array<string>', 'theme': {'bg': 'string', 'headerBg': 'string', 'cardBg': 'string', 'primaryAccent': 'string', 'cardAccent': 'string', 'heading': 'string', 'text': 'string', 'cardHeading': 'string', 'cardText': 'string', 'logoUrl': 'string'}, 'defaultParadigmMode': 'string', 'paradigmParams': {'webSearchEnabled': 'boolean', 'pythonEnabled': 'boolean'}, 'toolRestrictions': {'webSearchEnabled': 'boolean', 'sqlEnabled': 'boolean', 'ontologyEnabled': 'boolean', 'ontologyEditingEnabled': 'boolean', 'pythonEnabled': 'boolean', 'powerbiEnabled': 'boolean', 'googleDriveEnabled': 'boolean', 'autoApproveEnabled': 'boolean', 'contextEditingEnabled': 'boolean', 'formEditorEnabled': 'boolean', 'tableauEnabled': 'boolean', 'fileUploadEnabled': 'boolean', 'multipleConnectorMode': 'boolean', 'playbookToolsEnabled': 'boolean', 'chatHistorySearchEnabled': 'boolean'}, 'consoleAccess': 'boolean', 'methodologyEnabled': 'boolean', 'allowAllApiAccess': 'boolean', 'contextV2Enabled': 'boolean', 'bashEnabled': 'boolean', 'defaultRoutingEnabled': 'boolean', 'discoverable': 'boolean', 'observabilityEnabled': 'boolean', 'notificationsEnabled': 'boolean', 'clientDbOverrideEnabled': 'boolean', 'contextReviewRequired': 'boolean', 'googleConnectorEnabled': 'boolean'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

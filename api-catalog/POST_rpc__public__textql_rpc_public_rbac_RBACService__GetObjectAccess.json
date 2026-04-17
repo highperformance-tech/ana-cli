@@ -1,0 +1,48 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.rbac.RBACService/GetObjectAccess",
+  "host": "app.textql.com",
+  "description": "Connect-RPC rbac.RBACService/GetObjectAccess",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.rbac.RBACService/GetObjectAccess",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "objectType": "chat",
+        "objectId": "00000000-0000-0000-0000-000000000032"
+      },
+      "status": 200,
+      "responseBody": {
+        "accessEntries": [
+          {
+            "id": "00000000-0000-0000-0000-000000000353",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "objectType": "chat",
+            "objectId": "00000000-0000-0000-0000-000000000032",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "accessType": "owner",
+            "grantedBy": "00000000-0000-0000-0000-000000000003",
+            "createdAt": "2026-04-17T15:05:34.588819Z",
+            "updatedAt": "2026-04-17T15:05:34.588819Z"
+          }
+        ]
+      },
+      "inferredRequestSchema": {
+        "objectType": "string",
+        "objectId": "string"
+      },
+      "inferredResponseSchema": {
+        "accessEntries": "array<{'id': 'string', 'orgId': 'string', 'objectType': 'string', 'objectId': 'string', 'memberId': 'string', 'accessType': 'string', 'grantedBy': 'string', 'createdAt': 'string', 'updatedAt': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

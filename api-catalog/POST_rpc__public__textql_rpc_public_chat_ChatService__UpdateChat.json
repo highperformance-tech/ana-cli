@@ -1,0 +1,86 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/UpdateChat",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/UpdateChat",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/UpdateChat",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "chatId": "00000000-0000-0000-0000-000000000030",
+        "summary": "<REDACTED>"
+      },
+      "status": 200,
+      "responseBody": {
+        "chat": {
+          "id": "00000000-0000-0000-0000-000000000030",
+          "paradigm": {
+            "type": "TYPE_UNIVERSAL",
+            "version": 1,
+            "options": {
+              "universal": {
+                "webSearchEnabled": true,
+                "pythonEnabled": true,
+                "playbookToolsEnabled": true
+              }
+            }
+          },
+          "model": "MODEL_DEFAULT",
+          "timestamp": "2026-04-17T14:01:41.449814Z",
+          "orgId": "00000000-0000-0000-0000-000000000002",
+          "memberId": "00000000-0000-0000-0000-000000000003",
+          "summary": "<REDACTED>",
+          "research": false,
+          "updatedAt": "2026-04-17T14:02:27.682293Z",
+          "isBookmarked": false,
+          "dashboardMode": false,
+          "source": "CHAT_SOURCE_THREAD",
+          "methodology": "METHODOLOGY_ADAPTIVE",
+          "isUnread": false
+        }
+      },
+      "inferredRequestSchema": {
+        "chatId": "string",
+        "summary": "string"
+      },
+      "inferredResponseSchema": {
+        "chat": {
+          "id": "string",
+          "paradigm": {
+            "type": "string",
+            "version": "integer",
+            "options": {
+              "universal": {
+                "webSearchEnabled": "boolean",
+                "pythonEnabled": "boolean",
+                "playbookToolsEnabled": "boolean"
+              }
+            }
+          },
+          "model": "string",
+          "timestamp": "string",
+          "orgId": "string",
+          "memberId": "string",
+          "summary": "string",
+          "research": "boolean",
+          "updatedAt": "string",
+          "isBookmarked": "boolean",
+          "dashboardMode": "boolean",
+          "source": "string",
+          "methodology": "string",
+          "isUnread": "boolean"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

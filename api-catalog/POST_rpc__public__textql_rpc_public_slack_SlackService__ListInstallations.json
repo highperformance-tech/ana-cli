@@ -1,0 +1,36 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.slack.SlackService/ListInstallations",
+  "host": "app.textql.com",
+  "description": "Connect-RPC slack.SlackService/ListInstallations",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.slack.SlackService/ListInstallations",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "installations": [
+          {
+            "teamId": "TREDACTED00042",
+            "createdAt": "2025-10-31T14:34:44.761391Z",
+            "name": "slug-85"
+          }
+        ]
+      },
+      "inferredRequestSchema": {},
+      "inferredResponseSchema": {
+        "installations": "array<{'teamId': 'string', 'createdAt': 'string', 'name': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

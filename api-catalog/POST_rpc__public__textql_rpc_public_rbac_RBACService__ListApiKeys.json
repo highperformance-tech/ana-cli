@@ -1,0 +1,103 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.rbac.RBACService/ListApiKeys",
+  "host": "app.textql.com",
+  "description": "Connect-RPC rbac.RBACService/ListApiKeys",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.rbac.RBACService/ListApiKeys",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "scope": "API_KEY_SCOPE_ALL",
+        "includeRevoked": false,
+        "sortBy": "API_KEY_SORT_FIELD_CREATED_AT",
+        "sortDirection": "SORT_DIRECTION_DESC",
+        "pageSize": 100
+      },
+      "status": 200,
+      "responseBody": {
+        "apiKeys": [
+          {
+            "id": "00000000-0000-0000-0000-000000000004",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "createdAt": "2026-04-17T15:19:15.180169Z",
+            "apiKeyShort": "<REDACTED>",
+            "assumedRoles": [
+              "00000000-0000-0000-0000-000000000291",
+              "00000000-0000-0000-0000-000000000292",
+              "00000000-0000-0000-0000-000000000293",
+              "00000000-0000-0000-0000-000000000294"
+            ],
+            "name": "slug-1",
+            "expiresAt": "2026-07-16T15:19:15.175716Z",
+            "status": "API_KEY_STATUS_ACTIVE",
+            "ownerEmail": "user-1@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000354",
+            "memberId": "00000000-0000-0000-0000-000000000091",
+            "clientId": "Service Account (Service Account)",
+            "createdAt": "2026-01-06T20:38:51.472195Z",
+            "apiKeyShort": "<REDACTED>",
+            "assumedRoles": [
+              "00000000-0000-0000-0000-000000000352",
+              "00000000-0000-0000-0000-000000000292"
+            ],
+            "status": "API_KEY_STATUS_ACTIVE",
+            "ownerDisplayName": "Service Account Bot",
+            "ownerEmail": "user-4@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000355",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "clientId": "Ana",
+            "createdAt": "2025-10-31T20:48:36.521204Z",
+            "apiKeyShort": "<REDACTED>",
+            "assumedRoles": [
+              "00000000-0000-0000-0000-000000000293",
+              "00000000-0000-0000-0000-000000000292",
+              "00000000-0000-0000-0000-000000000291",
+              "00000000-0000-0000-0000-000000000294"
+            ],
+            "status": "API_KEY_STATUS_ACTIVE",
+            "ownerEmail": "user-1@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000356",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "clientId": "Claude Code",
+            "createdAt": "2025-10-31T14:32:25.808116Z",
+            "apiKeyShort": "<REDACTED>",
+            "assumedRoles": [
+              "00000000-0000-0000-0000-000000000293",
+              "00000000-0000-0000-0000-000000000292",
+              "00000000-0000-0000-0000-000000000291",
+              "00000000-0000-0000-0000-000000000294"
+            ],
+            "status": "API_KEY_STATUS_ACTIVE",
+            "ownerEmail": "user-1@example.com"
+          }
+        ]
+      },
+      "inferredRequestSchema": {
+        "scope": "string",
+        "includeRevoked": "boolean",
+        "sortBy": "string",
+        "sortDirection": "string",
+        "pageSize": "integer"
+      },
+      "inferredResponseSchema": {
+        "apiKeys": "array<{'id': 'string', 'memberId': 'string', 'createdAt': 'string', 'apiKeyShort': 'string', 'assumedRoles': 'array<string>', 'name': 'string', 'expiresAt': 'string', 'status': 'string', 'ownerEmail': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

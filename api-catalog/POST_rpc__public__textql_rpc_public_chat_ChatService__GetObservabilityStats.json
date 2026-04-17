@@ -1,0 +1,393 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/GetObservabilityStats",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/GetObservabilityStats",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/GetObservabilityStats",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "summary": {
+          "totalRuns": 52,
+          "totalThreads": 11,
+          "totalPlaybooks": 37,
+          "totalWarnings": 1,
+          "warnRatePct": 1,
+          "runsDeltaPct": 23,
+          "threadsDeltaPct": 57,
+          "playbooksDeltaPct": 5,
+          "warningsDeltaPct": 100,
+          "runsSparkline": [
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            3,
+            3,
+            1,
+            2,
+            5,
+            1,
+            3,
+            2,
+            2,
+            3,
+            2,
+            1,
+            1,
+            1,
+            2,
+            3,
+            2,
+            2,
+            0
+          ],
+          "threadsSparkline": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            2,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0
+          ],
+          "playbooksSparkline": [
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            3,
+            1,
+            1,
+            1,
+            1,
+            1,
+            3,
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            2,
+            1,
+            1,
+            0
+          ],
+          "warningsSparkline": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0
+          ],
+          "totalFeedAgents": 4,
+          "feedAgentsDeltaPct": 100,
+          "feedAgentsSparkline": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "slackSparkline": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "dailyVolume": [
+          {
+            "date": "2026-03-19",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-20",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-21",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-22",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-23",
+            "playbooks": 2
+          },
+          {
+            "date": "2026-03-24",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-25",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-26",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-27",
+            "threads": 1,
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-28",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-29",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-03-30",
+            "playbooks": 3
+          },
+          {
+            "date": "2026-03-31",
+            "threads": 2,
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-01",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-02",
+            "threads": 1,
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-03",
+            "threads": 1,
+            "playbooks": 1,
+            "feedAgents": 3
+          },
+          {
+            "date": "2026-04-04",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-05",
+            "playbooks": 3
+          },
+          {
+            "date": "2026-04-06",
+            "playbooks": 2
+          },
+          {
+            "date": "2026-04-07",
+            "playbooks": 1,
+            "feedAgents": 1
+          },
+          {
+            "date": "2026-04-08",
+            "threads": 2,
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-09",
+            "threads": 1,
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-10",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-11",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-12",
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-13",
+            "playbooks": 2
+          },
+          {
+            "date": "2026-04-14",
+            "threads": 1,
+            "playbooks": 2
+          },
+          {
+            "date": "2026-04-15",
+            "threads": 1,
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-16",
+            "threads": 1,
+            "playbooks": 1
+          },
+          {
+            "date": "2026-04-17"
+          }
+        ],
+        "warningDistribution": [
+          {
+            "warningType": "ignored_instruction",
+            "category": "outcome",
+            "total": 1
+          }
+        ]
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "summary": {
+          "totalRuns": "integer",
+          "totalThreads": "integer",
+          "totalPlaybooks": "integer",
+          "totalWarnings": "integer",
+          "warnRatePct": "integer",
+          "runsDeltaPct": "integer",
+          "threadsDeltaPct": "integer",
+          "playbooksDeltaPct": "integer",
+          "warningsDeltaPct": "integer",
+          "runsSparkline": "array<integer>",
+          "threadsSparkline": "array<integer>",
+          "playbooksSparkline": "array<integer>",
+          "warningsSparkline": "array<integer>",
+          "totalFeedAgents": "integer",
+          "feedAgentsDeltaPct": "integer",
+          "feedAgentsSparkline": "array<integer>",
+          "slackSparkline": "array<integer>"
+        },
+        "dailyVolume": "array<{'date': 'string', 'playbooks': 'integer'}>",
+        "warningDistribution": "array<{'warningType': 'string', 'category': 'string', 'total': 'integer'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

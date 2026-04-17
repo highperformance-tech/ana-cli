@@ -1,0 +1,45 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.notifications.NotificationService/GetNotifications",
+  "host": "app.textql.com",
+  "description": "Connect-RPC notifications.NotificationService/GetNotifications",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.notifications.NotificationService/GetNotifications",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "notifications": [
+          {
+            "id": "00000000-0000-0000-0000-000000000184",
+            "notificationType": "NOTIFICATION_TYPE_FEED_TAG",
+            "context": {
+              "actor_member_id": "00000000-0000-0000-0000-000000000025",
+              "actor_member_name": "user-2@example.com",
+              "content_preview": "<REDACTED>",
+              "post_id": "00000000-0000-0000-0000-000000000185",
+              "thing_id": "00000000-0000-0000-0000-000000000186"
+            },
+            "createdAt": "2026-04-09T16:44:48.679947Z"
+          }
+        ],
+        "unreadCount": 1
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "notifications": "array<{'id': 'string', 'notificationType': 'string', 'context': {'actor_member_id': 'string', 'actor_member_name': 'string', 'content_preview': 'string', 'post_id': 'string', 'thing_id': 'string'}, 'createdAt': 'string'}>",
+        "unreadCount": "integer"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.playbook.PlaybookService/GetChatReportsSummary",
+  "host": "app.textql.com",
+  "description": "Connect-RPC playbook.PlaybookService/GetChatReportsSummary",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.playbook.PlaybookService/GetChatReportsSummary",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "chatId": "00000000-0000-0000-0000-000000000040"
+      },
+      "status": 200,
+      "responseBody": {},
+      "inferredRequestSchema": {
+        "chatId": "string"
+      },
+      "inferredResponseSchema": {}
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

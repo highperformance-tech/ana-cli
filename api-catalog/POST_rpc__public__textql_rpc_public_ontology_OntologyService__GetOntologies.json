@@ -1,0 +1,1421 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.ontology.OntologyService/GetOntologies",
+  "host": "app.textql.com",
+  "description": "Connect-RPC ontology.OntologyService/GetOntologies",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.ontology.OntologyService/GetOntologies",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "ontologies": [
+          {
+            "id": 5476,
+            "name": "Example Name 69",
+            "description": "Auto-generated ontology for TextQL Usage connector",
+            "connectorId": 3847
+          },
+          {
+            "id": 2200,
+            "name": "Example Name 3",
+            "description": "Auto-generated ontology for ExampleOrg connector",
+            "connectorId": 608
+          },
+          {
+            "id": 2156,
+            "name": "Example Name 70",
+            "description": "Auto-generated ontology for Databricks Data Warehouse connector",
+            "connectorId": 564,
+            "objects": [
+              {
+                "id": "00000000-0000-0000-0000-000000000187",
+                "name": "Nation",
+                "description": "Countries/nations with their associated regions",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "nation",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000188"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000188"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 639.3302769230769,
+                    "y": 524.5934153846155
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000189",
+                "name": "Orders",
+                "description": "Customer orders with order details and status",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "orders",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000190"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000190"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 97.78732307692309,
+                    "y": 571.8131692307693
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000191",
+                "name": "Part",
+                "description": "Parts/products that can be ordered",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "part",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000192"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000192"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 122.35324701827426,
+                    "y": 114.35324701827432
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000193",
+                "name": "Example Name 71",
+                "description": "Junction table linking parts to their suppliers with pricing and availability",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "partsupp",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000194"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000194"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 567.8531692307693,
+                    "y": -129.93323076923073
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000195",
+                "name": "Region",
+                "description": "Geographic regions containing multiple nations",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "region",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000196"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000196"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 802,
+                    "y": 423
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000197",
+                "name": "Supplier",
+                "description": "Suppliers who provide parts",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "supplier",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000198"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000198"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 678.8978624028896,
+                    "y": 255.39321452018726
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000199",
+                "name": "Customer",
+                "description": "Customers who place orders",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "customer",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000200"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000200"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 298,
+                    "y": 672
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000201",
+                "name": "Example Name 72",
+                "description": "<REDACTED>",
+                "backingTable": {
+                  "schema": "tpch",
+                  "table": "lineitem",
+                  "database": "samples"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000202"
+                },
+                "titleAttribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000202"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": 235.64675298172563,
+                    "y": 284.35324701827426
+                  }
+                }
+              }
+            ],
+            "attributes": [
+              {
+                "id": "00000000-0000-0000-0000-000000000203",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-10",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_size"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000204",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "name": "slug-11",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "s_nationkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000202",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-12",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_orderkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000205",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-13",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_orderpriority"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000206",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-14",
+                "description": "Order status",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_orderstatus"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000207",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-15",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_shipinstruct"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000208",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-16",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000209",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-17",
+                "description": "Order total price",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_totalprice"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000210",
+                "objectId": "00000000-0000-0000-0000-000000000195",
+                "name": "slug-18",
+                "description": "Region name",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "r_name"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000211",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-19",
+                "description": "Line item quantity",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_quantity"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000212",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-20",
+                "description": "Order date",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_orderdate"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000213",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-21",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_address"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000214",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-22",
+                "description": "Line status",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_linestatus"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000190",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-23",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_orderkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000215",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-24",
+                "description": "Discount amount",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_discount"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000216",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-25",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_clerk"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000217",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-26",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000218",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-27",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_name"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000219",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-28",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_partkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000198",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "name": "slug-29",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "s_suppkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000220",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-30",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000221",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-31",
+                "description": "Shipping mode",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_shipmode"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000222",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-32",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_commitdate"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000223",
+                "objectId": "00000000-0000-0000-0000-000000000193",
+                "name": "slug-33",
+                "description": "Supply cost",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "ps_supplycost"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000196",
+                "objectId": "00000000-0000-0000-0000-000000000195",
+                "name": "slug-34",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "r_regionkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000224",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-35",
+                "description": "Ship date",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_shipdate"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000225",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-36",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_brand"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000226",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-37",
+                "description": "Tax amount",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_tax"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000227",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-38",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_custkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000192",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-39",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_partkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000228",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-40",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_type"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000229",
+                "objectId": "00000000-0000-0000-0000-000000000187",
+                "name": "slug-41",
+                "description": "Nation name",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "n_name"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000230",
+                "objectId": "00000000-0000-0000-0000-000000000187",
+                "name": "slug-42",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "data": {
+                  "unlinked": {
+                    "columnName": "n_regionkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000231",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-43",
+                "description": "Customer market segment",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_mktsegment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000232",
+                "objectId": "00000000-0000-0000-0000-000000000193",
+                "name": "slug-44",
+                "description": "Available quantity",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "ps_availqty"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000233",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-45",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_linenumber"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000234",
+                "objectId": "00000000-0000-0000-0000-000000000193",
+                "name": "slug-46",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "ps_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000235",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-47",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_container"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000236",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-48",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_nationkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000237",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "name": "slug-49",
+                "description": "Supplier account balance",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "s_acctbal"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000238",
+                "objectId": "00000000-0000-0000-0000-000000000187",
+                "name": "slug-50",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "n_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000239",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-51",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_suppkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000240",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-52",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_receiptdate"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000241",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-53",
+                "description": "Return flag",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "isDimension": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_returnflag"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000242",
+                "objectId": "00000000-0000-0000-0000-000000000195",
+                "name": "slug-54",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "r_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000243",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "name": "slug-55",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "s_name"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000244",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-56",
+                "description": "Part retail price",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_retailprice"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000245",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "name": "slug-57",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "s_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000246",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-58",
+                "description": "Customer account balance",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_acctbal"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000247",
+                "objectId": "00000000-0000-0000-0000-000000000193",
+                "name": "slug-59",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "ps_suppkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000248",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-60",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_comment"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000249",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "name": "slug-61",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "o_shippriority"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000250",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "name": "slug-62",
+                "description": "Extended price",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "isMeasure": true,
+                "data": {
+                  "unlinked": {
+                    "columnName": "l_extendedprice"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000251",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-63",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_phone"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000252",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "name": "slug-64",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "s_address"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000253",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-65",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_name"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000194",
+                "objectId": "00000000-0000-0000-0000-000000000193",
+                "name": "slug-66",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "ps_partkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000200",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "name": "slug-67",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
+                "data": {
+                  "unlinked": {
+                    "columnName": "c_custkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000254",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "name": "slug-68",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "p_mfgr"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000188",
+                "objectId": "00000000-0000-0000-0000-000000000187",
+                "name": "slug-69",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
+                "data": {
+                  "unlinked": {
+                    "columnName": "n_nationkey"
+                  }
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000255",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "name": "slug-70",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "s_phone"
+                  }
+                }
+              }
+            ],
+            "metrics": [
+              {
+                "id": "00000000-0000-0000-0000-000000000256",
+                "name": "Example Name 73",
+                "description": "Total revenue from line items before discounts and taxes",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000250"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000257",
+                "name": "Example Name 74",
+                "description": "Total number of orders placed by customers",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000190"
+                },
+                "aggregation": "METRIC_AGGREGATION_COUNT"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000258",
+                "name": "Example Name 75",
+                "description": "Total number of suppliers",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000198"
+                },
+                "aggregation": "METRIC_AGGREGATION_COUNT"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000259",
+                "name": "Example Name 76",
+                "description": "Sum of all customer account balances",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000246"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000260",
+                "name": "Example Name 77",
+                "description": "Total number of parts in catalog",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000192"
+                },
+                "aggregation": "METRIC_AGGREGATION_COUNT"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000261",
+                "name": "Example Name 78",
+                "description": "Average discount percentage applied to line items",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000215"
+                },
+                "aggregation": "METRIC_AGGREGATION_AVG"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000262",
+                "name": "Example Name 79",
+                "description": "Average retail price of parts",
+                "objectId": "00000000-0000-0000-0000-000000000191",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000244"
+                },
+                "aggregation": "METRIC_AGGREGATION_AVG"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000263",
+                "name": "Example Name 80",
+                "description": "Sum of all supplier account balances",
+                "objectId": "00000000-0000-0000-0000-000000000197",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000237"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000264",
+                "name": "Example Name 81",
+                "description": "Total number of line items across all orders",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000202"
+                },
+                "aggregation": "METRIC_AGGREGATION_COUNT"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000265",
+                "name": "Example Name 82",
+                "description": "Total number of customers",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000200"
+                },
+                "aggregation": "METRIC_AGGREGATION_COUNT"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000266",
+                "name": "Example Name 83",
+                "description": "Average tax rate applied to line items",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000226"
+                },
+                "aggregation": "METRIC_AGGREGATION_AVG"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000267",
+                "name": "Example Name 84",
+                "description": "Average cost to supply parts across all suppliers",
+                "objectId": "00000000-0000-0000-0000-000000000193",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000223"
+                },
+                "aggregation": "METRIC_AGGREGATION_AVG"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000268",
+                "name": "Example Name 85",
+                "description": "Sum of all order totals",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000209"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000269",
+                "name": "Example Name 86",
+                "description": "Total available quantity across all part-supplier combinations",
+                "objectId": "00000000-0000-0000-0000-000000000193",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000232"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000270",
+                "name": "Example Name 87",
+                "description": "Average value per order",
+                "objectId": "00000000-0000-0000-0000-000000000189",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000209"
+                },
+                "aggregation": "METRIC_AGGREGATION_AVG"
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000271",
+                "name": "Example Name 88",
+                "description": "Total quantity of items ordered across all line items",
+                "objectId": "00000000-0000-0000-0000-000000000201",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000211"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000272",
+                "name": "Example Name 89",
+                "description": "Average customer account balance",
+                "objectId": "00000000-0000-0000-0000-000000000199",
+                "attribute": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000246"
+                },
+                "aggregation": "METRIC_AGGREGATION_AVG"
+              }
+            ],
+            "relations": [
+              {
+                "id": "00000000-0000-0000-0000-000000000273",
+                "name": "Example Name 90",
+                "description": "Links each nation to its geographic region",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000187"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000195"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000230"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000196"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000274",
+                "name": "Example Name 91",
+                "description": "Links each customer to their nation",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000199"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000187"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000236"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000188"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000275",
+                "name": "Example Name 92",
+                "description": "Links each line item to the supplier providing the part",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000201"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000197"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000239"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000198"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000276",
+                "name": "Example Name 93",
+                "description": "Links each supplier to their nation",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000197"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000187"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000204"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000188"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000277",
+                "name": "Example Name 94",
+                "description": "Links each order to the customer who placed it",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000189"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000199"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000227"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000200"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000278",
+                "name": "Example Name 95",
+                "description": "Links part-supplier relationships to the supplier",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000193"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000197"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000247"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000198"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000279",
+                "name": "Example Name 96",
+                "description": "Links part-supplier relationships to the part",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000193"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000191"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000194"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000192"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000280",
+                "name": "Example Name 97",
+                "description": "Links each line item to its parent order",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000201"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000189"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000202"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000190"
+                }
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000281",
+                "name": "Example Name 98",
+                "description": "Links each line item to the part being ordered",
+                "type": "RELATION_TYPE_MANY_TO_ONE",
+                "objectA": {
+                  "objectRef": "00000000-0000-0000-0000-000000000201"
+                },
+                "objectB": {
+                  "objectRef": "00000000-0000-0000-0000-000000000191"
+                },
+                "joinKeyA": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000219"
+                },
+                "joinKeyB": {
+                  "attributeRef": "00000000-0000-0000-0000-000000000192"
+                }
+              }
+            ],
+            "measures": [
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000209"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000211"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000215"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000223"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000226"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000232"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000237"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000244"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000246"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000250"
+              }
+            ],
+            "dimensions": [
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000204"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000206"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000210"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000212"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000214"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000221"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000224"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000229"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000231"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000236"
+              },
+              {
+                "attributeRef": "00000000-0000-0000-0000-000000000241"
+              }
+            ]
+          },
+          {
+            "id": 2095,
+            "name": "Example Name 99",
+            "description": "Auto-generated ontology for eCommerce (Example) connector",
+            "connectorId": 503,
+            "objects": [
+              {
+                "id": "61sm5a667ca9bsn1tvotv9",
+                "name": "Example Name 100",
+                "description": "Distribution Centers",
+                "backingTable": {
+                  "schema": "ecommerce",
+                  "table": "distribution_centers",
+                  "database": "example-gcp-project"
+                },
+                "primaryKeyAttribute": {
+                  "attributeRef": "2e3iffo2lqbruhkvhzofti"
+                },
+                "titleAttribute": {
+                  "attributeRef": "sllbi2imoih6j2el0jjht"
+                },
+                "graphProperties": {
+                  "position": {
+                    "x": -105.32010956305984,
+                    "y": -108.27996826962544
+                  },
+                  "icon": "office-building-outline",
+                  "color": "#a1887c"
+                }
+              }
+            ],
+            "attributes": [
+              {
+                "id": "2e3iffo2lqbruhkvhzofti",
+                "objectId": "61sm5a667ca9bsn1tvotv9",
+                "name": "id",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "id"
+                  }
+                }
+              },
+              {
+                "id": "9bew0ilzi1b0py8isi3myp",
+                "objectId": "61sm5a667ca9bsn1tvotv9",
+                "name": "longitude",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "longitude"
+                  }
+                }
+              },
+              {
+                "id": "auyfhkb4nichb37cf27gk8",
+                "objectId": "61sm5a667ca9bsn1tvotv9",
+                "name": "latitude",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "latitude"
+                  }
+                }
+              },
+              {
+                "id": "sllbi2imoih6j2el0jjht",
+                "objectId": "61sm5a667ca9bsn1tvotv9",
+                "name": "name",
+                "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
+                "data": {
+                  "unlinked": {
+                    "columnName": "name"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": 2094,
+            "name": "Example Name 4",
+            "description": "Auto-generated ontology for tableau.example-tools.example.com connector",
+            "connectorId": 502
+          }
+        ]
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "ontologies": "array<{'id': 'integer', 'name': 'string', 'description': 'string', 'connectorId': 'integer'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

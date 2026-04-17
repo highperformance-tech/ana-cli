@@ -1,0 +1,30 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/MarkChatRead",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/MarkChatRead",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/MarkChatRead",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "chatId": "00000000-0000-0000-0000-000000000030"
+      },
+      "status": 200,
+      "responseBody": {},
+      "inferredRequestSchema": {
+        "chatId": "string"
+      },
+      "inferredResponseSchema": {}
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

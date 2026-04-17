@@ -1,0 +1,289 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.audit_log.AuditLogService/ListAuditLogs",
+  "host": "app.textql.com",
+  "description": "Connect-RPC audit_log.AuditLogService/ListAuditLogs",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.audit_log.AuditLogService/ListAuditLogs",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "pageSize": 50
+      },
+      "status": 200,
+      "responseBody": {
+        "entries": [
+          {
+            "id": "00000000-0000-0000-0000-000000000001",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "api_key.created",
+            "category": "api_key",
+            "resourceType": "api_key",
+            "resourceId": "00000000-0000-0000-0000-000000000004",
+            "details": {
+              "name": "slug-1"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-04-17T15:19:15.189150Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000005",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000006",
+            "actorEmail": "user-1@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "google",
+            "createdAt": "2026-04-17T13:36:22.992721Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000007",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "org_settings.org_switched",
+            "category": "org_settings",
+            "resourceType": "organization",
+            "resourceId": "00000000-0000-0000-0000-000000000002",
+            "details": {
+              "org_name": "Example Org",
+              "target_org_id": "00000000-0000-0000-0000-000000000002"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-04-17T13:32:24.669080Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000008",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "org_settings.org_switched",
+            "category": "org_settings",
+            "resourceType": "organization",
+            "resourceId": "00000000-0000-0000-0000-000000000002",
+            "details": {
+              "org_name": "Example Org",
+              "target_org_id": "00000000-0000-0000-0000-000000000002"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-04-15T20:55:54.113526Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000009",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000010",
+            "actorEmail": "user-2@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "email",
+            "createdAt": "2026-04-14T20:04:35.164530Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000011",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000006",
+            "actorEmail": "user-1@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "google",
+            "createdAt": "2026-04-09T18:38:12.398362Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000012",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "auth.logout",
+            "category": "auth",
+            "details": {},
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-04-09T18:37:49.833658Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000013",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000006",
+            "actorEmail": "user-1@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "google",
+            "createdAt": "2026-04-09T16:36:57.364592Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000014",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "auth.logout",
+            "category": "auth",
+            "details": {},
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-04-09T16:36:29.836145Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000015",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000006",
+            "actorEmail": "user-1@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "google",
+            "createdAt": "2026-04-09T16:35:24.502189Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000016",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000010",
+            "actorEmail": "user-2@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "email",
+            "createdAt": "2026-04-06T19:12:24.180304Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000017",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "connector.updated",
+            "category": "connector",
+            "resourceType": "connector",
+            "resourceId": "564",
+            "details": {
+              "connector_type": "DatabricksConnector",
+              "name": "Example Name 58"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-04-03T19:19:22.651459Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000018",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "org_settings.org_switched",
+            "category": "org_settings",
+            "resourceType": "organization",
+            "resourceId": "00000000-0000-0000-0000-000000000002",
+            "details": {
+              "org_name": "Example Org",
+              "target_org_id": "00000000-0000-0000-0000-000000000002"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-04-02T16:12:26.547218Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000019",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000006",
+            "actorEmail": "user-1@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "google",
+            "createdAt": "2026-03-31T21:59:20.287929Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000020",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "org_settings.org_switched",
+            "category": "org_settings",
+            "resourceType": "organization",
+            "resourceId": "00000000-0000-0000-0000-000000000002",
+            "details": {
+              "org_name": "Example Org",
+              "target_org_id": "00000000-0000-0000-0000-000000000002"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-03-27T00:45:46.244901Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000021",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000010",
+            "actorEmail": "user-2@example.com",
+            "action": "auth.login_success",
+            "category": "auth",
+            "details": {},
+            "authMethod": "email",
+            "createdAt": "2026-03-27T00:00:36.617765Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000022",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "org_settings.org_switched",
+            "category": "org_settings",
+            "resourceType": "organization",
+            "resourceId": "00000000-0000-0000-0000-000000000002",
+            "details": {
+              "org_name": "Example Org",
+              "target_org_id": "00000000-0000-0000-0000-000000000002"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-03-26T18:11:56.487658Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000023",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "org_settings.org_switched",
+            "category": "org_settings",
+            "resourceType": "organization",
+            "resourceId": "00000000-0000-0000-0000-000000000002",
+            "details": {
+              "org_name": "Example Org",
+              "target_org_id": "00000000-0000-0000-0000-000000000002"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-03-24T19:54:34.411608Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000024",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "actorId": "00000000-0000-0000-0000-000000000003",
+            "actorEmail": "user-1@example.com",
+            "action": "org_settings.org_switched",
+            "category": "org_settings",
+            "resourceType": "organization",
+            "resourceId": "00000000-0000-0000-0000-000000000002",
+            "details": {
+              "org_name": "Example Org",
+              "target_org_id": "00000000-0000-0000-0000-000000000002"
+            },
+            "authMethod": "oathkeeper",
+            "createdAt": "2026-03-24T19:48:34.897424Z"
+          }
+        ]
+      },
+      "inferredRequestSchema": {
+        "pageSize": "integer"
+      },
+      "inferredResponseSchema": {
+        "entries": "array<{'id': 'string', 'orgId': 'string', 'actorId': 'string', 'actorEmail': 'string', 'action': 'string', 'category': 'string', 'resourceType': 'string', 'resourceId': 'string', 'details': {'name': 'string'}, 'authMethod': 'string', 'createdAt': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error).",
+    "Action strings observed: api_key.created, api_key.rotated, api_key.revoked, service_account.created, service_account.deleted. authMethod=\"oathkeeper\" for web-UI actions."
+  ]
+}

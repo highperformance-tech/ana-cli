@@ -1,0 +1,104 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.settings.SettingsService/ListOrganizationMembers",
+  "host": "app.textql.com",
+  "description": "Connect-RPC settings.SettingsService/ListOrganizationMembers",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.settings.SettingsService/ListOrganizationMembers",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "orgId": "00000000-0000-0000-0000-000000000002"
+      },
+      "status": 200,
+      "responseBody": {
+        "members": [
+          {
+            "id": 1,
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "role": "member",
+            "showCode": true,
+            "profileImageUrl": "https://example.com/avatar.png",
+            "emailAddress": "user-1@example.com",
+            "name": "",
+            "isAdmin": true,
+            "roles": [
+              "<REDACTED>",
+              "<REDACTED>",
+              "<REDACTED>",
+              "<REDACTED>"
+            ],
+            "createdAt": "2025-10-31T14:19:13.151903Z",
+            "updatedAt": "2026-01-29T21:26:26.298773Z",
+            "paradigmParams": {
+              "webSearchEnabled": true,
+              "pythonEnabled": true
+            },
+            "emailVerified": true
+          },
+          {
+            "id": 2,
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "memberId": "00000000-0000-0000-0000-000000000025",
+            "role": "stytch_member",
+            "showCode": true,
+            "profileImageUrl": "https://example.com/avatar.png",
+            "emailAddress": "user-2@example.com",
+            "name": "",
+            "isAdmin": true,
+            "roles": [
+              "<REDACTED>",
+              "<REDACTED>",
+              "<REDACTED>",
+              "<REDACTED>"
+            ],
+            "createdAt": "2025-11-19T16:56:04.665768Z",
+            "updatedAt": "2026-03-05T19:15:04.330706Z",
+            "paradigmParams": {
+              "webSearchEnabled": true,
+              "pythonEnabled": true
+            },
+            "emailVerified": true
+          },
+          {
+            "id": 3,
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "memberId": "00000000-0000-0000-0000-000000000093",
+            "role": "stytch_member",
+            "showCode": true,
+            "profileImageUrl": "https://example.com/avatar.png",
+            "emailAddress": "user-6@example.com",
+            "name": "",
+            "isAdmin": true,
+            "roles": [
+              "<REDACTED>",
+              "<REDACTED>",
+              "<REDACTED>",
+              "<REDACTED>",
+              "<REDACTED>"
+            ],
+            "createdAt": "2025-11-14T22:33:46.560377Z",
+            "updatedAt": "2025-12-22T18:27:25.719Z",
+            "emailVerified": true
+          }
+        ]
+      },
+      "inferredRequestSchema": {
+        "orgId": "string"
+      },
+      "inferredResponseSchema": {
+        "members": "array<{'id': 'integer', 'orgId': 'string', 'memberId': 'string', 'role': 'string', 'showCode': 'boolean', 'profileImageUrl': 'string', 'emailAddress': 'string', 'name': 'string', 'isAdmin': 'boolean', 'roles': 'array<string>', 'createdAt': 'string', 'updatedAt': 'string', 'paradigmParams': {'webSearchEnabled': 'boolean', 'pythonEnabled': 'boolean'}, 'emailVerified': 'boolean'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.feed.FeedService/GetFeedStats",
+  "host": "app.textql.com",
+  "description": "Connect-RPC feed.FeedService/GetFeedStats",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.feed.FeedService/GetFeedStats",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "messagesToday": 116,
+        "messagesAllTime": 11518,
+        "activeAgents": 3,
+        "dashboardsCreated": 7,
+        "threadsCreated": 399,
+        "playbooksCreated": 5,
+        "connectorsConfigured": 4,
+        "connectorNames": [
+          "<REDACTED>",
+          "<REDACTED>",
+          "<REDACTED>"
+        ],
+        "activeAgentNames": [
+          "<REDACTED>",
+          "<REDACTED>",
+          "<REDACTED>"
+        ]
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "messagesToday": "integer",
+        "messagesAllTime": "integer",
+        "activeAgents": "integer",
+        "dashboardsCreated": "integer",
+        "threadsCreated": "integer",
+        "playbooksCreated": "integer",
+        "connectorsConfigured": "integer",
+        "connectorNames": "array<string>",
+        "activeAgentNames": "array<string>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}
