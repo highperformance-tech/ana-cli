@@ -1,4 +1,4 @@
-.PHONY: all build test cover vet clean
+.PHONY: all build test cover vet clean e2e e2e-sweep e2e-dryrun
 
 GO ?= go
 PKGS := ./...
@@ -27,3 +27,22 @@ cover:
 
 clean:
 	rm -rf bin c.out c.internal.out
+
+# e2e runs the live smoke suite against app.textql.com. Requires env:
+#   ANA_E2E_ENDPOINT   (e.g. https://app.textql.com)
+#   ANA_E2E_TOKEN      API key for the demo org
+#   ANA_E2E_EXPECT_ORG human-readable org name the token must resolve to
+# -p 1 serializes packages so parallel resource names cannot collide; the
+# suite uses disposable-parent-nesting to stay auto-revertable.
+e2e:
+	$(GO) test -p 1 -count=1 -timeout 10m ./e2e/...
+
+# e2e-dryrun lists every planned mutation without hitting the network. The
+# harness short-circuits Run() and returns empty results; see harness/harness.go.
+e2e-dryrun:
+	ANA_E2E_DRYRUN=1 $(GO) test -p 1 -count=1 -timeout 2m -v ./e2e/...
+
+# e2e-sweep cleans any anacli-e2e-* leftovers from prior crashed runs. Useful
+# to run manually before a fresh suite if a previous run died mid-test.
+e2e-sweep:
+	ANA_E2E_SWEEP_ONLY=1 $(GO) test -p 1 -count=1 -timeout 2m ./e2e/...
