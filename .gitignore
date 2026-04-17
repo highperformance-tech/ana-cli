@@ -16,3 +16,14 @@ c.out
 # e2e manual-revert ledger files (written by the live smoke harness when
 # auto-cleanup fails and human intervention is required)
 e2e-manual-revert-*.md
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# Claude Code personal overrides
+CLAUDE.local.md
