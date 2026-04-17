@@ -10,7 +10,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // DefaultEndpoint is used when neither the --endpoint global nor a persisted

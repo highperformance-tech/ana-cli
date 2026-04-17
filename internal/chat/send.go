@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // sendCmd implements `ana chat send <id> <message>` — the only streaming verb.

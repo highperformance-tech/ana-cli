@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // --- shared fakes ----------------------------------------------------------

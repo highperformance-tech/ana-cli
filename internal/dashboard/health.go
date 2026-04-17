@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // healthCmd implements `ana dashboard health <id>` — CheckDashboardHealth.

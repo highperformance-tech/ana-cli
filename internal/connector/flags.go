@@ -7,7 +7,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // newFlagSet returns a FlagSet configured for leaf commands: continue-on-error

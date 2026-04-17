@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"text/tabwriter"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // getCmd implements `ana ontology get <id>` — GetOntologyById with

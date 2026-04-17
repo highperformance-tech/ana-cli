@@ -13,7 +13,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // servicePath is the Connect-RPC service prefix every dashboard endpoint

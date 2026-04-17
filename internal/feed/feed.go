@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // feedServicePath is the Connect-RPC prefix every FeedService endpoint uses.
