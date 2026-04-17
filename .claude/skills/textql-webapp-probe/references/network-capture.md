@@ -49,7 +49,11 @@ Run every record through `scripts/normalize_request.sh` before writing to disk. 
 
 - Deletes `authorization`, `cookie`, `set-cookie` headers case-insensitively.
 - Blanks values of headers ending in `-token`, `-secret`, `-key`.
-- Leaves request/response bodies alone — redact field values inside the body manually if they are obviously secret (e.g. API keys in a response). When in doubt, keep the key but replace the value with `"<redacted>"`.
+- Walks request + response bodies recursively and replaces string values with `"<REDACTED>"` when the key name (case-insensitive, underscores ignored) is sensitive. Covered: `apiKeyHash`, `plaintextKey`, `password`, `secret`, `clientSecret`, `accessToken`, `refreshToken`, `sessionToken`, `bearerToken`, `authToken`, `privateKey`, `signingKey`, `apiSecret`, `oauthSecret`, `webhookSecret`, plus any key ending in those suffixes (`refreshBearerToken`, `fooPassword`, …). Exempted: `apiKeyShort` (display fingerprint), `tokenType` (metadata), `csrfToken`, `publicKey`.
+
+The body scrub is a safety net, not a substitute for review. After normalizing, eyeball the output before writing to `api-catalog/`: look for any remaining high-entropy strings, base64 blobs, or JWT-shaped values (three dot-separated segments). If a capture returns credential material under a field name not on the list above, **extend the list in `scripts/normalize_request.sh`** before writing the catalog entry — don't just edit the one file.
+
+Never commit until a diff review shows no plaintext secrets remain.
 
 ## Inferring schema from a sample body
 
