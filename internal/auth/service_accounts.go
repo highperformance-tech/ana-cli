@@ -132,7 +132,11 @@ type saDeleteCmd struct{ deps Deps }
 
 func (c *saDeleteCmd) Help() string {
 	return "service-accounts delete   Delete a service account by id.\n" +
-		"Usage: ana auth service-accounts delete <id>"
+		"Usage: ana auth service-accounts delete <id>\n" +
+		"\n" +
+		"<id> is the memberId shown by `ana auth service-accounts list`. memberId is\n" +
+		"per-org, so the same id will not resolve against a different profile. Deleting\n" +
+		"cascades to revoke all API keys issued by the account."
 }
 
 // deleteServiceAccountReq uses `memberId` per the catalog's DeleteServiceAccount

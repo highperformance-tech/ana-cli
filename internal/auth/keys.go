@@ -84,7 +84,11 @@ type keysCreateCmd struct{ deps Deps }
 
 func (c *keysCreateCmd) Help() string {
 	return "keys create   Create an API key and print the plaintext token ONCE.\n" +
-		"Usage: ana auth keys create --name <name> [--service-account <id>]"
+		"Usage: ana auth keys create --name <name> [--service-account <id>]\n" +
+		"\n" +
+		"--service-account takes a memberId, which is per-org: the same service account\n" +
+		"in a different org has a different memberId. Get the right id from\n" +
+		"`ana auth service-accounts list` while on the target org's profile."
 }
 
 // createApiKeyReq uses the exact camelCase names the server requires (see

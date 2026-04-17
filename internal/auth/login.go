@@ -18,9 +18,15 @@ type loginCmd struct{ deps Deps }
 // Help is fixed text; flag names and behavior live here rather than in
 // auth.go so the command file is self-contained.
 func (c *loginCmd) Help() string {
-	return "login   Save an API token to the config file.\n" +
+	return "login   Save an API token to the active config profile.\n" +
 		"Usage: ana auth login [--token-stdin]\n" +
-		"Reads the token from stdin (one line by default, or the full stream with --token-stdin)."
+		"Reads the token from stdin (one line by default, or the full stream with --token-stdin).\n" +
+		"\n" +
+		"API keys are scoped to a single TextQL organization (they are minted by a\n" +
+		"member, and each user has a separate member record per org). To work across\n" +
+		"multiple orgs, mint one key per org in that org's /settings#dev page and save\n" +
+		"each under its own profile via `ana profile add <name>`. Select a profile with\n" +
+		"the global --profile flag or `ana profile use <name>`."
 }
 
 // Run reads a token from stdio.Stdin, merges endpoint precedence, and saves
