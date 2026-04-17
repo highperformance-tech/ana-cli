@@ -81,10 +81,31 @@ func newFlagSet(name string) *flag.FlagSet {
 }
 
 // parseFlags parses args into fs and wraps any error with cli.ErrUsage so the
-// root dispatcher maps the failure to exit code 1.
+// root dispatcher maps the failure to exit code 1. Supports flags interspersed
+// with positionals: the stdlib FlagSet stops at the first non-flag token, so
+// we loop — parse, capture the non-flag, advance past it, parse again — until
+// everything is consumed. The flags' final values come from the last pass;
+// positionals are reassembled in order and left on fs.Args() for the caller.
 func parseFlags(fs *flag.FlagSet, args []string) error {
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("%s: %w: %w", fs.Name(), err, cli.ErrUsage)
+	var positionals []string
+	rest := args
+	for {
+		if err := fs.Parse(rest); err != nil {
+			return fmt.Errorf("%s: %w: %w", fs.Name(), err, cli.ErrUsage)
+		}
+		tail := fs.Args()
+		if len(tail) == 0 {
+			break
+		}
+		positionals = append(positionals, tail[0])
+		rest = tail[1:]
+	}
+	// Re-seed fs.Args() with the collected positionals by parsing a synthetic
+	// "--" separator. stdlib FlagSet treats everything after "--" as
+	// positionals, so this lets callers keep using fs.Args() uniformly. This
+	// second Parse cannot fail (inputs post-`--` bypass flag validation).
+	if len(positionals) > 0 {
+		_ = fs.Parse(append([]string{"--"}, positionals...))
 	}
 	return nil
 }
