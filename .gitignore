@@ -3,3 +3,12 @@
 __pycache__/
 *.pyc
 .venv/
+
+# Go build + test artifacts
+/ana
+/bin/
+/dist/
+*.test
+*.out
+coverage.out
+c.out
