@@ -28,6 +28,13 @@ cover:
 clean:
 	rm -rf bin c.out c.internal.out
 
+ENV_FILE := .env
+# LOAD_ENV sources the repo-root .env if present, exporting each KEY=VAL so
+# the spawned `go test` process inherits ANA_E2E_ENDPOINT / ANA_E2E_TOKEN /
+# ANA_E2E_EXPECT_ORG. No-op when .env is absent. Must stay inline (a single
+# shell line) because each make-recipe line spawns its own shell.
+LOAD_ENV := if [ -f $(ENV_FILE) ]; then set -a; . ./$(ENV_FILE); set +a; fi;
+
 # e2e runs the live smoke suite against app.textql.com. Requires env:
 #   ANA_E2E_ENDPOINT   (e.g. https://app.textql.com)
 #   ANA_E2E_TOKEN      API key for the demo org
@@ -35,14 +42,14 @@ clean:
 # -p 1 serializes packages so parallel resource names cannot collide; the
 # suite uses disposable-parent-nesting to stay auto-revertable.
 e2e:
-	$(GO) test -p 1 -count=1 -timeout 10m ./e2e/...
+	@$(LOAD_ENV) $(GO) test -p 1 -count=1 -timeout 10m ./e2e/...
 
 # e2e-dryrun lists every planned mutation without hitting the network. The
 # harness short-circuits Run() and returns empty results; see harness/harness.go.
 e2e-dryrun:
-	ANA_E2E_DRYRUN=1 $(GO) test -p 1 -count=1 -timeout 2m -v ./e2e/...
+	@$(LOAD_ENV) ANA_E2E_DRYRUN=1 $(GO) test -p 1 -count=1 -timeout 2m -v ./e2e/...
 
 # e2e-sweep cleans any anacli-e2e-* leftovers from prior crashed runs. Useful
 # to run manually before a fresh suite if a previous run died mid-test.
 e2e-sweep:
-	ANA_E2E_SWEEP_ONLY=1 $(GO) test -p 1 -count=1 -timeout 2m ./e2e/...
+	@$(LOAD_ENV) ANA_E2E_SWEEP_ONLY=1 $(GO) test -p 1 -count=1 -timeout 2m ./e2e/...
