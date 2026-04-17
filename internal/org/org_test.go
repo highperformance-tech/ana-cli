@@ -378,17 +378,31 @@ func TestListHelp(t *testing.T) {
 func TestMembersListTable(t *testing.T) {
 	f := &fakeDeps{
 		unaryFn: func(_ context.Context, path string, _, resp any) error {
-			if path != "/rpc/public/textql.rpc.public.settings.SettingsService/ListOrganizationMembers" {
+			switch path {
+			case "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization":
+				// Decode into the pre-call's typed struct. Use a blind
+				// assignment through reflection-free path by writing via a
+				// JSON round-trip.
+				out := resp.(*struct {
+					Organization struct {
+						OrgID string `json:"orgId"`
+					} `json:"organization"`
+				})
+				out.Organization.OrgID = "org-1"
+				return nil
+			case "/rpc/public/textql.rpc.public.settings.SettingsService/ListOrganizationMembers":
+				out := resp.(*map[string]any)
+				*out = map[string]any{
+					"members": []any{
+						map[string]any{"memberId": "m1", "emailAddress": "a@b.c", "role": "member"},
+						map[string]any{"memberId": "m2", "emailAddress": "x@y.z"},
+					},
+				}
+				return nil
+			default:
 				t.Errorf("path=%s", path)
+				return nil
 			}
-			out := resp.(*map[string]any)
-			*out = map[string]any{
-				"members": []any{
-					map[string]any{"memberId": "m1", "emailAddress": "a@b.c", "role": "member"},
-					map[string]any{"memberId": "m2", "emailAddress": "x@y.z"},
-				},
-			}
-			return nil
 		},
 	}
 	cmd := &membersListCmd{deps: f.deps()}
@@ -402,14 +416,23 @@ func TestMembersListTable(t *testing.T) {
 			t.Errorf("missing %q in output %q", want, s)
 		}
 	}
-	if string(f.lastRawReq) != "{}" {
-		t.Errorf("req=%s want {}", string(f.lastRawReq))
+	if got := string(f.lastRawReq); got != `{"orgId":"org-1"}` {
+		t.Errorf("req=%s want {\"orgId\":\"org-1\"}", got)
 	}
 }
 
 func TestMembersListJSON(t *testing.T) {
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if path == "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization" {
+				out := resp.(*struct {
+					Organization struct {
+						OrgID string `json:"orgId"`
+					} `json:"organization"`
+				})
+				out.Organization.OrgID = "org-1"
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"members": []any{}}
 			return nil
@@ -449,7 +472,16 @@ func TestMembersListBadFlag(t *testing.T) {
 
 func TestMembersListRemarshalErr(t *testing.T) {
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if path == "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization" {
+				out := resp.(*struct {
+					Organization struct {
+						OrgID string `json:"orgId"`
+					} `json:"organization"`
+				})
+				out.Organization.OrgID = "org-1"
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"members": "not-an-array"}
 			return nil
