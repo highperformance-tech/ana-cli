@@ -2,18 +2,26 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"sync"
+	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
-// whoamiCmd prints the current member's email (or full JSON under --json).
-// Path: /rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember.
+// whoamiCmd prints the authenticated member's identity — email, active org
+// name, orgId, and role — as a tabwriter-formatted key/value list (or the
+// combined raw JSON of both RPCs under --json). It fans out GetMember and
+// GetOrganization in parallel because they are independent RPCs and serial
+// issuance would needlessly double command latency.
+//
+// Paths:
+//   /rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember
+//   /rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization
 type whoamiCmd struct{ deps Deps }
 
 func (c *whoamiCmd) Help() string {
-	return "whoami   Print the authenticated member's email (or full JSON with --json).\n" +
+	return "whoami   Print email, org, and role (tabwriter) or both raw responses with --json.\n" +
 		"Usage: ana auth whoami"
 }
 
@@ -30,9 +38,20 @@ type getMemberResp struct {
 	} `json:"member"`
 }
 
+// getOrganizationResp narrows the fields we render from GetOrganization. The
+// full payload includes theme/toolRestrictions/etc.; the decoder silently
+// drops them.
+type getOrganizationResp struct {
+	Organization struct {
+		OrgID            string `json:"orgId"`
+		OrganizationName string `json:"organizationName"`
+	} `json:"organization"`
+}
+
 // Run refuses to call Unary when no token is set (surfacing ErrNotLoggedIn
-// before any network attempt), issues the RPC otherwise, and prints either
-// the email or the full response JSON depending on --json.
+// before any network attempt), fans out GetMember and GetOrganization in
+// parallel, then prints either the tabwriter summary or a wrapper object
+// containing both raw responses under --json.
 func (c *whoamiCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := newFlagSet("auth whoami")
 	if err := parseFlags(fs, args); err != nil {
@@ -46,35 +65,74 @@ func (c *whoamiCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("auth whoami: %w", ErrNotLoggedIn)
 	}
 
-	// Keep the decoded response around even for the --json branch so we emit
-	// the re-encoded payload rather than the raw wire bytes, which keeps the
-	// output stable even if the server adds fields we don't model.
-	var raw map[string]any
-	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember", struct{}{}, &raw); err != nil {
-		return fmt.Errorf("auth whoami: %w", translateErr(err))
+	// Fan out the two independent RPCs. Each goroutine writes into its own
+	// destination, so no mutex is needed on the payload maps; errors land on
+	// a buffered channel so neither send blocks even if we only ever read one.
+	var (
+		memberRaw map[string]any
+		orgRaw    map[string]any
+		wg        sync.WaitGroup
+	)
+	errCh := make(chan error, 2)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		if e := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember", struct{}{}, &memberRaw); e != nil {
+			errCh <- translateErr(e)
+			return
+		}
+		errCh <- nil
+	}()
+	go func() {
+		defer wg.Done()
+		if e := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization", struct{}{}, &orgRaw); e != nil {
+			errCh <- translateErr(e)
+			return
+		}
+		errCh <- nil
+	}()
+	wg.Wait()
+	close(errCh)
+	// Return the first non-nil error we observe. If both failed, either is an
+	// acceptable signal — the user sees "auth whoami: <message>" regardless.
+	for e := range errCh {
+		if e != nil {
+			return fmt.Errorf("auth whoami: %w", e)
+		}
 	}
 
-	global := cli.GlobalFrom(ctx)
-	if global.JSON {
-		enc := json.NewEncoder(stdio.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(raw); err != nil {
-			return fmt.Errorf("auth whoami: encode response: %w", err)
-		}
-		return nil
+	if cli.GlobalFrom(ctx).JSON {
+		// Wrap both raw maps so neither response is lost. This matches the
+		// "preserve what the server sent" contract the other --json paths
+		// follow (writeJSON uses the same 2-space indent).
+		return writeJSON(stdio.Stdout, map[string]any{
+			"member":       memberRaw,
+			"organization": orgRaw,
+		})
 	}
 
-	// Pull the email out of the generic map; defensive because a partial
-	// response (no `member` field) shouldn't panic.
-	email := ""
-	if m, ok := raw["member"].(map[string]any); ok {
-		if e, ok := m["emailAddress"].(string); ok {
-			email = e
-		}
+	var member getMemberResp
+	if err := remarshal(memberRaw, &member); err != nil {
+		return fmt.Errorf("auth whoami: decode response: %w", err)
 	}
-	if email == "" {
+	// Org is decoded lazily — a missing organizationName is tolerated (org is
+	// secondary to the "who am I" identity claim), but a missing email still
+	// errors because it's the primary assertion of this command.
+	var org getOrganizationResp
+	if err := remarshal(orgRaw, &org); err != nil {
+		return fmt.Errorf("auth whoami: decode response: %w", err)
+	}
+	if member.Member.EmailAddress == "" {
 		return fmt.Errorf("auth whoami: response missing member.emailAddress")
 	}
-	fmt.Fprintln(stdio.Stdout, email)
-	return nil
+
+	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	// Keys mirror the `org show` aesthetic: camelCase wire names where they
+	// exist (orgId), human-friendly shortenings where brevity helps
+	// (organization, not organizationName).
+	fmt.Fprintf(tw, "email\t%s\n", member.Member.EmailAddress)
+	fmt.Fprintf(tw, "organization\t%s\n", org.Organization.OrganizationName)
+	fmt.Fprintf(tw, "orgId\t%s\n", member.Member.OrgID)
+	fmt.Fprintf(tw, "role\t%s\n", member.Member.Role)
+	return tw.Flush()
 }
