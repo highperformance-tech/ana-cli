@@ -15,6 +15,9 @@ func TestAuditTail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit tail: %v\nstderr: %s", err, stderr)
 	}
+	if h.DryRun() {
+		return
+	}
 	// Table header must be present regardless of whether the org has
 	// activity — an empty org still renders `TIME ACTOR ACTION TARGET`.
 	if out == "" {

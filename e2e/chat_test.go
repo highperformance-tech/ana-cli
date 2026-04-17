@@ -22,6 +22,9 @@ func TestChatNewShowDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("chat show: %v\nstderr: %s", err, stderr)
 	}
+	if h.DryRun() {
+		return
+	}
 	if out == "" {
 		t.Errorf("chat show produced no output (stderr=%s)", stderr)
 	}

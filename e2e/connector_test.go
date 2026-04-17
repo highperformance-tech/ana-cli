@@ -42,6 +42,9 @@ func TestConnectorList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connector list: %v\nstderr: %s", err, stderr)
 	}
+	if h.DryRun() {
+		return
+	}
 	if !strings.Contains(out, "ID") || !strings.Contains(out, "NAME") {
 		t.Errorf("connector list missing table header: %s", out)
 	}
@@ -59,6 +62,9 @@ func TestConnectorCreateDelete(t *testing.T) {
 	out, stderr, err := h.Run("connector", "get", fmt.Sprint(id))
 	if err != nil {
 		t.Fatalf("connector get %d: %v\nstderr: %s", id, err, stderr)
+	}
+	if h.DryRun() {
+		return
 	}
 	if !strings.Contains(out, h.ResourceName("create-delete")) {
 		t.Errorf("connector get output missing test name: %s", out)
@@ -79,6 +85,9 @@ func TestConnectorUpdate(t *testing.T) {
 	out, stderr, err := h.Run("connector", "get", fmt.Sprint(id))
 	if err != nil {
 		t.Fatalf("connector get after update: %v\nstderr: %s", err, stderr)
+	}
+	if h.DryRun() {
+		return
 	}
 	if !strings.Contains(out, renamed) {
 		t.Errorf("update did not take effect; get output: %s", out)

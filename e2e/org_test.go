@@ -15,6 +15,9 @@ func TestOrgShow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("org show: %v\nstderr: %s", err, stderr)
 	}
+	if h.DryRun() {
+		return
+	}
 	if !strings.Contains(out, h.ExpectOrg()) {
 		t.Errorf("expected org %q in `org show` output; got %q", h.ExpectOrg(), out)
 	}
@@ -26,6 +29,9 @@ func TestOrgList(t *testing.T) {
 	out, stderr, err := h.Run("org", "list")
 	if err != nil {
 		t.Fatalf("org list: %v\nstderr: %s", err, stderr)
+	}
+	if h.DryRun() {
+		return
 	}
 	if !strings.Contains(out, h.ExpectOrg()) {
 		t.Errorf("`org list` missing %q: %s", h.ExpectOrg(), out)
@@ -40,6 +46,9 @@ func TestOrgMembersList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("org members list: %v\nstderr: %s", err, stderr)
 	}
+	if h.DryRun() {
+		return
+	}
 	if out == "" {
 		t.Errorf("`org members list` produced no output (stderr=%s)", stderr)
 	}
@@ -53,6 +62,9 @@ func TestWhoami(t *testing.T) {
 	out, stderr, err := h.Run("auth", "whoami")
 	if err != nil {
 		t.Fatalf("auth whoami: %v\nstderr: %s", err, stderr)
+	}
+	if h.DryRun() {
+		return
 	}
 	if !strings.Contains(out, h.ExpectOrg()) {
 		t.Errorf("whoami missing org %q: %s", h.ExpectOrg(), out)
