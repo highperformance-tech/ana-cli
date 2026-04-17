@@ -59,18 +59,14 @@ func TestNewUUID_Unique(t *testing.T) {
 	}
 }
 
-// TestConfigTranslation covers the tiny projection helpers between the main
-// package's config.Config and auth.Config. Trivial, but guards against future
-// drift where a new field lands in one side and not the other.
-func TestConfigTranslation(t *testing.T) {
-	c := config.Config{Endpoint: "https://example.com", Token: "abc"}
-	ac := toAuthConfig(c)
-	if ac.Endpoint != c.Endpoint || ac.Token != c.Token {
-		t.Fatalf("toAuthConfig lost fields: %+v", ac)
-	}
-	round := fromAuthConfig(ac)
-	if round != c {
-		t.Fatalf("round-trip mismatch: got %+v want %+v", round, c)
+// TestProfileToAuthConfig covers the projection helper between config.Profile
+// and auth.Config. Trivial, but guards against future drift where a new field
+// lands in one side and not the other.
+func TestProfileToAuthConfig(t *testing.T) {
+	p := config.Profile{Endpoint: "https://example.com", Token: "abc", OrgName: "Acme"}
+	ac := profileToAuthConfig(p)
+	if ac.Endpoint != p.Endpoint || ac.Token != p.Token {
+		t.Fatalf("profileToAuthConfig lost fields: %+v", ac)
 	}
 }
 
@@ -138,14 +134,21 @@ func TestStreamAdapter_PropagatesError(t *testing.T) {
 func TestAuthDeps_LoadSave_RoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
-	// Seed with an existing file so LoadCfg returns non-zero.
-	if err := config.Save(cfgPath, config.Config{Endpoint: "https://existing", Token: "t0"}); err != nil {
+	// Seed the "default" profile so LoadCfg has something to read. Also
+	// include OrgName to verify SaveCfg preserves it.
+	seed := config.Config{
+		Profiles: map[string]config.Profile{
+			"default": {Endpoint: "https://existing", Token: "t0", OrgName: "Existing Co"},
+		},
+		Active: "default",
+	}
+	if err := config.Save(cfgPath, seed); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 	env := func(string) string { return "" }
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
 
-	deps := authDeps(client, env, cfgPath)
+	deps := authDeps(client, env, cfgPath, "default")
 
 	got, err := deps.LoadCfg()
 	if err != nil {
@@ -162,13 +165,71 @@ func TestAuthDeps_LoadSave_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reload: %v", err)
 	}
-	if after.Endpoint != "https://new" || after.Token != "t1" {
-		t.Fatalf("SaveCfg did not persist: %+v", after)
+	p, ok := after.Profiles["default"]
+	if !ok {
+		t.Fatalf("default profile missing after save: %+v", after)
+	}
+	if p.Endpoint != "https://new" || p.Token != "t1" {
+		t.Fatalf("SaveCfg did not persist: %+v", p)
+	}
+	if p.OrgName != "Existing Co" {
+		t.Errorf("OrgName not preserved: %q", p.OrgName)
 	}
 
-	p, err := deps.ConfigPath()
-	if err != nil || p != cfgPath {
-		t.Fatalf("ConfigPath: p=%q err=%v", p, err)
+	pp, err := deps.ConfigPath()
+	if err != nil || pp != cfgPath {
+		t.Fatalf("ConfigPath: p=%q err=%v", pp, err)
+	}
+}
+
+// TestAuthDeps_SaveCfg_DefaultsToNamedSlot covers the fallback: when run
+// hands buildVerbs an empty profileName (shouldn't happen in practice, but
+// authDeps defends against it), SaveCfg must still write into "default".
+func TestAuthDeps_SaveCfg_DefaultsToNamedSlot(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.json")
+	env := func(string) string { return "" }
+	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
+	deps := authDeps(client, env, cfgPath, "")
+	if err := deps.SaveCfg(auth.Config{Endpoint: "https://new", Token: "t1"}); err != nil {
+		t.Fatalf("SaveCfg: %v", err)
+	}
+	after, err := config.Load(cfgPath)
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if _, ok := after.Profiles["default"]; !ok {
+		t.Fatalf("expected default slot, got %+v", after)
+	}
+}
+
+// TestAuthDeps_SaveCfg_LoadError verifies a malformed existing file surfaces
+// as an error from SaveCfg rather than silently clobbering the user's data.
+func TestAuthDeps_SaveCfg_LoadError(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
+	deps := authDeps(client, func(string) string { return "" }, cfgPath, "default")
+	if err := deps.SaveCfg(auth.Config{Endpoint: "e", Token: "t"}); err == nil {
+		t.Fatal("expected error on malformed existing config")
+	}
+}
+
+// TestAuthDeps_LoadCfg_LoadError mirrors the SaveCfg variant — a malformed
+// file must surface through LoadCfg rather than silently masking the problem.
+func TestAuthDeps_LoadCfg_LoadError(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
+	deps := authDeps(client, func(string) string { return "" }, cfgPath, "default")
+	if _, err := deps.LoadCfg(); err == nil {
+		t.Fatal("expected error on malformed existing config")
 	}
 }
 
@@ -184,7 +245,7 @@ func TestAuthDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
 		return ""
 	}
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
-	deps := authDeps(client, env, "")
+	deps := authDeps(client, env, "", "default")
 
 	// LoadCfg with empty cfgPath returns zero value, no error.
 	got, err := deps.LoadCfg()
@@ -213,7 +274,7 @@ func TestAuthDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
 // otherwise — main.go has no other assertion about verb naming.
 func TestBuildVerbs_Shape(t *testing.T) {
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
-	verbs := buildVerbs(client, func(string) string { return "" }, "")
+	verbs := buildVerbs(client, func(string) string { return "" }, "", "default")
 	want := []string{"auth", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit"}
 	for _, v := range want {
 		if _, ok := verbs[v]; !ok {
@@ -285,5 +346,35 @@ func TestRun_EndToEnd_ConnectorList(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "alpha") {
 		t.Fatalf("expected 'alpha' in stdout, got: %q", out.String())
+	}
+}
+
+// TestRun_UnknownProfile drives the ErrUnknownProfile branch in run: a
+// --profile pointing at a slot that doesn't exist (and no env fallback)
+// must print the canonical error to stderr and exit 1 via ErrUsage.
+func TestRun_UnknownProfile(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "ana", "config.json")
+	seed := config.Config{
+		Profiles: map[string]config.Profile{"default": {Endpoint: "https://x", Token: "t"}},
+		Active:   "default",
+	}
+	if err := config.Save(cfgPath, seed); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	env := func(k string) string {
+		if k == "XDG_CONFIG_HOME" {
+			return dir
+		}
+		return ""
+	}
+	var out, errb bytes.Buffer
+	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: env, Now: time.Now}
+	err := run([]string{"--profile", "ghost", "connector", "list"}, stdio, env)
+	if cli.ExitCode(err) != 1 {
+		t.Fatalf("exit code = %d, want 1 (err=%v)", cli.ExitCode(err), err)
+	}
+	if !strings.Contains(errb.String(), `unknown profile "ghost"`) {
+		t.Errorf("stderr missing message: %q", errb.String())
 	}
 }
