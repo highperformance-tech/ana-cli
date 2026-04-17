@@ -275,7 +275,7 @@ func TestAuthDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
 func TestBuildVerbs_Shape(t *testing.T) {
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
 	verbs := buildVerbs(client, func(string) string { return "" }, "", "default")
-	want := []string{"auth", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit"}
+	want := []string{"auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit"}
 	for _, v := range want {
 		if _, ok := verbs[v]; !ok {
 			t.Errorf("missing verb: %q", v)
@@ -283,6 +283,105 @@ func TestBuildVerbs_Shape(t *testing.T) {
 	}
 	if len(verbs) != len(want) {
 		t.Errorf("verb count = %d, want %d (verbs=%v)", len(verbs), len(want), verbs)
+	}
+}
+
+// TestProfileDeps_LoadSave_RoundTrip drives profileDeps against a real
+// on-disk config file in t.TempDir(), exercising LoadCfg, SaveCfg, and
+// ConfigPath. Mirrors TestAuthDeps_LoadSave_RoundTrip — the profile verb
+// speaks config.Config directly so the assertions are simpler (no projection
+// in the middle).
+func TestProfileDeps_LoadSave_RoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.json")
+	seed := config.Config{
+		Profiles: map[string]config.Profile{
+			"default": {Endpoint: "https://existing", Token: "t0", OrgName: "Existing Co"},
+		},
+		Active: "default",
+	}
+	if err := config.Save(cfgPath, seed); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	env := func(string) string { return "" }
+
+	deps := profileDeps(env, cfgPath)
+
+	got, err := deps.LoadCfg()
+	if err != nil {
+		t.Fatalf("LoadCfg: %v", err)
+	}
+	if got.Active != "default" || got.Profiles["default"].Endpoint != "https://existing" {
+		t.Fatalf("LoadCfg round-trip: %+v", got)
+	}
+
+	got.Upsert("alt", config.Profile{Endpoint: "https://alt", Token: "t1", OrgName: "Alt"})
+	if err := deps.SaveCfg(got); err != nil {
+		t.Fatalf("SaveCfg: %v", err)
+	}
+	after, err := config.Load(cfgPath)
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if _, ok := after.Profiles["alt"]; !ok {
+		t.Fatalf("alt missing after save: %+v", after)
+	}
+
+	pp, err := deps.ConfigPath()
+	if err != nil || pp != cfgPath {
+		t.Fatalf("ConfigPath: p=%q err=%v", pp, err)
+	}
+}
+
+// TestProfileDeps_EmptyPath_FallsBackToEnv exercises the cfgPath=="" branches
+// of all three closures: with XDG_CONFIG_HOME set they must resolve into
+// that directory rather than erroring.
+func TestProfileDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
+	dir := t.TempDir()
+	env := func(k string) string {
+		if k == "XDG_CONFIG_HOME" {
+			return dir
+		}
+		return ""
+	}
+	deps := profileDeps(env, "")
+
+	// LoadCfg on a missing file returns zero config, no error.
+	if _, err := deps.LoadCfg(); err != nil {
+		t.Fatalf("LoadCfg: %v", err)
+	}
+	p, err := deps.ConfigPath()
+	if err != nil {
+		t.Fatalf("ConfigPath: %v", err)
+	}
+	if !strings.HasPrefix(p, dir) {
+		t.Fatalf("ConfigPath did not honor XDG: %q", p)
+	}
+	c := config.Config{
+		Profiles: map[string]config.Profile{"x": {Endpoint: "https://e", Token: "t"}},
+		Active:   "x",
+	}
+	if err := deps.SaveCfg(c); err != nil {
+		t.Fatalf("SaveCfg: %v", err)
+	}
+	if _, err := os.Stat(p); err != nil {
+		t.Fatalf("expected file at %q: %v", p, err)
+	}
+}
+
+// TestProfileDeps_EmptyPath_NoEnv covers the error branches: with neither
+// cfgPath nor any env var set, all three closures must surface the
+// config.DefaultPath error rather than silently writing to nowhere.
+func TestProfileDeps_EmptyPath_NoEnv(t *testing.T) {
+	deps := profileDeps(func(string) string { return "" }, "")
+	if _, err := deps.LoadCfg(); err == nil {
+		t.Fatal("LoadCfg: expected error with no HOME/XDG set")
+	}
+	if err := deps.SaveCfg(config.Config{}); err == nil {
+		t.Fatal("SaveCfg: expected error with no HOME/XDG set")
+	}
+	if _, err := deps.ConfigPath(); err == nil {
+		t.Fatal("ConfigPath: expected error with no HOME/XDG set")
 	}
 }
 
