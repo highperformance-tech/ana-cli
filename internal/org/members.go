@@ -39,16 +39,26 @@ type listOrganizationMembersResp struct {
 	} `json:"members"`
 }
 
-// Run issues ListOrganizationMembers with an empty body and either prints a
-// table or the raw payload under --json. An empty Role cell renders as "-"
-// so tabwriter keeps the column aligned for old accounts without a role.
+// Run issues ListOrganizationMembers (server requires orgId in the request
+// body — it won't infer from the token) and either prints a table or the
+// raw payload under --json. An empty Role cell renders as "-" so tabwriter
+// keeps the column aligned for old accounts without a role.
 func (c *membersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := newFlagSet("org members list")
 	if err := parseFlags(fs, args); err != nil {
 		return err
 	}
+	var orgResp struct {
+		Organization struct {
+			OrgID string `json:"orgId"`
+		} `json:"organization"`
+	}
+	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization", struct{}{}, &orgResp); err != nil {
+		return fmt.Errorf("org members list: resolve orgId: %w", err)
+	}
 	var raw map[string]any
-	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.settings.SettingsService/ListOrganizationMembers", struct{}{}, &raw); err != nil {
+	req := map[string]any{"orgId": orgResp.Organization.OrgID}
+	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.settings.SettingsService/ListOrganizationMembers", req, &raw); err != nil {
 		return fmt.Errorf("org members list: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
