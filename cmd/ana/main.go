@@ -43,9 +43,10 @@ func main() {
 // run is the testable entrypoint: same signature as main() but with args,
 // stdio, and env injected. Returns the error that main() feeds to ExitCode.
 func run(args []string, stdio cli.IO, env func(string) string) error {
-	// Parse global flags up front so the token-file/endpoint overrides are
-	// available before we touch config on disk. cli.Dispatch re-parses
-	// globals, but doing it here lets us wire deps correctly before dispatch.
+	// Parse global flags up front so the token-file/endpoint/profile
+	// overrides are available before we touch config on disk. cli.Dispatch
+	// re-parses globals, but doing it here lets us wire deps correctly
+	// before dispatch.
 	global, _, err := cli.ParseGlobal(args)
 	if err != nil {
 		// Don't return here — let Dispatch produce the canonical usage error
@@ -76,7 +77,18 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 		// swallowed here; the resolved endpoint still defaults correctly and
 		// auth commands will surface a clearer message downstream.
 	}
-	resolved := config.Resolve(env, loaded)
+
+	resolved, profileName, rerr := config.Resolve(env, loaded, global.Profile)
+	if rerr != nil {
+		// The only documented error from Resolve is ErrUnknownProfile — a
+		// user-visible mistake. Print it on stderr and map to exit 1 (usage)
+		// by wrapping cli.ErrUsage.
+		if errors.Is(rerr, config.ErrUnknownProfile) {
+			fmt.Fprintf(stdio.Stderr, "ana: unknown profile %q\n", global.Profile)
+			return fmt.Errorf("%w: %s", cli.ErrUsage, rerr)
+		}
+		return rerr
+	}
 	if global.Endpoint != "" {
 		resolved.Endpoint = global.Endpoint
 	}
@@ -87,7 +99,7 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	}
 	client := transport.New(resolved.Endpoint, tokenFn)
 
-	verbs := buildVerbs(client, env, cfgPath)
+	verbs := buildVerbs(client, env, cfgPath, profileName)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -97,10 +109,12 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 
 // buildVerbs wires every verb package's Deps against the shared transport
 // client and config path. Pulled out of run() so main_test can exercise it in
-// isolation.
-func buildVerbs(client *transport.Client, env func(string) string, cfgPath string) map[string]cli.Command {
+// isolation. profileName is the slot that auth.Load/SaveCfg should read from
+// and write into — resolved upstream so login/logout always target the same
+// profile the rest of the invocation used.
+func buildVerbs(client *transport.Client, env func(string) string, cfgPath, profileName string) map[string]cli.Command {
 	return map[string]cli.Command{
-		"auth":      auth.New(authDeps(client, env, cfgPath)),
+		"auth":      auth.New(authDeps(client, env, cfgPath, profileName)),
 		"org":       org.New(org.Deps{Unary: client.Unary}),
 		"connector": connector.New(connector.Deps{Unary: client.Unary}),
 		"chat":      chat.New(chatDeps(client)),
@@ -113,8 +127,18 @@ func buildVerbs(client *transport.Client, env func(string) string, cfgPath strin
 }
 
 // authDeps adapts the process-level config.Config <-> auth.Config boundary and
-// wraps config.DefaultPath/Load/Save with closures that capture env + cfgPath.
-func authDeps(client *transport.Client, env func(string) string, cfgPath string) auth.Deps {
+// wraps config.DefaultPath/Load/Save with closures that capture env + cfgPath
+// + the selected profile name. LoadCfg/SaveCfg operate on the active profile
+// slot: on Save we read the whole file, upsert the profile, and write it
+// back, preserving every other profile (and any existing OrgName on the
+// target profile — login is not responsible for clobbering that label).
+func authDeps(client *transport.Client, env func(string) string, cfgPath, profileName string) auth.Deps {
+	// Fallback to "default" if no profile was resolved (e.g. first-run login
+	// with no config file on disk). The resolver already supplies this in
+	// practice, but we keep the defense so SaveCfg never writes into "".
+	if profileName == "" {
+		profileName = "default"
+	}
 	return auth.Deps{
 		Unary: client.Unary,
 		LoadCfg: func() (auth.Config, error) {
@@ -125,7 +149,8 @@ func authDeps(client *transport.Client, env func(string) string, cfgPath string)
 			if err != nil {
 				return auth.Config{}, err
 			}
-			return toAuthConfig(c), nil
+			p := c.Profiles[profileName]
+			return profileToAuthConfig(p), nil
 		},
 		SaveCfg: func(ac auth.Config) error {
 			path := cfgPath
@@ -136,7 +161,21 @@ func authDeps(client *transport.Client, env func(string) string, cfgPath string)
 				}
 				path = p
 			}
-			return config.Save(path, fromAuthConfig(ac))
+			// Read-modify-write: preserve every other profile and any
+			// existing OrgName on the target. Load errors (malformed file,
+			// permissions) propagate so the user sees them rather than
+			// silently overwriting their config.
+			existing, err := config.Load(path)
+			if err != nil {
+				return err
+			}
+			prev := existing.Profiles[profileName]
+			existing.Upsert(profileName, config.Profile{
+				Endpoint: ac.Endpoint,
+				Token:    ac.Token,
+				OrgName:  prev.OrgName,
+			})
+			return config.Save(path, existing)
 		},
 		ConfigPath: func() (string, error) {
 			if cfgPath != "" {
@@ -170,18 +209,11 @@ func streamAdapter(client *transport.Client) func(ctx context.Context, path stri
 	}
 }
 
-// toAuthConfig projects the persisted config.Config down to the subset
+// profileToAuthConfig projects a config.Profile down to the subset
 // internal/auth cares about. Keeping the projection in main.go means auth
 // never imports internal/config — the contract stays narrow.
-func toAuthConfig(c config.Config) auth.Config {
-	return auth.Config{Endpoint: c.Endpoint, Token: c.Token}
-}
-
-// fromAuthConfig is the inverse of toAuthConfig. Any fields config.Config adds
-// later (telemetry prefs, org id) are preserved by reading them first, but
-// today the two shapes are equal so a direct copy is fine.
-func fromAuthConfig(ac auth.Config) config.Config {
-	return config.Config{Endpoint: ac.Endpoint, Token: ac.Token}
+func profileToAuthConfig(p config.Profile) auth.Config {
+	return auth.Config{Endpoint: p.Endpoint, Token: p.Token}
 }
 
 // newUUID returns a canonical RFC 4122 version-4 UUID string. It draws 16

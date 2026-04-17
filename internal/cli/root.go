@@ -14,6 +14,7 @@ type Global struct {
 	JSON      bool
 	Endpoint  string
 	TokenFile string
+	Profile   string
 	Verbose   bool
 }
 
@@ -50,6 +51,7 @@ func ParseGlobal(args []string) (Global, []string, error) {
 	fs.BoolVar(&g.JSON, "json", false, "emit JSON output")
 	fs.StringVar(&g.Endpoint, "endpoint", "", "override API endpoint URL")
 	fs.StringVar(&g.TokenFile, "token-file", "", "path to bearer-token file")
+	fs.StringVar(&g.Profile, "profile", "", "config profile to use")
 	fs.BoolVar(&g.Verbose, "verbose", false, "verbose logging")
 	fs.BoolVar(&g.Verbose, "v", false, "verbose logging (shorthand)")
 	if err := fs.Parse(args); err != nil {

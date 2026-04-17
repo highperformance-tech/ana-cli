@@ -182,7 +182,7 @@ func TestGroupHelpNoSummary(t *testing.T) {
 }
 
 func TestParseGlobalAllFlagsEqualsForm(t *testing.T) {
-	args := []string{"--json", "--endpoint=https://x", "--token-file=/tmp/t", "--verbose", "verb", "a"}
+	args := []string{"--json", "--endpoint=https://x", "--token-file=/tmp/t", "--profile=prod", "--verbose", "verb", "a"}
 	g, rest, err := ParseGlobal(args)
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -190,7 +190,7 @@ func TestParseGlobalAllFlagsEqualsForm(t *testing.T) {
 	if !g.JSON || !g.Verbose {
 		t.Errorf("bool flags not set: %+v", g)
 	}
-	if g.Endpoint != "https://x" || g.TokenFile != "/tmp/t" {
+	if g.Endpoint != "https://x" || g.TokenFile != "/tmp/t" || g.Profile != "prod" {
 		t.Errorf("string flags wrong: %+v", g)
 	}
 	if len(rest) != 2 || rest[0] != "verb" || rest[1] != "a" {
@@ -353,13 +353,13 @@ func TestDispatchStoresGlobalInContext(t *testing.T) {
 	child := &fakeCmd{help: "c"}
 	verbs := map[string]Command{"run": child}
 	stdio, _, _ := testIO()
-	args := []string{"--endpoint", "https://api", "--token-file=/t", "-v", "--json", "run"}
+	args := []string{"--endpoint", "https://api", "--token-file=/t", "--profile", "prod", "-v", "--json", "run"}
 	err := Dispatch(context.Background(), verbs, args, stdio)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	got := child.gotGlobal
-	want := Global{JSON: true, Endpoint: "https://api", TokenFile: "/t", Verbose: true}
+	want := Global{JSON: true, Endpoint: "https://api", TokenFile: "/t", Profile: "prod", Verbose: true}
 	if got != want {
 		t.Errorf("gotGlobal=%+v want %+v", got, want)
 	}
