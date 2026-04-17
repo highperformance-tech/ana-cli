@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/textql/ana-cli/internal/auth"
-	"github.com/textql/ana-cli/internal/cli"
-	"github.com/textql/ana-cli/internal/config"
-	"github.com/textql/ana-cli/internal/transport"
+	"github.com/highperformance-tech/ana-cli/internal/auth"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/config"
+	"github.com/highperformance-tech/ana-cli/internal/transport"
 )
 
 // uuidRe matches canonical 8-4-4-4-12 lowercase-hex UUIDs. Used to sanity-check

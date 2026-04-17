@@ -13,7 +13,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // auditServicePath is the Connect-RPC prefix the AuditLogService uses. The

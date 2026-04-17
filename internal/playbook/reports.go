@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // reportsCmd implements `ana playbook reports <id>` — GetPlaybookReports with

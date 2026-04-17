@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // Deps is the injected boundary. A real wiring layer adapts transport.Client

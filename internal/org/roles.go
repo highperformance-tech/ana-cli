@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // newRolesGroup wires `org roles list`. Like members, the wrapping group is

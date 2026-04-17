@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // chatServicePath is the Connect-RPC prefix every ChatService endpoint uses.

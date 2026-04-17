@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // showCmd implements `ana chat show <id>` — GetChat with `{chatId: "..."}`.

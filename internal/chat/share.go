@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // shareCmd implements `ana chat share <id>` — POST CreateShare on the sharing

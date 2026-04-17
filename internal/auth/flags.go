@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // newFlagSet builds a FlagSet configured the way every leaf command wants:

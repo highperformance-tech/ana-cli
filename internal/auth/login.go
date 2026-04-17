@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // loginCmd persists a token to the config file. The token may come from

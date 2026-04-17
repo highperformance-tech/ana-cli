@@ -9,7 +9,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/textql/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // createCmd implements `ana connector create` — POST CreateConnector.
