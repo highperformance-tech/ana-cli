@@ -471,6 +471,54 @@ func TestStreamBuildRequestError(t *testing.T) {
 	}
 }
 
+// TestStreamWithBody covers the non-nil req marshal path + header plumbing:
+// User-Agent (via WithUserAgent) and Authorization (via tokenFn returning a
+// non-empty token). Three gaps closed in one server round-trip.
+func TestStreamWithBody(t *testing.T) {
+	tokenFn := func(context.Context) (string, error) { return "tok-123", nil }
+	srv, _ := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("User-Agent"); got != "ana/x" {
+			t.Errorf("UA=%q", got)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer tok-123" {
+			t.Errorf("Auth=%q", got)
+		}
+		// Verify non-nil req was framed + JSON-encoded.
+		body, _ := io.ReadAll(r.Body)
+		if len(body) < 5 || !strings.Contains(string(body[5:]), `"n":7`) {
+			t.Errorf("body=%q", body)
+		}
+		// Empty stream; client sees EOF.
+	}, WithUserAgent("ana/x"))
+	c := New(srv.URL, tokenFn, WithUserAgent("ana/x"))
+	sr, err := c.Stream(context.Background(), "/", streamEvent{N: 7})
+	if err != nil {
+		t.Fatalf("Stream: %v", err)
+	}
+	sr.Close()
+}
+
+// TestStreamTokenFnError covers the tokenFn-returned-error branch.
+func TestStreamTokenFnError(t *testing.T) {
+	c := New("http://example.invalid", func(context.Context) (string, error) {
+		return "", errors.New("token-boom")
+	})
+	_, err := c.Stream(context.Background(), "/", nil)
+	if err == nil || !strings.Contains(err.Error(), "token-boom") {
+		t.Fatalf("err=%v", err)
+	}
+}
+
+// TestStreamBuildRequestInvalidURL covers http.NewRequestWithContext failure
+// (control-char in URL is rejected before the transport is touched).
+func TestStreamBuildRequestInvalidURL(t *testing.T) {
+	c := New("http://example.invalid\x7f", nil)
+	_, err := c.Stream(context.Background(), "/", nil)
+	if err == nil || !strings.Contains(err.Error(), "build request") {
+		t.Fatalf("err=%v", err)
+	}
+}
+
 func TestStreamEOFBeforeAnyFrame(t *testing.T) {
 	// Server writes nothing and hangs up cleanly.
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {})

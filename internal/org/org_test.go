@@ -460,6 +460,30 @@ func TestMembersListUnaryErr(t *testing.T) {
 	}
 }
 
+func TestMembersListCallErr(t *testing.T) {
+	// GetOrganization succeeds; ListOrganizationMembers itself errors.
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if path == "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization" {
+				out := resp.(*struct {
+					Organization struct {
+						OrgID string `json:"orgId"`
+					} `json:"organization"`
+				})
+				out.Organization.OrgID = "org-1"
+				return nil
+			}
+			return errors.New("list-boom")
+		},
+	}
+	cmd := &membersListCmd{deps: f.deps()}
+	stdio, _, _ := newIO()
+	err := cmd.Run(context.Background(), nil, stdio)
+	if err == nil || !strings.Contains(err.Error(), "list-boom") {
+		t.Errorf("err=%v", err)
+	}
+}
+
 func TestMembersListBadFlag(t *testing.T) {
 	f := &fakeDeps{}
 	cmd := &membersListCmd{deps: f.deps()}

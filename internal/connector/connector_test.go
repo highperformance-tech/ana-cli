@@ -757,11 +757,32 @@ func TestUpdateBadFlag(t *testing.T) {
 }
 
 func TestUpdateUnaryErr(t *testing.T) {
+	// GetConnector pre-fetch fails — the "fetch current" branch.
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
 	cmd := &updateCmd{deps: f.deps()}
 	stdio, _, _ := newIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), []string{"--name", "n", "1"}, stdio)
-	if err == nil || !strings.Contains(err.Error(), "boom") {
+	if err == nil || !strings.Contains(err.Error(), "fetch current") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestUpdateCallErr(t *testing.T) {
+	// GetConnector succeeds; UpdateConnector itself errors — separate branch.
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				out := resp.(*getConnectorResp)
+				out.Connector.ConnectorType = "POSTGRES"
+				return nil
+			}
+			return errors.New("update-boom")
+		},
+	}
+	cmd := &updateCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"--name", "n", "1"}, stdio)
+	if err == nil || !strings.Contains(err.Error(), "update-boom") {
 		t.Errorf("err=%v", err)
 	}
 }
