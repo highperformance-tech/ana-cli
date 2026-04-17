@@ -8,14 +8,14 @@ import (
 )
 
 // Dispatch is the root entry point. It parses global flags, stashes them in
-// ctx, then routes to the matching verb. An empty verb or an explicit help
-// token prints root help and returns ErrUsage.
+// ctx, then routes to the matching verb. An explicit help token returns
+// ErrHelp (exit 0); an empty verb or parse error returns ErrUsage (exit 1).
 func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdio IO) error {
 	// A bare help token anywhere up front short-circuits flag parsing so users
 	// can discover commands without first fixing any flag validation errors.
 	if len(args) > 0 && isHelpArg(args[0]) {
 		RootHelp(stdio.Stdout, verbs)
-		return ErrUsage
+		return ErrHelp
 	}
 	global, rest, err := ParseGlobal(args)
 	if err != nil {
@@ -27,11 +27,11 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 
 	if len(rest) == 0 {
 		RootHelp(stdio.Stdout, verbs)
-		return ErrUsage
+		return ErrHelp
 	}
 	if isHelpArg(rest[0]) {
 		RootHelp(stdio.Stdout, verbs)
-		return ErrUsage
+		return ErrHelp
 	}
 
 	name := rest[0]
