@@ -74,8 +74,8 @@ func TestGroupRunEmptyArgs(t *testing.T) {
 	g := &Group{Summary: "a group", Children: map[string]Command{"c": child}}
 	stdio, out, errb := testIO()
 	err := g.Run(context.Background(), nil, stdio)
-	if !errors.Is(err, ErrUsage) {
-		t.Fatalf("err=%v want ErrUsage", err)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
 	}
 	if !strings.Contains(out.String(), "a group") {
 		t.Errorf("stdout missing summary: %q", out.String())
@@ -92,8 +92,8 @@ func TestGroupRunHelpTokens(t *testing.T) {
 			g := &Group{Summary: "S", Children: map[string]Command{"c": &fakeCmd{help: "do c"}}}
 			stdio, out, errb := testIO()
 			err := g.Run(context.Background(), []string{tok}, stdio)
-			if !errors.Is(err, ErrUsage) {
-				t.Fatalf("err=%v want ErrUsage", err)
+			if !errors.Is(err, ErrHelp) {
+				t.Fatalf("err=%v want ErrHelp", err)
 			}
 			if !strings.Contains(out.String(), "Commands:") {
 				t.Errorf("stdout missing Commands: %q", out.String())
@@ -271,8 +271,8 @@ func TestDispatchNoVerb(t *testing.T) {
 	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
 	stdio, out, _ := testIO()
 	err := Dispatch(context.Background(), verbs, nil, stdio)
-	if !errors.Is(err, ErrUsage) {
-		t.Fatalf("err=%v", err)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
 	}
 	if !strings.Contains(out.String(), "Commands:") {
 		t.Errorf("stdout missing root help: %q", out.String())
@@ -291,8 +291,8 @@ func TestDispatchHelp(t *testing.T) {
 				args = []string{"help"}
 			}
 			err := Dispatch(context.Background(), verbs, args, stdio)
-			if !errors.Is(err, ErrUsage) {
-				t.Fatalf("err=%v", err)
+			if !errors.Is(err, ErrHelp) {
+				t.Fatalf("err=%v want ErrHelp", err)
 			}
 			if !strings.Contains(out.String(), "Commands:") {
 				t.Errorf("stdout missing root help: %q", out.String())
@@ -306,8 +306,8 @@ func TestDispatchHelpAfterGlobalFlag(t *testing.T) {
 	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
 	stdio, out, _ := testIO()
 	err := Dispatch(context.Background(), verbs, []string{"--json", "help"}, stdio)
-	if !errors.Is(err, ErrUsage) {
-		t.Fatalf("err=%v", err)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
 	}
 	if !strings.Contains(out.String(), "Commands:") {
 		t.Errorf("stdout missing root help: %q", out.String())
@@ -411,6 +411,12 @@ func (s stubAuthErr) IsAuthError() bool   { return s.auth }
 func TestExitCode(t *testing.T) {
 	if got := ExitCode(nil); got != 0 {
 		t.Errorf("nil=%d want 0", got)
+	}
+	if got := ExitCode(ErrHelp); got != 0 {
+		t.Errorf("ErrHelp=%d want 0", got)
+	}
+	if got := ExitCode(fmt.Errorf("wrap: %w", ErrHelp)); got != 0 {
+		t.Errorf("wrapped ErrHelp=%d want 0", got)
 	}
 	if got := ExitCode(ErrUsage); got != 1 {
 		t.Errorf("ErrUsage=%d want 1", got)

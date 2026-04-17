@@ -32,10 +32,10 @@ import (
 func main() {
 	stdio := cli.DefaultIO()
 	err := run(os.Args[1:], stdio, os.Getenv)
-	if err != nil && !errors.Is(err, cli.ErrUsage) {
-		// cli.ErrUsage means help/usage text has already been emitted to the
-		// appropriate stream; any other error is a runtime failure that
-		// hasn't been reported yet, so surface it on stderr.
+	if err != nil && !errors.Is(err, cli.ErrUsage) && !errors.Is(err, cli.ErrHelp) {
+		// ErrUsage and ErrHelp mean help/usage text has already been emitted
+		// to the appropriate stream; any other error is a runtime failure
+		// that hasn't been reported yet, so surface it on stderr.
 		fmt.Fprintln(stdio.Stderr, err)
 	}
 	os.Exit(cli.ExitCode(err))

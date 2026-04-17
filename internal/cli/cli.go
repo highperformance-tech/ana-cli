@@ -52,13 +52,13 @@ type Group struct {
 	Children map[string]Command
 }
 
-// Run dispatches to a child command. With no args or a help flag it prints
-// Help() to stdout and returns ErrUsage. An unknown child name writes to
-// stderr and also returns ErrUsage.
+// Run dispatches to a child command. With no args or an explicit help flag it
+// prints Help() to stdout and returns ErrHelp (exit 0). An unknown child name
+// writes to stderr and returns ErrUsage (exit 1).
 func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 	if len(args) == 0 || isHelpArg(args[0]) {
 		fmt.Fprintln(stdio.Stdout, g.Help())
-		return ErrUsage
+		return ErrHelp
 	}
 	name := args[0]
 	child, ok := g.Children[name]

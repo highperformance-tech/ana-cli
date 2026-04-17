@@ -400,13 +400,13 @@ func TestChatDeps_Fields(t *testing.T) {
 }
 
 // TestRun_NoArgs_PrintsHelp verifies the top-level behavior: no args prints
-// root help to stdout and returns ErrUsage (exit code 1 via cli.ExitCode).
+// root help to stdout and returns ErrHelp (exit code 0 via cli.ExitCode).
 func TestRun_NoArgs_PrintsHelp(t *testing.T) {
 	var out, errb bytes.Buffer
 	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: func(string) string { return "" }, Now: time.Now}
 	err := run(nil, stdio, func(string) string { return "" })
-	if cli.ExitCode(err) != 1 {
-		t.Fatalf("exit code = %d, want 1 (err=%v)", cli.ExitCode(err), err)
+	if cli.ExitCode(err) != 0 {
+		t.Fatalf("exit code = %d, want 0 (err=%v)", cli.ExitCode(err), err)
 	}
 	if !strings.Contains(out.String(), "Usage:") {
 		t.Fatalf("expected help on stdout, got: %q", out.String())
