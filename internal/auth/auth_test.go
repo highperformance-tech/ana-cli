@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,12 +20,15 @@ import (
 // fakeDeps is the table-driven fake for Deps. Each function field defaults to
 // a benign implementation; individual tests override what they need. Every
 // call is recorded so assertions can inspect the request payload that flowed
-// through Unary.
+// through Unary. The mu guards the recorded fields because whoami (and any
+// future fan-out command) invokes Unary concurrently from goroutines — without
+// the lock the race detector flags simultaneous writes to lastPath etc.
 type fakeDeps struct {
 	unaryFn    func(ctx context.Context, path string, req, resp any) error
 	loadFn     func() (Config, error)
 	saveFn     func(Config) error
 	pathFn     func() (string, error)
+	mu         sync.Mutex
 	lastPath   string
 	lastReq    any
 	lastRawReq []byte
@@ -39,6 +43,7 @@ type fakeDeps struct {
 func (f *fakeDeps) deps() Deps {
 	return Deps{
 		Unary: func(ctx context.Context, path string, req, resp any) error {
+			f.mu.Lock()
 			f.lastPath = path
 			f.lastReq = req
 			// Capture the JSON-encoded request so tests can assert on exact
@@ -46,6 +51,7 @@ func (f *fakeDeps) deps() Deps {
 			if b, err := json.Marshal(req); err == nil {
 				f.lastRawReq = b
 			}
+			f.mu.Unlock()
 			if f.unaryFn != nil {
 				return f.unaryFn(ctx, path, req, resp)
 			}
@@ -366,36 +372,96 @@ func TestLogoutBadFlag(t *testing.T) {
 
 // --- whoami ---
 
+// memberPath and orgPath are the two RPCs whoami fans out. Duplicating them
+// here (rather than importing from whoami.go) keeps tests decoupled from the
+// production constant names while still asserting the exact wire paths.
+const (
+	memberPath = "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember"
+	orgPath    = "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization"
+)
+
+// whoamiRouter builds a Unary fake that dispatches by path to per-endpoint
+// handlers. Each handler receives the resp pointer and returns an error. A
+// nil handler means "succeed with empty payload" so callers can leave out
+// branches they don't care about.
+func whoamiRouter(member, org func(resp any) error) func(context.Context, string, any, any) error {
+	return func(_ context.Context, path string, _ any, resp any) error {
+		switch path {
+		case memberPath:
+			if member != nil {
+				return member(resp)
+			}
+		case orgPath:
+			if org != nil {
+				return org(resp)
+			}
+		default:
+			return fmt.Errorf("unexpected path %s", path)
+		}
+		return nil
+	}
+}
+
+// setMap writes v into a *map[string]any response pointer; abstracts the
+// type-assertion boilerplate that would otherwise repeat in every fake.
+func setMap(resp any, v map[string]any) {
+	out := resp.(*map[string]any)
+	*out = v
+}
+
 func TestWhoamiHappy(t *testing.T) {
 	f := &fakeDeps{
 		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
-		unaryFn: func(ctx context.Context, path string, req, resp any) error {
-			if path != "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember" {
-				return fmt.Errorf("bad path %s", path)
-			}
-			out := resp.(*map[string]any)
-			*out = map[string]any{"member": map[string]any{"emailAddress": "a@b.c"}}
-			return nil
-		},
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": map[string]any{
+					"emailAddress": "user@example.com",
+					"orgId":        "f31322df",
+					"role":         "member",
+				}})
+				return nil
+			},
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": map[string]any{
+					"orgId":            "f31322df",
+					"organizationName": "Example Org",
+				}})
+				return nil
+			},
+		),
 	}
 	cmd := &whoamiCmd{deps: f.deps()}
 	stdio, out, _ := newIO(strings.NewReader(""))
 	if err := cmd.Run(context.Background(), nil, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
-	if strings.TrimSpace(out.String()) != "a@b.c" {
-		t.Errorf("stdout=%q", out.String())
+	s := out.String()
+	// All four columns must render on their own labelled line.
+	for _, want := range []string{
+		"email", "user@example.com",
+		"organization", "Example Org",
+		"orgId", "f31322df",
+		"role", "member",
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("stdout missing %q: %s", want, s)
+		}
 	}
 }
 
 func TestWhoamiJSON(t *testing.T) {
 	f := &fakeDeps{
 		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
-		unaryFn: func(ctx context.Context, path string, req, resp any) error {
-			out := resp.(*map[string]any)
-			*out = map[string]any{"member": map[string]any{"emailAddress": "x@y"}}
-			return nil
-		},
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": map[string]any{"emailAddress": "x@y", "role": "admin"}})
+				return nil
+			},
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": map[string]any{"organizationName": "Acme", "orgId": "o1"}})
+				return nil
+			},
+		),
 	}
 	cmd := &whoamiCmd{deps: f.deps()}
 	ctx := cli.WithGlobal(context.Background(), cli.Global{JSON: true})
@@ -403,18 +469,38 @@ func TestWhoamiJSON(t *testing.T) {
 	if err := cmd.Run(ctx, nil, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
-	if !strings.Contains(out.String(), "\"emailAddress\"") {
-		t.Errorf("stdout=%q want JSON", out.String())
+	// Round-trip the wrapper to assert both raw maps survived.
+	var got map[string]any
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("output is not JSON: %v, %s", err, out.String())
+	}
+	m, ok := got["member"].(map[string]any)
+	if !ok || m["member"] == nil {
+		t.Errorf("wrapper missing member: %v", got)
+	}
+	o, ok := got["organization"].(map[string]any)
+	if !ok || o["organization"] == nil {
+		t.Errorf("wrapper missing organization: %v", got)
 	}
 }
 
 func TestWhoamiNoToken(t *testing.T) {
-	f := &fakeDeps{loadFn: func() (Config, error) { return Config{}, nil }}
+	called := 0
+	f := &fakeDeps{
+		loadFn: func() (Config, error) { return Config{}, nil },
+		unaryFn: func(_ context.Context, _ string, _, _ any) error {
+			called++
+			return nil
+		},
+	}
 	cmd := &whoamiCmd{deps: f.deps()}
 	stdio, _, _ := newIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), nil, stdio)
 	if !errors.Is(err, ErrNotLoggedIn) {
 		t.Errorf("err=%v want ErrNotLoggedIn", err)
+	}
+	if called != 0 {
+		t.Errorf("Unary called %d times before token check", called)
 	}
 }
 
@@ -428,15 +514,67 @@ func TestWhoamiLoadErr(t *testing.T) {
 	}
 }
 
-func TestWhoamiUnaryErr(t *testing.T) {
+func TestWhoamiMemberErr(t *testing.T) {
 	f := &fakeDeps{
-		loadFn:  func() (Config, error) { return Config{Token: "t"}, nil },
-		unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("network boom") },
+		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
+		unaryFn: whoamiRouter(
+			func(_ any) error { return errors.New("member boom") },
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": map[string]any{"organizationName": "x"}})
+				return nil
+			},
+		),
 	}
 	cmd := &whoamiCmd{deps: f.deps()}
 	stdio, _, _ := newIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), nil, stdio)
-	if err == nil || !strings.Contains(err.Error(), "network boom") {
+	if err == nil || !strings.Contains(err.Error(), "member boom") {
+		t.Errorf("err=%v", err)
+	}
+	if !strings.Contains(err.Error(), "auth whoami:") {
+		t.Errorf("err not wrapped: %v", err)
+	}
+}
+
+func TestWhoamiOrgErr(t *testing.T) {
+	f := &fakeDeps{
+		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": map[string]any{"emailAddress": "x"}})
+				return nil
+			},
+			func(_ any) error { return errors.New("org boom") },
+		),
+	}
+	cmd := &whoamiCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), nil, stdio)
+	if err == nil || !strings.Contains(err.Error(), "org boom") {
+		t.Errorf("err=%v", err)
+	}
+	if !strings.Contains(err.Error(), "auth whoami:") {
+		t.Errorf("err not wrapped: %v", err)
+	}
+}
+
+func TestWhoamiBothErr(t *testing.T) {
+	// Both goroutines fail — whichever error is received first is fine; we
+	// just need *some* error surfaced.
+	f := &fakeDeps{
+		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
+		unaryFn: whoamiRouter(
+			func(_ any) error { return errors.New("member boom") },
+			func(_ any) error { return errors.New("org boom") },
+		),
+	}
+	cmd := &whoamiCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), nil, stdio)
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v", err)
 	}
 }
@@ -445,8 +583,8 @@ func TestWhoamiUnaryErr(t *testing.T) {
 // flows up through whoami (but any command's Unary would behave identically).
 type stubAuthErr struct{}
 
-func (stubAuthErr) Error() string       { return "remote says no" }
-func (stubAuthErr) IsAuthError() bool   { return true }
+func (stubAuthErr) Error() string     { return "remote says no" }
+func (stubAuthErr) IsAuthError() bool { return true }
 
 func TestWhoamiAuthErrTranslated(t *testing.T) {
 	f := &fakeDeps{
@@ -482,17 +620,51 @@ func TestWhoamiAuthErrViaString(t *testing.T) {
 func TestWhoamiMissingEmail(t *testing.T) {
 	f := &fakeDeps{
 		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
-			out := resp.(*map[string]any)
-			*out = map[string]any{"member": map[string]any{}}
-			return nil
-		},
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": map[string]any{}})
+				return nil
+			},
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": map[string]any{"organizationName": "x"}})
+				return nil
+			},
+		),
 	}
 	cmd := &whoamiCmd{deps: f.deps()}
 	stdio, _, _ := newIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), nil, stdio)
 	if err == nil || !strings.Contains(err.Error(), "emailAddress") {
 		t.Errorf("err=%v", err)
+	}
+}
+
+func TestWhoamiMissingOrgName(t *testing.T) {
+	// Org missing organizationName must not error: org is secondary to the
+	// "who am I" claim; the line simply renders with an empty value.
+	f := &fakeDeps{
+		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": map[string]any{"emailAddress": "x@y", "role": "member"}})
+				return nil
+			},
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": map[string]any{}})
+				return nil
+			},
+		),
+	}
+	cmd := &whoamiCmd{deps: f.deps()}
+	stdio, out, _ := newIO(strings.NewReader(""))
+	if err := cmd.Run(context.Background(), nil, stdio); err != nil {
+		t.Fatalf("unexpected err=%v", err)
+	}
+	if !strings.Contains(out.String(), "organization") {
+		t.Errorf("missing organization line: %q", out.String())
+	}
+	if !strings.Contains(out.String(), "x@y") {
+		t.Errorf("missing email: %q", out.String())
 	}
 }
 
@@ -514,17 +686,69 @@ func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("w boom")
 func TestWhoamiJSONEncodeError(t *testing.T) {
 	f := &fakeDeps{
 		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
-			out := resp.(*map[string]any)
-			*out = map[string]any{"member": map[string]any{"emailAddress": "x"}}
-			return nil
-		},
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": map[string]any{"emailAddress": "x"}})
+				return nil
+			},
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": map[string]any{"organizationName": "x"}})
+				return nil
+			},
+		),
 	}
 	cmd := &whoamiCmd{deps: f.deps()}
 	ctx := cli.WithGlobal(context.Background(), cli.Global{JSON: true})
 	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: failingWriter{}, Stderr: &bytes.Buffer{}, Env: func(string) string { return "" }, Now: time.Now}
 	err := cmd.Run(ctx, nil, stdio)
 	if err == nil || !strings.Contains(err.Error(), "w boom") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+// TestWhoamiMemberRemarshalErr / TestWhoamiOrgRemarshalErr: the remarshal path
+// can fail if the server returns a shape we can't decode into the typed
+// struct. Force that by returning `member` as a non-object.
+func TestWhoamiMemberRemarshalErr(t *testing.T) {
+	f := &fakeDeps{
+		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": "not-an-object"})
+				return nil
+			},
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": map[string]any{"organizationName": "x"}})
+				return nil
+			},
+		),
+	}
+	cmd := &whoamiCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), nil, stdio)
+	if err == nil || !strings.Contains(err.Error(), "decode response") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestWhoamiOrgRemarshalErr(t *testing.T) {
+	f := &fakeDeps{
+		loadFn: func() (Config, error) { return Config{Token: "t"}, nil },
+		unaryFn: whoamiRouter(
+			func(resp any) error {
+				setMap(resp, map[string]any{"member": map[string]any{"emailAddress": "x"}})
+				return nil
+			},
+			func(resp any) error {
+				setMap(resp, map[string]any{"organization": "not-an-object"})
+				return nil
+			},
+		),
+	}
+	cmd := &whoamiCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), nil, stdio)
+	if err == nil || !strings.Contains(err.Error(), "decode response") {
 		t.Errorf("err=%v", err)
 	}
 }
