@@ -18,8 +18,8 @@ func TestOrgShow(t *testing.T) {
 	if h.DryRun() {
 		return
 	}
-	if !strings.Contains(out, h.ExpectOrg()) {
-		t.Errorf("expected org %q in `org show` output; got %q", h.ExpectOrg(), out)
+	if !strings.Contains(out, h.ExpectOrgID()) {
+		t.Errorf("expected org %q in `org show` output; got %q", h.ExpectOrgID(), out)
 	}
 }
 
@@ -33,8 +33,8 @@ func TestOrgList(t *testing.T) {
 	if h.DryRun() {
 		return
 	}
-	if !strings.Contains(out, h.ExpectOrg()) {
-		t.Errorf("`org list` missing %q: %s", h.ExpectOrg(), out)
+	if !strings.Contains(out, h.ExpectOrgID()) {
+		t.Errorf("`org list` missing %q: %s", h.ExpectOrgID(), out)
 	}
 }
 
@@ -66,8 +66,8 @@ func TestWhoami(t *testing.T) {
 	if h.DryRun() {
 		return
 	}
-	if !strings.Contains(out, h.ExpectOrg()) {
-		t.Errorf("whoami missing org %q: %s", h.ExpectOrg(), out)
+	if !strings.Contains(out, h.ExpectOrgID()) {
+		t.Errorf("whoami missing org %q: %s", h.ExpectOrgID(), out)
 	}
 	if !strings.Contains(out, "email") {
 		t.Errorf("whoami missing email row: %s", out)

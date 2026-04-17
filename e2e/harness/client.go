@@ -28,21 +28,21 @@ import (
 
 // envSpec is the env-var contract required by the harness. See e2e/README.md.
 type envSpec struct {
-	endpoint   string
-	token      string
-	expectOrg  string
-	dryRun     bool
-	sweepOnly  bool
-	configHome string
+	endpoint     string
+	token        string
+	expectOrgID  string
+	dryRun       bool
+	sweepOnly    bool
+	configHome   string
 }
 
 func loadEnv() (envSpec, bool) {
 	e := envSpec{
-		endpoint:  os.Getenv("ANA_E2E_ENDPOINT"),
-		token:     os.Getenv("ANA_E2E_TOKEN"),
-		expectOrg: os.Getenv("ANA_E2E_EXPECT_ORG"),
-		dryRun:    os.Getenv("ANA_E2E_DRYRUN") == "1",
-		sweepOnly: os.Getenv("ANA_E2E_SWEEP_ONLY") == "1",
+		endpoint:    os.Getenv("ANA_E2E_ENDPOINT"),
+		token:       os.Getenv("ANA_E2E_TOKEN"),
+		expectOrgID: os.Getenv("ANA_E2E_EXPECT_ORG_ID"),
+		dryRun:      os.Getenv("ANA_E2E_DRYRUN") == "1",
+		sweepOnly:   os.Getenv("ANA_E2E_SWEEP_ONLY") == "1",
 	}
 	return e, e.endpoint != "" && e.token != ""
 }

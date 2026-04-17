@@ -40,7 +40,7 @@ type H struct {
 }
 
 // Begin sets up a harness for t. Skips the test unless both ANA_E2E_ENDPOINT
-// and ANA_E2E_TOKEN are set. Validates the token against ANA_E2E_EXPECT_ORG
+// and ANA_E2E_TOKEN are set. Validates the token against ANA_E2E_EXPECT_ORG_ID
 // (aborts with t.Fatalf on mismatch) and sweeps any anacli-e2e-* leftovers
 // from prior crashed runs before returning.
 func Begin(t *testing.T) *H {
@@ -49,8 +49,8 @@ func Begin(t *testing.T) *H {
 	if !ok {
 		t.Skip("e2e: ANA_E2E_ENDPOINT and ANA_E2E_TOKEN not set")
 	}
-	if env.expectOrg == "" {
-		t.Fatalf("e2e: ANA_E2E_EXPECT_ORG must be set so the harness can refuse to touch the wrong org")
+	if env.expectOrgID == "" {
+		t.Fatalf("e2e: ANA_E2E_EXPECT_ORG_ID must be set so the harness can refuse to touch the wrong org")
 	}
 
 	dir := t.TempDir()
@@ -72,16 +72,16 @@ func Begin(t *testing.T) *H {
 		envFn:     envFn,
 		cfgPath:   cfgPath,
 		Prefix:    fmt.Sprintf("anacli-e2e-%d-%s", time.Now().Unix(), shortRand()),
-		ledger:    newManualRevertLog(env.expectOrg),
+		ledger:    newManualRevertLog(env.expectOrgID),
 		forbidden: map[string]map[string]struct{}{},
 	}
 
 	if env.dryRun {
-		t.Logf("e2e dryrun: prefix=%q endpoint=%q expect_org=%q", h.Prefix, env.endpoint, env.expectOrg)
+		t.Logf("e2e dryrun: prefix=%q endpoint=%q expect_org_id=%q", h.Prefix, env.endpoint, env.expectOrgID)
 		return h
 	}
 
-	if err := guardOrg(context.Background(), client, env.expectOrg); err != nil {
+	if err := guardOrg(context.Background(), client, env.expectOrgID); err != nil {
 		t.Fatalf("e2e: org guard: %v", err)
 	}
 	if err := sweepPrior(context.Background(), client); err != nil {
@@ -129,8 +129,8 @@ func (h *H) DryRun() bool { return h.env.dryRun }
 // (sweep lists, parent-cascade deletes). Prefer Run for test body actions.
 func (h *H) Client() *transport.Client { return h.client }
 
-// ExpectOrg returns the ANA_E2E_EXPECT_ORG value the harness validated.
-func (h *H) ExpectOrg() string { return h.env.expectOrg }
+// ExpectOrgID returns the ANA_E2E_EXPECT_ORG_ID value the harness validated.
+func (h *H) ExpectOrgID() string { return h.env.expectOrgID }
 
 // defer registers fn to run in LIFO order when End fires. Exported indirectly
 // via Register so callers can deregister on successful delete.
