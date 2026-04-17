@@ -25,12 +25,8 @@ func usageErrf(format string, a ...any) error {
 	return fmt.Errorf("%s: %w", fmt.Sprintf(format, a...), cli.ErrUsage)
 }
 
-// parseFlags invokes fs.Parse and wraps any error with cli.ErrUsage. Returning
-// the usage sentinel here means every leaf command doesn't have to replicate
-// the boilerplate — they just `return parseFlags(...)` on failure.
+// parseFlags delegates to cli.ParseFlags so positional args can be
+// interleaved with flags without silently dropping trailing flags.
 func parseFlags(fs *flag.FlagSet, args []string) error {
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("%s: %w: %w", fs.Name(), err, cli.ErrUsage)
-	}
-	return nil
+	return cli.ParseFlags(fs, args)
 }

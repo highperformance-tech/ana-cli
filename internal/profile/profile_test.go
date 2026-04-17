@@ -254,6 +254,38 @@ func TestAdd_CreatesProfile(t *testing.T) {
 	}
 }
 
+// Regression: stdlib flag.Parse stops at the first non-flag, so
+// `profile add <name> --flag` would silently drop every trailing flag.
+// The live symptom was an e2e profile saved without --org / --endpoint /
+// --token-stdin despite them being passed on the command line. This test
+// guards the shape that bit us in the field.
+func TestAdd_RegressionPositionalBeforeFlags(t *testing.T) {
+	cfgPath := tmpCfg(t)
+	stdio, _, _ := newIO(strings.NewReader("secret\n"))
+	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
+		[]string{"newprof", "--endpoint", "https://custom", "--org", "Acme"}, stdio)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	c, err := config.Load(cfgPath)
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	p, ok := c.Profiles["newprof"]
+	if !ok {
+		t.Fatalf("newprof missing: %+v", c)
+	}
+	if p.Endpoint != "https://custom" {
+		t.Errorf("endpoint dropped when placed after positional: got %q", p.Endpoint)
+	}
+	if p.OrgName != "Acme" {
+		t.Errorf("org dropped when placed after positional: got %q", p.OrgName)
+	}
+	if p.Token != "secret" {
+		t.Errorf("token = %q", p.Token)
+	}
+}
+
 func TestAdd_DefaultEndpoint(t *testing.T) {
 	cfgPath := tmpCfg(t)
 	stdio, _, _ := newIO(strings.NewReader("tok\n"))

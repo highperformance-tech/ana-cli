@@ -53,12 +53,10 @@ func newFlagSet(name string) *flag.FlagSet {
 	return fs
 }
 
-// parseFlags wraps any fs.Parse failure with cli.ErrUsage.
+// parseFlags delegates to cli.ParseFlags so positional args can be
+// interleaved with flags without silently dropping trailing flags.
 func parseFlags(fs *flag.FlagSet, args []string) error {
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("%s: %w: %w", fs.Name(), err, cli.ErrUsage)
-	}
-	return nil
+	return cli.ParseFlags(fs, args)
 }
 
 // usageErrf produces a cli.ErrUsage-wrapped error with a formatted message.

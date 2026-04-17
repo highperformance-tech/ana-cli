@@ -576,6 +576,44 @@ func TestUpdateHappyPartial(t *testing.T) {
 	}
 }
 
+// Regression: positional <id> placed BEFORE flags must not drop the trailing
+// flags (stdlib fs.Parse stops at the first non-flag token). We fixed this by
+// routing every verb through cli.ParseFlags, but 100% branch coverage on that
+// helper did not catch the verb-level regression we hit in prod — so each verb
+// that takes positional+flag gets an explicit ordering test.
+func TestUpdateRegressionPositionalBeforeFlags(t *testing.T) {
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				out := resp.(*getConnectorResp)
+				out.Connector.ConnectorType = "POSTGRES"
+				out.Connector.Name = "old"
+				return nil
+			}
+			out := resp.(*map[string]any)
+			*out = map[string]any{"connector": map[string]any{"id": 9.0}}
+			return nil
+		},
+	}
+	cmd := &updateCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	// Positional FIRST (the ordering that broke profile add in prod).
+	args := []string{"9", "--name", "renamed", "--host", "h2"}
+	if err := cmd.Run(context.Background(), args, stdio); err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	req := string(f.lastRawReq)
+	if !strings.Contains(req, `"connectorId":9`) {
+		t.Errorf("id lost: %s", req)
+	}
+	if !strings.Contains(req, `"name":"renamed"`) {
+		t.Errorf("--name dropped when placed after positional: %s", req)
+	}
+	if !strings.Contains(req, `"host":"h2"`) {
+		t.Errorf("--host dropped when placed after positional: %s", req)
+	}
+}
+
 func TestUpdateDialectFields(t *testing.T) {
 	f := &fakeDeps{
 		unaryFn: func(_ context.Context, path string, _, resp any) error {
