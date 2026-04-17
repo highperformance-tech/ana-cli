@@ -1,0 +1,61 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/TestConnector",
+  "host": "app.textql.com",
+  "description": "Connect-RPC connector.ConnectorService/TestConnector",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.connector.ConnectorService/TestConnector",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "config": {
+          "connectorType": "POSTGRES",
+          "name": "slug-9",
+          "postgres": {
+            "host": "127.0.0.1",
+            "port": 5432,
+            "user": "probe_user",
+            "password": "probe_pw",
+            "database": "probe_db",
+            "dialect": "postgres",
+            "sslMode": true
+          }
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "error": "Connection test failed: failed to connect to `user=probe_user database=probe_db`: 127.0.0.1:5432 (127.0.0.1): dial error: dial tcp 127.0.0.1:5432: connect: connection refused"
+      },
+      "inferredRequestSchema": {
+        "config": {
+          "connectorType": "string",
+          "name": "string",
+          "postgres": {
+            "host": "string",
+            "port": "integer",
+            "user": "string",
+            "password": "string",
+            "database": "string",
+            "dialect": "string",
+            "sslMode": "boolean"
+          }
+        }
+      },
+      "inferredResponseSchema": {
+        "error": "string"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error).",
+    "connectorType enum observed: \"POSTGRES\". Config uses a protobuf oneof — the body nests the dialect-specific fields under the enum name lowercased (e.g. `postgres: {host, port, user, password, database, dialect, sslMode}`). Other connector types (bigquery/snowflake/redshift/mysql/sqlserver/databricks/supabase/motherduck) almost certainly follow the same pattern; unverified in this capture.",
+    "connectorId is an integer (not a UUID). createdAt is RFC3339. authStrategy observed: \"service_role\".",
+    "Request shape: `{config: {connectorType, name, <dialect>: {...}}}`. Response: `{error: <string>}` (empty/absent on success, filled with raw driver error on failure — e.g. `dial tcp ...: connect: connection refused`). Status is 200 even when connection fails."
+  ]
+}

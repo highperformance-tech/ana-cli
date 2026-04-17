@@ -1,0 +1,464 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.rbac.RBACService/GetCurrentMemberRolesAndPermissions",
+  "host": "app.textql.com",
+  "description": "Connect-RPC rbac.RBACService/GetCurrentMemberRolesAndPermissions",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.rbac.RBACService/GetCurrentMemberRolesAndPermissions",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "roles": [
+          {
+            "id": "00000000-0000-0000-0000-000000000291",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "admin",
+            "description": "Administrator role with full access",
+            "isSystem": true,
+            "createdAt": "2025-10-31T14:19:13.093597Z",
+            "updatedAt": "2025-10-31T14:19:13.093597Z",
+            "allowModelChoice": true
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000292",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "member",
+            "description": "Default member role",
+            "isSystem": true,
+            "createdAt": "2025-10-31T14:19:13.095600Z",
+            "updatedAt": "2025-10-31T14:19:13.095600Z",
+            "allowModelChoice": false
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000293",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "Example Name 9",
+            "description": "Access ExampleSaaS details through Ana's API interactions.",
+            "createdAt": "2025-10-31T20:41:23.332874Z",
+            "updatedAt": "2025-10-31T20:41:23.332874Z",
+            "allowModelChoice": false
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000294",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "Example Name 10",
+            "description": "This role can access the ExampleVideo API",
+            "createdAt": "2025-12-12T16:31:54.426801Z",
+            "updatedAt": "2025-12-12T16:31:54.426801Z",
+            "allowModelChoice": false
+          }
+        ],
+        "permissions": [
+          {
+            "id": "00000000-0000-0000-0000-000000000296",
+            "resource": "ontology",
+            "action": "read_private",
+            "description": "View private ontologies",
+            "createdAt": "2025-08-27T22:48:41.268473Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000297",
+            "resource": "playbook",
+            "action": "write",
+            "description": "Create and edit public playbooks",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000298",
+            "resource": "scim",
+            "action": "read",
+            "description": "View SCIM tokens and OAuth clients",
+            "createdAt": "2026-03-19T04:18:57.823486Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000299",
+            "resource": "billing",
+            "action": "read",
+            "description": "View billing usage data",
+            "createdAt": "2026-03-21T16:16:21.930760Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000300",
+            "resource": "chat",
+            "action": "write_private",
+            "description": "Create and edit private chats",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000301",
+            "resource": "chat",
+            "action": "read_private",
+            "description": "View private chat conversations",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000302",
+            "resource": "dataset",
+            "action": "write",
+            "description": "Create and edit public datasets",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000303",
+            "resource": "ontology",
+            "action": "write_private",
+            "description": "Create and edit private ontologies",
+            "createdAt": "2025-08-27T22:48:41.268473Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000304",
+            "resource": "feed",
+            "action": "write",
+            "description": "Create posts, comments, and manage agents",
+            "createdAt": "2026-02-24T15:36:19.897626Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000305",
+            "resource": "packages",
+            "action": "write",
+            "description": "Install/remove org packages",
+            "createdAt": "2026-03-19T04:18:21.242968Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000306",
+            "resource": "playbook",
+            "action": "read",
+            "description": "View public playbooks",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000307",
+            "resource": "sandbox",
+            "action": "read",
+            "description": "View sandbox status for usage in API",
+            "createdAt": "2026-04-13T16:43:17.983273Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000308",
+            "resource": "secret",
+            "action": "write",
+            "description": "Create, update, and delete secrets",
+            "createdAt": "2025-07-30T14:57:18.375675Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000309",
+            "resource": "secret",
+            "action": "read_private",
+            "description": "View all secrets in org",
+            "createdAt": "2026-01-13T01:20:00.751083Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000310",
+            "resource": "usage",
+            "action": "read",
+            "description": "View organization usage metrics and ACU data",
+            "createdAt": "2025-07-26T00:54:15.351010Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000311",
+            "resource": "api_access_key",
+            "action": "write_private",
+            "description": "Create and edit private API access keys",
+            "createdAt": "2026-02-24T01:51:27.630180Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000312",
+            "resource": "api_access_key",
+            "action": "read_private",
+            "description": "View and use private API access keys",
+            "createdAt": "2026-02-24T01:51:27.630180Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000313",
+            "resource": "connector",
+            "action": "read",
+            "description": "View public connectors",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000314",
+            "resource": "connector",
+            "action": "read_private",
+            "description": "View private connectors",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000315",
+            "resource": "context",
+            "action": "write",
+            "description": "Create, update, and delete organization context prompts",
+            "createdAt": "2025-07-30T14:57:18.326115Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000316",
+            "resource": "context",
+            "action": "read_private",
+            "description": "View private context prompts",
+            "createdAt": "2026-04-14T22:26:14.586695Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000317",
+            "resource": "dataset",
+            "action": "write_private",
+            "description": "Create and edit private datasets",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000318",
+            "resource": "mcp",
+            "action": "write",
+            "description": "Write/modify MCP server configurations",
+            "createdAt": "2025-08-25T17:13:02.457578Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000319",
+            "resource": "chat",
+            "action": "read",
+            "description": "View public chat conversations",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000320",
+            "resource": "dashboard",
+            "action": "read",
+            "description": "View public dashboards",
+            "createdAt": "2025-12-19T20:47:33.806923Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000321",
+            "resource": "dataset",
+            "action": "read_private",
+            "description": "View private datasets",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000322",
+            "resource": "member",
+            "action": "write",
+            "description": "Manage organization members (invite, remove)",
+            "createdAt": "2025-07-10T17:47:13.887199Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000323",
+            "resource": "notifications",
+            "action": "write",
+            "description": "Mark notifications read, update preferences",
+            "createdAt": "2026-03-19T04:18:57.955487Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000324",
+            "resource": "organization",
+            "action": "read",
+            "description": "View organization settings",
+            "createdAt": "2025-07-10T17:47:13.887199Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000325",
+            "resource": "playbook",
+            "action": "write_private",
+            "description": "Create and edit private playbooks",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000326",
+            "resource": "playbook",
+            "action": "read_private",
+            "description": "View private playbooks",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000327",
+            "resource": "connector",
+            "action": "write_private",
+            "description": "Create and edit private connectors",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000328",
+            "resource": "dashboard",
+            "action": "write_private",
+            "description": "Create and edit private dashboards",
+            "createdAt": "2025-12-19T20:47:33.806923Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000329",
+            "resource": "dataset",
+            "action": "read",
+            "description": "View public datasets",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000330",
+            "resource": "feed",
+            "action": "read",
+            "description": "View feed posts and comments",
+            "createdAt": "2026-02-24T15:36:19.897626Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000331",
+            "resource": "notifications",
+            "action": "read",
+            "description": "View own notifications and preferences",
+            "createdAt": "2026-03-19T04:18:57.955487Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000332",
+            "resource": "ontology",
+            "action": "read",
+            "description": "View ontology schema, objects, attributes, metrics, and relations",
+            "createdAt": "2025-07-24T10:42:22.734843Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000333",
+            "resource": "ontology",
+            "action": "write",
+            "description": "<REDACTED>",
+            "createdAt": "2025-07-24T10:42:22.734843Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000334",
+            "resource": "packages",
+            "action": "read",
+            "description": "View org packages",
+            "createdAt": "2026-03-19T04:18:21.242968Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000335",
+            "resource": "api_access_key",
+            "action": "read",
+            "description": "View and use public API access keys",
+            "createdAt": "2026-02-24T01:51:27.630180Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000336",
+            "resource": "chat",
+            "action": "write",
+            "description": "Create and edit public chats",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000337",
+            "resource": "connector",
+            "action": "write",
+            "description": "Create and edit public connectors",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000338",
+            "resource": "context",
+            "action": "write_private",
+            "description": "Create and edit private context prompts",
+            "createdAt": "2026-04-14T22:26:14.586695Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000339",
+            "resource": "dashboard",
+            "action": "write",
+            "description": "Create and edit public dashboards",
+            "createdAt": "2025-12-19T20:47:33.806923Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000340",
+            "resource": "sandbox",
+            "action": "write",
+            "description": "Create and execute code in sandboxes for usage in API",
+            "createdAt": "2026-04-13T16:43:17.983273Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000341",
+            "resource": "secret",
+            "action": "read",
+            "description": "View and use secrets in code",
+            "createdAt": "2025-07-30T14:57:18.375675Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000342",
+            "resource": "secret",
+            "action": "write_private",
+            "description": "Edit and delete any secret in org",
+            "createdAt": "2026-01-13T01:20:00.751083Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000343",
+            "resource": "api_access_key",
+            "action": "write",
+            "description": "Create and edit public API access keys",
+            "createdAt": "2026-02-24T01:51:27.630180Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000344",
+            "resource": "context",
+            "action": "read",
+            "description": "View organization context prompts",
+            "createdAt": "2025-07-30T14:57:18.326115Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000345",
+            "resource": "mcp",
+            "action": "read",
+            "description": "Read MCP server configurations",
+            "createdAt": "2025-08-25T17:13:02.457578Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000346",
+            "resource": "member",
+            "action": "read",
+            "description": "View organization members",
+            "createdAt": "2025-07-10T17:47:13.887199Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000347",
+            "resource": "organization",
+            "action": "write",
+            "description": "Manage organization settings",
+            "createdAt": "2025-07-10T17:47:13.887199Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000348",
+            "resource": "role",
+            "action": "write",
+            "description": "Manage role settings",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000349",
+            "resource": "role",
+            "action": "read",
+            "description": "View role settings",
+            "createdAt": "2025-07-09T15:01:29.133684Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000350",
+            "resource": "scim",
+            "action": "write",
+            "description": "Create and revoke SCIM tokens and OAuth clients",
+            "createdAt": "2026-03-19T04:18:57.823486Z"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000351",
+            "resource": "dashboard",
+            "action": "read_private",
+            "description": "View private dashboards",
+            "createdAt": "2025-12-19T20:47:33.806923Z"
+          }
+        ]
+      },
+      "inferredRequestSchema": {},
+      "inferredResponseSchema": {
+        "roles": "array<{'id': 'string', 'orgId': 'string', 'name': 'string', 'description': 'string', 'isSystem': 'boolean', 'createdAt': 'string', 'updatedAt': 'string', 'allowModelChoice': 'boolean'}>",
+        "permissions": "array<{'id': 'string', 'resource': 'string', 'action': 'string', 'description': 'string', 'createdAt': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/SendMessage",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/SendMessage",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/SendMessage",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "chatId": "00000000-0000-0000-0000-000000000031",
+        "message": "What's available in ExampleOrg?",
+        "messageId": "00000000-0000-0000-0000-000000000094"
+      },
+      "status": 200,
+      "responseBody": {
+        "cellId": "00000000-0000-0000-0000-000000000094"
+      },
+      "inferredRequestSchema": {
+        "chatId": "string",
+        "message": "string",
+        "messageId": "string"
+      },
+      "inferredResponseSchema": {
+        "cellId": "string"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

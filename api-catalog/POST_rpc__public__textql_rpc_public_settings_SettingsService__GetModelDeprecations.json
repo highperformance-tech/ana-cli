@@ -1,0 +1,52 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.settings.SettingsService/GetModelDeprecations",
+  "host": "app.textql.com",
+  "description": "Connect-RPC settings.SettingsService/GetModelDeprecations",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.settings.SettingsService/GetModelDeprecations",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "deprecations": [
+          {
+            "deprecatedModel": 64,
+            "successorModel": 67,
+            "deprecatedModelName": "GPT-5.2",
+            "successorModelName": "GPT-5.4",
+            "deprecationDate": "2026-04-01"
+          },
+          {
+            "deprecatedModel": 62,
+            "successorModel": 68,
+            "deprecatedModelName": "GPT-5 Mini",
+            "successorModelName": "GPT-5.4 Mini",
+            "deprecationDate": "2026-04-01"
+          },
+          {
+            "deprecatedModel": 17,
+            "successorModel": 21,
+            "deprecatedModelName": "Claude Sonnet 4.5",
+            "successorModelName": "Claude Sonnet 4.6",
+            "deprecationDate": "2026-04-15"
+          }
+        ]
+      },
+      "inferredRequestSchema": {},
+      "inferredResponseSchema": {
+        "deprecations": "array<{'deprecatedModel': 'integer', 'successorModel': 'integer', 'deprecatedModelName': 'string', 'successorModelName': 'string', 'deprecationDate': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

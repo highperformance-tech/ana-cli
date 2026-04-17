@@ -1,0 +1,120 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/CreateChat",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/CreateChat",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/CreateChat",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "paradigm": {
+          "type": "TYPE_UNIVERSAL",
+          "version": 1,
+          "options": {
+            "universal": {
+              "connectorIds": [
+                608
+              ],
+              "webSearchEnabled": true,
+              "sqlEnabled": true,
+              "pythonEnabled": true
+            }
+          }
+        },
+        "model": "MODEL_DEFAULT",
+        "research": false,
+        "dashboardMode": false,
+        "methodology": "METHODOLOGY_ADAPTIVE"
+      },
+      "status": 200,
+      "responseBody": {
+        "chat": {
+          "id": "00000000-0000-0000-0000-000000000031",
+          "paradigm": {
+            "type": "TYPE_UNIVERSAL",
+            "version": 1,
+            "options": {
+              "universal": {
+                "connectorIds": [
+                  608
+                ],
+                "webSearchEnabled": true,
+                "sqlEnabled": true,
+                "pythonEnabled": true,
+                "playbookToolsEnabled": true
+              }
+            }
+          },
+          "model": "MODEL_DEFAULT",
+          "timestamp": "2026-04-17T15:16:44.189477Z",
+          "orgId": "00000000-0000-0000-0000-000000000002",
+          "memberId": "00000000-0000-0000-0000-000000000003",
+          "research": false,
+          "updatedAt": "2026-04-17T15:16:44.189477Z",
+          "isBookmarked": false,
+          "dashboardMode": false,
+          "source": "CHAT_SOURCE_THREAD",
+          "methodology": "METHODOLOGY_ADAPTIVE",
+          "isUnread": false
+        }
+      },
+      "inferredRequestSchema": {
+        "paradigm": {
+          "type": "string",
+          "version": "integer",
+          "options": {
+            "universal": {
+              "connectorIds": "array<integer>",
+              "webSearchEnabled": "boolean",
+              "sqlEnabled": "boolean",
+              "pythonEnabled": "boolean"
+            }
+          }
+        },
+        "model": "string",
+        "research": "boolean",
+        "dashboardMode": "boolean",
+        "methodology": "string"
+      },
+      "inferredResponseSchema": {
+        "chat": {
+          "id": "string",
+          "paradigm": {
+            "type": "string",
+            "version": "integer",
+            "options": {
+              "universal": {
+                "connectorIds": "array<…>",
+                "webSearchEnabled": "boolean",
+                "sqlEnabled": "boolean",
+                "pythonEnabled": "boolean",
+                "playbookToolsEnabled": "boolean"
+              }
+            }
+          },
+          "model": "string",
+          "timestamp": "string",
+          "orgId": "string",
+          "memberId": "string",
+          "research": "boolean",
+          "updatedAt": "string",
+          "isBookmarked": "boolean",
+          "dashboardMode": "boolean",
+          "source": "string",
+          "methodology": "string",
+          "isUnread": "boolean"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

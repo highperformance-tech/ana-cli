@@ -1,0 +1,108 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/GetConnectors",
+  "host": "app.textql.com",
+  "description": "Connect-RPC connector.ConnectorService/GetConnectors",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.connector.ConnectorService/GetConnectors",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "connectors": [
+          {
+            "id": 70,
+            "name": "example-client-redacted (Example)",
+            "connectorType": "BIGQUERY",
+            "memberId": "member-live-00000000-0000-0000-0000-000000000102",
+            "createdAt": "2024-09-25T23:09:59.947151Z",
+            "bigqueryMetadata": {
+              "projectId": "example-gcp-project",
+              "datasetId": "demo"
+            },
+            "isExample": true,
+            "authStrategy": "service_role"
+          },
+          {
+            "id": 502,
+            "name": "tableau.example-tools.example.com",
+            "connectorType": "TABLEAU",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "createdAt": "2025-10-31T18:05:01.482859Z",
+            "tableauMetadata": {
+              "serverUrl": "https://tableau.example-tools.example.com",
+              "siteName": "<REDACTED>",
+              "patName": "<REDACTED>",
+              "connectedAppSecretValue": ""
+            },
+            "authStrategy": "service_role"
+          },
+          {
+            "id": 503,
+            "name": "eCommerce (Example)",
+            "connectorType": "BIGQUERY",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "createdAt": "2025-10-31T19:07:13.636981Z",
+            "bigqueryMetadata": {
+              "projectId": "example-gcp-project",
+              "datasetId": "ecommerce"
+            },
+            "authStrategy": "service_role"
+          },
+          {
+            "id": 564,
+            "name": "Example Name 63",
+            "connectorType": "DREDACTED00007",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "createdAt": "2025-11-18T23:12:38.801166Z",
+            "databricksMetadata": {
+              "host": "dbc-workspace.cloud.databricks.com",
+              "httpPath": "/sql/1.0/warehouses/REDACTED",
+              "port": 443,
+              "databricksAuth": {
+                "pat": {}
+              },
+              "catalog": "samples",
+              "schema": "tpch"
+            },
+            "authStrategy": "service_role"
+          },
+          {
+            "id": 608,
+            "name": "ExampleOrg",
+            "connectorType": "TABLEAU",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "createdAt": "2025-12-04T20:08:56.109895Z",
+            "tableauMetadata": {
+              "serverUrl": "https://tableau.example-tools.example.com",
+              "patName": "<REDACTED>",
+              "connectedAppSecretValue": ""
+            },
+            "authStrategy": "service_role"
+          },
+          {
+            "id": 3847,
+            "name": "Example Name 64",
+            "connectorType": "ANA_INTERNAL",
+            "createdAt": "2026-03-19T04:18:58.146221Z",
+            "authStrategy": "service_role"
+          }
+        ]
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "connectors": "array<{'id': 'integer', 'name': 'string', 'connectorType': 'string', 'memberId': 'string', 'createdAt': 'string', 'bigqueryMetadata': {'projectId': 'string', 'datasetId': 'string'}, 'isExample': 'boolean', 'authStrategy': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

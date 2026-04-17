@@ -1,0 +1,95 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.rbac.RBACService/ListRoles",
+  "host": "app.textql.com",
+  "description": "Connect-RPC rbac.RBACService/ListRoles",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.rbac.RBACService/ListRoles",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "roles": [
+          {
+            "id": "00000000-0000-0000-0000-000000000291",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "admin",
+            "description": "Administrator role with full access",
+            "isSystem": true,
+            "createdAt": "2025-10-31T14:19:13.093597Z",
+            "updatedAt": "2025-10-31T14:19:13.093597Z",
+            "allowModelChoice": true
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000292",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "member",
+            "description": "Default member role",
+            "isSystem": true,
+            "createdAt": "2025-10-31T14:19:13.095600Z",
+            "updatedAt": "2025-10-31T14:19:13.095600Z",
+            "allowModelChoice": false
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000357",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "Example Name 107",
+            "description": "Users with access to the online sales dashboard in Tableau",
+            "createdAt": "2025-12-12T22:27:40.686340Z",
+            "updatedAt": "2025-12-12T22:27:40.686340Z",
+            "allowModelChoice": false
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000352",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "slug-72",
+            "createdAt": "2026-01-06T20:41:00.812159Z",
+            "updatedAt": "2026-01-06T20:41:00.812159Z",
+            "allowModelChoice": false
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000358",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "Example Name 108",
+            "description": "See TextQL related things.",
+            "createdAt": "2025-10-31T20:46:55.563106Z",
+            "updatedAt": "2025-10-31T20:46:55.563106Z",
+            "allowModelChoice": false
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000293",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "Example Name 11",
+            "description": "Access ExampleSaaS details through Ana's API interactions.",
+            "createdAt": "2025-10-31T20:41:23.332874Z",
+            "updatedAt": "2025-10-31T20:41:23.332874Z",
+            "allowModelChoice": false
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000294",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "name": "Example Name 12",
+            "description": "This role can access the ExampleVideo API",
+            "createdAt": "2025-12-12T16:31:54.426801Z",
+            "updatedAt": "2025-12-12T16:31:54.426801Z",
+            "allowModelChoice": false
+          }
+        ]
+      },
+      "inferredRequestSchema": {},
+      "inferredResponseSchema": {
+        "roles": "array<{'id': 'string', 'orgId': 'string', 'name': 'string', 'description': 'string', 'isSystem': 'boolean', 'createdAt': 'string', 'updatedAt': 'string', 'allowModelChoice': 'boolean'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

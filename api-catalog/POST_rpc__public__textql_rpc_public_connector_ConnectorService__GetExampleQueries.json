@@ -1,0 +1,75 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/GetExampleQueries",
+  "host": "app.textql.com",
+  "description": "Connect-RPC connector.ConnectorService/GetExampleQueries",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.connector.ConnectorService/GetExampleQueries",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "connectorContexts": [
+          {
+            "connectorId": 608
+          }
+        ]
+      },
+      "status": 200,
+      "responseBody": {
+        "examples": [
+          {
+            "id": "explore-608",
+            "label": "Explore Data",
+            "message": "What's available in ExampleOrg?",
+            "requiredConnectorIds": [
+              608
+            ],
+            "category": "Exploration"
+          },
+          {
+            "id": "insights-608",
+            "label": "Find Insights",
+            "message": "What's interesting in ExampleOrg?",
+            "requiredConnectorIds": [
+              608
+            ],
+            "category": "Analysis"
+          },
+          {
+            "id": "overview-608",
+            "label": "Overview",
+            "message": "Give me a summary of ExampleOrg",
+            "requiredConnectorIds": [
+              608
+            ],
+            "category": "Analysis"
+          },
+          {
+            "id": "stats-608",
+            "label": "Quick Stats",
+            "message": "What are the key metrics in ExampleOrg?",
+            "requiredConnectorIds": [
+              608
+            ],
+            "category": "Analysis"
+          }
+        ]
+      },
+      "inferredRequestSchema": {
+        "connectorContexts": "array<{'connectorId': 'integer'}>"
+      },
+      "inferredResponseSchema": {
+        "examples": "array<{'id': 'string', 'label': 'string', 'message': 'string', 'requiredConnectorIds': 'array<integer>', 'category': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

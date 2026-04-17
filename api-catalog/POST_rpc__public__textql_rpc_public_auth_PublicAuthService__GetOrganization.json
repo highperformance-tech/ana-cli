@@ -1,0 +1,155 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization",
+  "host": "app.textql.com",
+  "description": "Connect-RPC auth.PublicAuthService/GetOrganization",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "organization": {
+          "orgId": "00000000-0000-0000-0000-000000000002",
+          "organizationName": "<REDACTED>",
+          "createdAt": "2025-10-31T14:19:13.092053Z",
+          "updatedAt": "2026-03-31T21:56:45.749131Z",
+          "organizationLogoUrl": "https://example.com/redacted/asset",
+          "emailAllowedDomains": [
+            "example.com",
+            "example.com"
+          ],
+          "theme": {
+            "bg": "#F8FAFC",
+            "headerBg": "#FFFFFF",
+            "cardBg": "#FFFFFF",
+            "primaryAccent": "#ED1C24",
+            "cardAccent": "#ED1C24",
+            "heading": "#2D3748",
+            "text": "#2D3748",
+            "cardHeading": "#2D3748",
+            "cardText": "#2D3748",
+            "logoUrl": "https://example.com/redacted/asset"
+          },
+          "injectWholeOntologyDisableSearch": false,
+          "chatV5Cutover": true,
+          "defaultParadigmMode": "TYPE_UNIVERSAL",
+          "secretsEnabled": true,
+          "emailPollingEnabled": false,
+          "paradigmParams": {
+            "webSearchEnabled": true,
+            "pythonEnabled": true
+          },
+          "toolRestrictions": {
+            "webSearchEnabled": true,
+            "sqlEnabled": true,
+            "ontologyEnabled": true,
+            "ontologyEditingEnabled": true,
+            "pythonEnabled": true,
+            "powerbiEnabled": true,
+            "googleDriveEnabled": true,
+            "autoApproveEnabled": true,
+            "contextEditingEnabled": true,
+            "formEditorEnabled": true,
+            "tableauEnabled": true,
+            "fileUploadEnabled": true,
+            "multipleConnectorMode": true,
+            "playbookToolsEnabled": true
+          },
+          "consoleAccess": true,
+          "disableEmojis": true,
+          "hideExampleConnectors": false,
+          "trainingMode": false,
+          "dashboardsEnabled": true,
+          "methodologyEnabled": false,
+          "allowAllApiAccess": true,
+          "feedEnabled": true,
+          "contextV2Enabled": false,
+          "bashEnabled": false,
+          "defaultRoutingEnabled": true,
+          "discoverable": false,
+          "observabilityEnabled": true,
+          "notificationsEnabled": true,
+          "clientDbOverrideEnabled": false,
+          "contextReviewRequired": false,
+          "googleConnectorEnabled": false
+        }
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "organization": {
+          "orgId": "string",
+          "organizationName": "string",
+          "createdAt": "string",
+          "updatedAt": "string",
+          "organizationLogoUrl": "string",
+          "emailAllowedDomains": "array<string>",
+          "theme": {
+            "bg": "string",
+            "headerBg": "string",
+            "cardBg": "string",
+            "primaryAccent": "string",
+            "cardAccent": "string",
+            "heading": "string",
+            "text": "string",
+            "cardHeading": "string",
+            "cardText": "string",
+            "logoUrl": "string"
+          },
+          "injectWholeOntologyDisableSearch": "boolean",
+          "chatV5Cutover": "boolean",
+          "defaultParadigmMode": "string",
+          "secretsEnabled": "boolean",
+          "emailPollingEnabled": "boolean",
+          "paradigmParams": {
+            "webSearchEnabled": "boolean",
+            "pythonEnabled": "boolean"
+          },
+          "toolRestrictions": {
+            "webSearchEnabled": "boolean",
+            "sqlEnabled": "boolean",
+            "ontologyEnabled": "boolean",
+            "ontologyEditingEnabled": "boolean",
+            "pythonEnabled": "boolean",
+            "powerbiEnabled": "boolean",
+            "googleDriveEnabled": "boolean",
+            "autoApproveEnabled": "boolean",
+            "contextEditingEnabled": "boolean",
+            "formEditorEnabled": "boolean",
+            "tableauEnabled": "boolean",
+            "fileUploadEnabled": "boolean",
+            "multipleConnectorMode": "boolean",
+            "playbookToolsEnabled": "boolean"
+          },
+          "consoleAccess": "boolean",
+          "disableEmojis": "boolean",
+          "hideExampleConnectors": "boolean",
+          "trainingMode": "boolean",
+          "dashboardsEnabled": "boolean",
+          "methodologyEnabled": "boolean",
+          "allowAllApiAccess": "boolean",
+          "feedEnabled": "boolean",
+          "contextV2Enabled": "boolean",
+          "bashEnabled": "boolean",
+          "defaultRoutingEnabled": "boolean",
+          "discoverable": "boolean",
+          "observabilityEnabled": "boolean",
+          "notificationsEnabled": "boolean",
+          "clientDbOverrideEnabled": "boolean",
+          "contextReviewRequired": "boolean",
+          "googleConnectorEnabled": "boolean"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

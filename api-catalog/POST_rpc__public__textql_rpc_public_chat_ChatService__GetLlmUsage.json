@@ -1,0 +1,50 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/GetLlmUsage",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/GetLlmUsage",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/GetLlmUsage",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "chatId": "00000000-0000-0000-0000-000000000030"
+      },
+      "status": 200,
+      "responseBody": {
+        "usage": [
+          {
+            "inputTokens": "1975",
+            "outputTokens": "11",
+            "modelName": "MODEL_HAIKU_4_5",
+            "timestamp": "2026-04-17T14:02:24.746759Z"
+          },
+          {
+            "inputTokens": "3",
+            "cacheCreationInputTokens": "22482",
+            "outputTokens": "5",
+            "modelName": "MODEL_SONNET_4_6",
+            "timestamp": "2026-04-17T14:02:27.690604Z"
+          }
+        ],
+        "contextWindowUsed": 0.02249
+      },
+      "inferredRequestSchema": {
+        "chatId": "string"
+      },
+      "inferredResponseSchema": {
+        "usage": "array<{'inputTokens': 'string', 'outputTokens': 'string', 'modelName': 'string', 'timestamp': 'string'}>",
+        "contextWindowUsed": "number"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.sharing.SharingService/CreateShare",
+  "host": "app.textql.com",
+  "description": "Connect-RPC sharing.SharingService/CreateShare",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.sharing.SharingService/CreateShare",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "primitiveId": "00000000-0000-0000-0000-000000000032",
+        "primitiveType": "PRIMITIVE_TYPE_CHAT",
+        "channel": "SHARE_CHANNEL_LINK_COPY"
+      },
+      "status": 200,
+      "responseBody": {
+        "share": {
+          "id": "00000000-0000-0000-0000-000000000360",
+          "shareToken": "<REDACTED>",
+          "primitiveId": "00000000-0000-0000-0000-000000000032",
+          "primitiveType": "PRIMITIVE_TYPE_CHAT",
+          "sharerId": "00000000-0000-0000-0000-000000000003",
+          "orgId": "00000000-0000-0000-0000-000000000002",
+          "channel": "SHARE_CHANNEL_LINK_COPY",
+          "createdAt": "2026-04-17T15:06:06.965400712Z"
+        },
+        "url": "https://app.textql.com/chat/00000000-0000-0000-0000-000000000032?ref=X3mLGQaiSC1khTwVUE147Zs_77lbGfHD"
+      },
+      "inferredRequestSchema": {
+        "primitiveId": "string",
+        "primitiveType": "string",
+        "channel": "string"
+      },
+      "inferredResponseSchema": {
+        "share": {
+          "id": "string",
+          "shareToken": "string",
+          "primitiveId": "string",
+          "primitiveType": "string",
+          "sharerId": "string",
+          "orgId": "string",
+          "channel": "string",
+          "createdAt": "string"
+        },
+        "url": "string"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

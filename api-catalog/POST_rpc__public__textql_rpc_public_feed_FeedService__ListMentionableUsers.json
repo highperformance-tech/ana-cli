@@ -1,0 +1,101 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.feed.FeedService/ListMentionableUsers",
+  "host": "app.textql.com",
+  "description": "Connect-RPC feed.FeedService/ListMentionableUsers",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.feed.FeedService/ListMentionableUsers",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "users": [
+          {
+            "id": "00000000-0000-0000-0000-000000000003",
+            "displayName": "user-1@example.com",
+            "avatarUrl": "https://example.com/avatar.png"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000176",
+            "displayName": "user-8@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000025",
+            "displayName": "user-2@example.com",
+            "avatarUrl": "https://example.com/avatar.png"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000033",
+            "displayName": "user-3@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000139",
+            "displayName": "user-9@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000177",
+            "displayName": "user-10@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000178",
+            "displayName": "user-11@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000179",
+            "displayName": "user-12@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000180",
+            "displayName": "user-13@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000181",
+            "displayName": "user-14@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000093",
+            "displayName": "user-6@example.com",
+            "avatarUrl": "https://example.com/avatar.png"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000182",
+            "displayName": "user-15@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000183",
+            "displayName": "user-16@example.com"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000034",
+            "displayName": "Example Name 67",
+            "isAgent": true
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000036",
+            "displayName": "Example Name 68",
+            "isAgent": true
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000035",
+            "displayName": "Example Name 2",
+            "isAgent": true
+          }
+        ]
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "users": "array<{'id': 'string', 'displayName': 'string', 'avatarUrl': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}

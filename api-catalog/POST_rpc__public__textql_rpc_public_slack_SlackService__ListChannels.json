@@ -1,0 +1,163 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.slack.SlackService/ListChannels",
+  "host": "app.textql.com",
+  "description": "Connect-RPC slack.SlackService/ListChannels",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.slack.SlackService/ListChannels",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "channels": [
+          {
+            "channelId": "CREDACTED00010",
+            "name": "slug-73"
+          },
+          {
+            "channelId": "CREDACTED00011",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00012",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00013",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00014",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00015",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00016",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00017",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00018",
+            "name": "client-redacted"
+          },
+          {
+            "channelId": "CREDACTED00019",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00020",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00021",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00022",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00023",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00024",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00025",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00026",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00027",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00028",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00029",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00030",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00031",
+            "name": "ext-redacted"
+          },
+          {
+            "channelId": "CREDACTED00032",
+            "name": "slug-74"
+          },
+          {
+            "channelId": "CREDACTED00033",
+            "name": "slug-75"
+          },
+          {
+            "channelId": "CREDACTED00034",
+            "name": "slug-76"
+          },
+          {
+            "channelId": "CREDACTED00035",
+            "name": "slug-77"
+          },
+          {
+            "channelId": "CREDACTED00001",
+            "name": "slug-78"
+          },
+          {
+            "channelId": "CREDACTED00036",
+            "name": "slug-79"
+          },
+          {
+            "channelId": "CREDACTED00037",
+            "name": "slug-80"
+          },
+          {
+            "channelId": "CREDACTED00038",
+            "name": "slug-81"
+          },
+          {
+            "channelId": "CREDACTED00039",
+            "name": "slug-82"
+          },
+          {
+            "channelId": "CREDACTED00040",
+            "name": "slug-83"
+          },
+          {
+            "channelId": "CREDACTED00041",
+            "name": "slug-84"
+          }
+        ]
+      },
+      "inferredRequestSchema": {},
+      "inferredResponseSchema": {
+        "channels": "array<{'channelId': 'string', 'name': 'string'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

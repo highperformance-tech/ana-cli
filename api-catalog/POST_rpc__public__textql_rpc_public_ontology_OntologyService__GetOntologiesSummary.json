@@ -1,0 +1,71 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.ontology.OntologyService/GetOntologiesSummary",
+  "host": "app.textql.com",
+  "description": "Connect-RPC ontology.OntologyService/GetOntologiesSummary",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.ontology.OntologyService/GetOntologiesSummary",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "includeExamples": true
+      },
+      "status": 200,
+      "responseBody": {
+        "ontologies": [
+          {
+            "id": 5476,
+            "name": "Example Name 101",
+            "description": "Auto-generated ontology for TextQL Usage connector",
+            "connectorId": 3847
+          },
+          {
+            "id": 2200,
+            "name": "Example Name 5",
+            "description": "Auto-generated ontology for ExampleOrg connector",
+            "connectorId": 608
+          },
+          {
+            "id": 2156,
+            "name": "Example Name 102",
+            "description": "Auto-generated ontology for Databricks Data Warehouse connector",
+            "connectorId": 564
+          },
+          {
+            "id": 2095,
+            "name": "Example Name 103",
+            "description": "Auto-generated ontology for eCommerce (Example) connector",
+            "connectorId": 503
+          },
+          {
+            "id": 2094,
+            "name": "Example Name 6",
+            "description": "Auto-generated ontology for tableau.example-tools.example.com connector",
+            "connectorId": 502
+          },
+          {
+            "id": 1696,
+            "name": "example-client-redacted (Example)",
+            "connectorId": 70,
+            "isExample": true
+          }
+        ]
+      },
+      "inferredRequestSchema": {
+        "includeExamples": "boolean"
+      },
+      "inferredResponseSchema": {
+        "ontologies": "array<{'id': 'integer', 'name': 'string', 'description': 'string', 'connectorId': 'integer'}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

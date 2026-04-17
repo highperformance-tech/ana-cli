@@ -1,0 +1,575 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/StreamChat",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/StreamChat (server-streaming)",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/StreamChat",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "chatId": "00000000-0000-0000-0000-000000000031",
+        "latestCompleteCellId": "00000000-0000-0000-0000-000000000094",
+        "research": false,
+        "model": "MODEL_DEFAULT"
+      },
+      "status": 200,
+      "responseBody": [
+        {
+          "id": "00000000-0000-0000-0000-000000000095",
+          "timestamp": "2026-04-17T15:16:47.912604856Z",
+          "complete": true,
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTED",
+          "summaryCell": {
+            "summary": "<REDACTED>"
+          },
+          "toolSummary": "User asking about ExampleOrg contents"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000096",
+          "timestamp": "2026-04-17T15:16:49.065504094Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "statusCell": {}
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000096",
+          "timestamp": "2026-04-17T15:16:49.065504094Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "statusCell": {
+            "status": "Checking available conn"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000096",
+          "timestamp": "2026-04-17T15:16:49.065504094Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "statusCell": {
+            "status": "Checking available connectors and data sources"
+          },
+          "toolSummary": "Checking available resources in ExampleOrg"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000096",
+          "timestamp": "2026-04-17T15:16:49.065504094Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "statusCell": {
+            "status": "Checking available connectors and data sources"
+          },
+          "toolSummary": "Checking available resources in ExampleOrg"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000096",
+          "timestamp": "2026-04-17T15:16:49.065504094Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "statusCell": {
+            "status": "Checking available connectors and data sources"
+          },
+          "toolSummary": "Checking available resources in ExampleOrg"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000096",
+          "timestamp": "2026-04-17T15:16:49.065504094Z",
+          "complete": true,
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTED",
+          "statusCell": {
+            "status": "Checking available connectors and data sources"
+          },
+          "toolSummary": "Checking available resources in ExampleOrg"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000096",
+          "timestamp": "2026-04-17T15:16:49.065504094Z",
+          "complete": true,
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTED",
+          "statusCell": {
+            "status": "Checking available connectors and data sources"
+          },
+          "toolSummary": "Checking available resources in ExampleOrg"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "executionTimeMs": "0"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          },
+          "toolSummary": "Inspect available resources"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          },
+          "toolSummary": "Inspect available resources"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATED",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          },
+          "toolSummary": "Inspect available resources"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          },
+          "toolSummary": "Inspect available resources"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000097",
+          "timestamp": "2026-04-17T15:16:51.062205648Z",
+          "complete": true,
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTED",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "output": [
+              "<REDACTED>"
+            ],
+            "executionTimeMs": "78"
+          },
+          "toolSummary": "Inspect available resources"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000098",
+          "timestamp": "2026-04-17T15:16:53.931212740Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "playbookEditorCell": {
+            "action": "PLAYBOOK_ACTION_LIST",
+            "errorMessage": ""
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000098",
+          "timestamp": "2026-04-17T15:16:53.931212740Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "playbookEditorCell": {
+            "action": "PLAYBOOK_ACTION_LIST",
+            "errorMessage": ""
+          },
+          "toolSummary": "List all playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000098",
+          "timestamp": "2026-04-17T15:16:53.931212740Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "playbookEditorCell": {
+            "action": "PLAYBOOK_ACTION_LIST",
+            "errorMessage": ""
+          },
+          "toolSummary": "List all playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000098",
+          "timestamp": "2026-04-17T15:16:53.931212740Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTING",
+          "playbookEditorCell": {
+            "action": "PLAYBOOK_ACTION_LIST",
+            "errorMessage": ""
+          },
+          "toolSummary": "List all playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000098",
+          "timestamp": "2026-04-17T15:16:53.931212740Z",
+          "complete": true,
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTED",
+          "playbookEditorCell": {
+            "action": "PLAYBOOK_ACTION_LIST",
+            "playbooks": [
+              {
+                "id": "00000000-0000-0000-0000-000000000048",
+                "name": "Example Name 59",
+                "prompt": "<REDACTED>",
+                "ownerId": "00000000-0000-0000-0000-000000000003",
+                "createdAt": "2025-11-13T22:46:07.607051Z",
+                "updatedAt": "2026-04-05T15:11:41.835904Z",
+                "cronString": "0 14 5 * *",
+                "slackChannelId": "CREDACTED00001",
+                "taggedSlackUserIds": [
+                  "UREDACTED00002"
+                ],
+                "status": "PLAYBOOK_STATUS_ACTIVE",
+                "connectorId": 503,
+                "paradigmType": "TYPE_UNIVERSAL",
+                "reportOutputStyle": "REPORT_STYLE_LIGHT_EXECUTIVE",
+                "connectorIds": [
+                  503
+                ]
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000099",
+                "name": "Example Name 1",
+                "prompt": "<REDACTED>",
+                "ownerId": "00000000-0000-0000-0000-000000000025",
+                "createdAt": "2026-03-27T00:55:12.574720Z",
+                "updatedAt": "2026-03-31T17:00:42.073892Z",
+                "cronString": "0 13 * * 1",
+                "emailAddresses": [
+                  "user-2@example.com"
+                ],
+                "status": "PLAYBOOK_STATUS_ACTIVE",
+                "connectorId": 70,
+                "paradigmType": "TYPE_UNIVERSAL",
+                "reportOutputStyle": "REPORT_STYLE_LIGHT_CONCISE",
+                "connectorIds": [
+                  70
+                ]
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000057",
+                "name": "Example Name 60",
+                "prompt": "<REDACTED>",
+                "ownerId": "00000000-0000-0000-0000-000000000003",
+                "createdAt": "2025-10-31T17:06:23.233075Z",
+                "updatedAt": "2025-11-03T19:22:21.757342Z",
+                "cronString": "0 14 * * *",
+                "slackChannelId": "CREDACTED00001",
+                "status": "PLAYBOOK_STATUS_ACTIVE",
+                "connectorId": 503,
+                "paradigmType": "TYPE_UNIVERSAL",
+                "reportOutputStyle": "REPORT_STYLE_LIGHT_EXECUTIVE",
+                "connectorIds": [
+                  503
+                ]
+              }
+            ],
+            "errorMessage": "",
+            "totalCount": 3,
+            "slackUsers": [
+              {
+                "userId": "UREDACTED00002",
+                "name": "slug-2"
+              },
+              {
+                "userId": "UREDACTED00003",
+                "name": "slug-3"
+              },
+              {
+                "userId": "UREDACTED00004",
+                "name": "slug-4"
+              },
+              {
+                "userId": "UREDACTED00005",
+                "name": "slug-5"
+              },
+              {
+                "userId": "UREDACTED00006",
+                "name": "slug-6"
+              }
+            ],
+            "connectors": [
+              {
+                "id": 70,
+                "name": "example-client-redacted (Example)",
+                "type": "BigQueryConnector"
+              },
+              {
+                "id": 502,
+                "name": "tableau.example-tools.example.com",
+                "type": "NewTableauConnector"
+              },
+              {
+                "id": 503,
+                "name": "eCommerce (Example)",
+                "type": "BigQueryConnector"
+              },
+              {
+                "id": 564,
+                "name": "Example Name 61",
+                "type": "DatabricksConnector"
+              },
+              {
+                "id": 608,
+                "name": "ExampleOrg",
+                "type": "NewTableauConnector"
+              },
+              {
+                "id": 3847,
+                "name": "Example Name 62",
+                "type": "AnaInternalConnector"
+              }
+            ]
+          },
+          "toolSummary": "List all playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000100",
+          "timestamp": "2026-04-17T15:16:57.037412134Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "executionTimeMs": "0"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000100",
+          "timestamp": "2026-04-17T15:16:57.037412134Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000100",
+          "timestamp": "2026-04-17T15:16:57.037412134Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000100",
+          "timestamp": "2026-04-17T15:16:57.037412134Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          },
+          "toolSummary": "Inspect playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000100",
+          "timestamp": "2026-04-17T15:16:57.037412134Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          },
+          "toolSummary": "Inspect playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000100",
+          "timestamp": "2026-04-17T15:16:57.037412134Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTING",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "executionTimeMs": "0"
+          },
+          "toolSummary": "Inspect playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000100",
+          "timestamp": "2026-04-17T15:16:57.037412134Z",
+          "complete": true,
+          "generated": true,
+          "lifecycle": "LIFECYCLE_EXECUTED",
+          "pyCell": {
+            "code": "<REDACTED>",
+            "output": [
+              "<REDACTED>"
+            ],
+            "executionTimeMs": "96"
+          },
+          "toolSummary": "Inspect playbooks"
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "Here",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATING",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000101",
+          "timestamp": "2026-04-17T15:17:00.340303776Z",
+          "complete": true,
+          "generated": true,
+          "lifecycle": "LIFECYCLE_CREATED",
+          "mdCell": {
+            "content": "<REDACTED>",
+            "renderedHtml": "<REDACTED>"
+          }
+        },
+        {}
+      ],
+      "inferredRequestSchema": {
+        "chatId": "string",
+        "latestCompleteCellId": "string",
+        "research": "boolean",
+        "model": "string"
+      },
+      "inferredResponseSchema": "array<{'id': 'string', 'timestamp': 'string', 'complete': 'boolean', 'generated': 'boolean', 'lifecycle': 'string', 'summaryCell': {'summary': 'string'}, 'toolSummary': 'string'}>"
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error).",
+    "Connect-RPC server-streaming. Framing: [flags:1B][len:4B BE][JSON], repeated. Trailer flags=2.",
+    "Cell variant keys seen this capture: summaryCell, statusCell, pyCell, playbookEditorCell, mdCell. Prior captures also saw sqlCell-equivalents via pyCell with _tql_ connector context injection.",
+    "pyCell.code is Python with _tql_<connector-slug> pre-bound variables (e.g. _tql_connectors, _tql_slack_channels). executionTimeMs is a string.",
+    "playbookEditorCell.action enum observed: PLAYBOOK_ACTION_LIST. errorMessage is empty on success."
+  ]
+}

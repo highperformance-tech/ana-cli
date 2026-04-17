@@ -1,0 +1,32 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.rbac.RBACService/ListAccessRequests",
+  "host": "app.textql.com",
+  "description": "Connect-RPC rbac.RBACService/ListAccessRequests",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.rbac.RBACService/ListAccessRequests",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "objectType": "chat",
+        "objectId": "00000000-0000-0000-0000-000000000032"
+      },
+      "status": 200,
+      "responseBody": {},
+      "inferredRequestSchema": {
+        "objectType": "string",
+        "objectId": "string"
+      },
+      "inferredResponseSchema": {}
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

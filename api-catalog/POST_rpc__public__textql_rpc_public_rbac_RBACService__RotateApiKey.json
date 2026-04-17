@@ -1,0 +1,62 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.rbac.RBACService/RotateApiKey",
+  "host": "app.textql.com",
+  "description": "Connect-RPC rbac.RBACService/RotateApiKey",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.rbac.RBACService/RotateApiKey",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "apiKeyId": "00000000-0000-0000-0000-000000000004"
+      },
+      "status": 200,
+      "responseBody": {
+        "apiKey": {
+          "id": "00000000-0000-0000-0000-000000000359",
+          "memberId": "00000000-0000-0000-0000-000000000003",
+          "createdAt": "2026-04-17T15:20:06.130308Z",
+          "apiKeyShort": "<REDACTED>",
+          "assumedRoles": [
+            "00000000-0000-0000-0000-000000000291",
+            "00000000-0000-0000-0000-000000000292",
+            "00000000-0000-0000-0000-000000000293",
+            "00000000-0000-0000-0000-000000000294"
+          ],
+          "name": "slug-1",
+          "expiresAt": "2026-07-16T15:19:15.175716Z",
+          "status": "API_KEY_STATUS_ACTIVE"
+        },
+        "apiKeyHash": "<REDACTED: base64(memberId:secret) — plaintext key, returned once>",
+        "revokedApiKeyId": "00000000-0000-0000-0000-000000000004"
+      },
+      "inferredRequestSchema": {
+        "apiKeyId": "string"
+      },
+      "inferredResponseSchema": {
+        "apiKey": {
+          "id": "string",
+          "memberId": "string",
+          "createdAt": "string",
+          "apiKeyShort": "string",
+          "assumedRoles": "array<string>",
+          "name": "string",
+          "expiresAt": "string",
+          "status": "string"
+        },
+        "apiKeyHash": "string",
+        "revokedApiKeyId": "string"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error).",
+    "Old key is revoked immediately on rotate; response returns NEW apiKey with new id, same name."
+  ]
+}

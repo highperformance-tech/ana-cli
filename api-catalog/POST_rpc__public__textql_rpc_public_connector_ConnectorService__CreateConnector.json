@@ -1,0 +1,65 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "Connect-RPC connector.ConnectorService/CreateConnector",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "config": {
+          "connectorType": "POSTGRES",
+          "name": "slug-7",
+          "postgres": {
+            "host": "127.0.0.1",
+            "port": 5432,
+            "user": "u",
+            "password": "p",
+            "database": "d",
+            "dialect": "postgres",
+            "sslMode": true
+          }
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "connectorId": 6445,
+        "name": "slug-7",
+        "connectorType": "POSTGRES"
+      },
+      "inferredRequestSchema": {
+        "config": {
+          "connectorType": "string",
+          "name": "string",
+          "postgres": {
+            "host": "string",
+            "port": "integer",
+            "user": "string",
+            "password": "string",
+            "database": "string",
+            "dialect": "string",
+            "sslMode": "boolean"
+          }
+        }
+      },
+      "inferredResponseSchema": {
+        "connectorId": "integer",
+        "name": "string",
+        "connectorType": "string"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error).",
+    "connectorType enum observed: \"POSTGRES\". Config uses a protobuf oneof — the body nests the dialect-specific fields under the enum name lowercased (e.g. `postgres: {host, port, user, password, database, dialect, sslMode}`). Other connector types (bigquery/snowflake/redshift/mysql/sqlserver/databricks/supabase/motherduck) almost certainly follow the same pattern; unverified in this capture.",
+    "connectorId is an integer (not a UUID). createdAt is RFC3339. authStrategy observed: \"service_role\".",
+    "Request shape: same as TestConnector — `{config: {connectorType, name, <dialect>: {...}}}`. NOTE: Create does NOT require the connection to succeed; a 200 response with a fresh connectorId is returned even if the underlying DB is unreachable. UI gates Create behind a successful Test, but the server does not."
+  ]
+}

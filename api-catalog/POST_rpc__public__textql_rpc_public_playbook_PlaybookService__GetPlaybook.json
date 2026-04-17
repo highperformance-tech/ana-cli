@@ -1,0 +1,401 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.playbook.PlaybookService/GetPlaybook",
+  "host": "app.textql.com",
+  "description": "Connect-RPC playbook.PlaybookService/GetPlaybook",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.playbook.PlaybookService/GetPlaybook",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "playbookId": "00000000-0000-0000-0000-000000000099",
+        "limit": 5
+      },
+      "status": 200,
+      "responseBody": {
+        "playbook": {
+          "id": "00000000-0000-0000-0000-000000000099",
+          "orgId": "00000000-0000-0000-0000-000000000002",
+          "memberId": "00000000-0000-0000-0000-000000000025",
+          "connectorId": 70,
+          "name": "Example Name 7",
+          "prompt": "<REDACTED>",
+          "createdAt": "2026-03-27T00:55:12.574720Z",
+          "updatedAt": "2026-03-31T17:00:42.073892Z",
+          "status": "STATUS_ACTIVE",
+          "triggerType": "TRIGGER_TYPE_CRON",
+          "cronString": "0 13 * * 1",
+          "latestChatId": "00000000-0000-0000-0000-000000000282",
+          "emailAddresses": [
+            "user-2@example.com"
+          ],
+          "paradigmOptions": {
+            "universal": {
+              "webSearchEnabled": true,
+              "pythonEnabled": true
+            }
+          },
+          "paradigmType": "TYPE_UNIVERSAL",
+          "owner": {
+            "memberId": "00000000-0000-0000-0000-000000000025",
+            "memberEmail": "user-2@example.com",
+            "memberName": "",
+            "memberPictureUrl": "https://example.com/redacted/asset"
+          },
+          "hasWritePermission": true,
+          "reportOutputStyle": "CONCISE",
+          "maxConcurrentTemplates": 2,
+          "autoOptimizeConcurrency": true,
+          "connectorIds": [
+            70
+          ]
+        },
+        "reports": [
+          {
+            "id": "00000000-0000-0000-0000-000000000283",
+            "chatId": "00000000-0000-0000-0000-000000000282",
+            "cellId": "00000000-0000-0000-0000-000000000284",
+            "createdAt": "2026-04-13T13:11:25.060762Z",
+            "subject": "<REDACTED>",
+            "summary": "<REDACTED>",
+            "blocks": [
+              {
+                "hero": {
+                  "imageUrl": "https://example.com/avatar.png",
+                  "imageAlt": "<REDACTED>"
+                }
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "text": {
+                        "heading": "<REDACTED>",
+                        "content": "<REDACTED>"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "text": {
+                  "heading": "<REDACTED>",
+                  "content": "<REDACTED>"
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "text": {
+                  "heading": "<REDACTED>"
+                }
+              },
+              {
+                "list": {
+                  "heading": "<REDACTED>",
+                  "items": [
+                    "<REDACTED>"
+                  ]
+                }
+              },
+              {
+                "list": {
+                  "heading": "<REDACTED>",
+                  "items": [
+                    "<REDACTED>"
+                  ]
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "text": {
+                  "heading": "<REDACTED>",
+                  "content": "<REDACTED>"
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "text": {
+                  "heading": "<REDACTED>",
+                  "content": "<REDACTED>"
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "playbookId": "00000000-0000-0000-0000-000000000099"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000285",
+            "chatId": "00000000-0000-0000-0000-000000000286",
+            "cellId": "00000000-0000-0000-0000-000000000287",
+            "createdAt": "2026-04-06T13:07:29.893796Z",
+            "subject": "<REDACTED>",
+            "summary": "<REDACTED>",
+            "blocks": [
+              {
+                "hero": {
+                  "imageUrl": "https://example.com/avatar.png",
+                  "imageAlt": "<REDACTED>"
+                }
+              },
+              {
+                "text": {
+                  "heading": "<REDACTED>",
+                  "content": "<REDACTED>"
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "playbookId": "00000000-0000-0000-0000-000000000099"
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000288",
+            "chatId": "00000000-0000-0000-0000-000000000289",
+            "cellId": "00000000-0000-0000-0000-000000000290",
+            "createdAt": "2026-03-30T13:05:26.246749Z",
+            "subject": "<REDACTED>",
+            "summary": "<REDACTED>",
+            "blocks": [
+              {
+                "hero": {
+                  "imageUrl": "https://example.com/avatar.png",
+                  "imageAlt": "<REDACTED>"
+                }
+              },
+              {
+                "text": {
+                  "heading": "<REDACTED>",
+                  "content": "<REDACTED>"
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "divider": {}
+              },
+              {
+                "card": {
+                  "blocks": [
+                    {
+                      "list": {
+                        "heading": "<REDACTED>",
+                        "items": [
+                          "<REDACTED>"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "playbookId": "00000000-0000-0000-0000-000000000099"
+          }
+        ],
+        "totalReportsCount": 3
+      },
+      "inferredRequestSchema": {
+        "playbookId": "string",
+        "limit": "integer"
+      },
+      "inferredResponseSchema": {
+        "playbook": {
+          "id": "string",
+          "orgId": "string",
+          "memberId": "string",
+          "connectorId": "integer",
+          "name": "string",
+          "prompt": "string",
+          "createdAt": "string",
+          "updatedAt": "string",
+          "status": "string",
+          "triggerType": "string",
+          "cronString": "string",
+          "latestChatId": "string",
+          "emailAddresses": "array<string>",
+          "paradigmOptions": {
+            "universal": {
+              "webSearchEnabled": "boolean",
+              "pythonEnabled": "boolean"
+            }
+          },
+          "paradigmType": "string",
+          "owner": {
+            "memberId": "string",
+            "memberEmail": "string",
+            "memberName": "string",
+            "memberPictureUrl": "string"
+          },
+          "hasWritePermission": "boolean",
+          "reportOutputStyle": "string",
+          "maxConcurrentTemplates": "integer",
+          "autoOptimizeConcurrency": "boolean",
+          "connectorIds": "array<integer>"
+        },
+        "reports": "array<{'id': 'string', 'chatId': 'string', 'cellId': 'string', 'createdAt': 'string', 'subject': 'string', 'summary': 'string', 'blocks': \"array<{'hero': {'imageUrl': '…', 'imageAlt': '…'}}>\", 'playbookId': 'string'}>",
+        "totalReportsCount": "integer"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

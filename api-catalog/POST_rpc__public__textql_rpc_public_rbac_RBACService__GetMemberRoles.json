@@ -1,0 +1,81 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.rbac.RBACService/GetMemberRoles",
+  "host": "app.textql.com",
+  "description": "Connect-RPC rbac.RBACService/GetMemberRoles",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.rbac.RBACService/GetMemberRoles",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "memberIds": [
+          "00000000-0000-0000-0000-000000000295",
+          "00000000-0000-0000-0000-000000000091"
+        ]
+      },
+      "status": 200,
+      "responseBody": {
+        "memberRoles": {
+          "00000000-0000-0000-0000-000000000091": {
+            "roles": [
+              {
+                "id": "00000000-0000-0000-0000-000000000292",
+                "orgId": "00000000-0000-0000-0000-000000000002",
+                "name": "member",
+                "description": "Default member role",
+                "isSystem": true,
+                "createdAt": "2025-10-31T14:19:13.095600Z",
+                "updatedAt": "2025-10-31T14:19:13.095600Z",
+                "allowModelChoice": false
+              },
+              {
+                "id": "00000000-0000-0000-0000-000000000352",
+                "orgId": "00000000-0000-0000-0000-000000000002",
+                "name": "slug-72",
+                "createdAt": "2026-01-06T20:41:00.812159Z",
+                "updatedAt": "2026-01-06T20:41:00.812159Z",
+                "allowModelChoice": false
+              }
+            ]
+          },
+          "00000000-0000-0000-0000-000000000295": {
+            "roles": [
+              {
+                "id": "00000000-0000-0000-0000-000000000292",
+                "orgId": "00000000-0000-0000-0000-000000000002",
+                "name": "member",
+                "description": "Default member role",
+                "isSystem": true,
+                "createdAt": "2025-10-31T14:19:13.095600Z",
+                "updatedAt": "2025-10-31T14:19:13.095600Z",
+                "allowModelChoice": false
+              }
+            ]
+          }
+        }
+      },
+      "inferredRequestSchema": {
+        "memberIds": "array<string>"
+      },
+      "inferredResponseSchema": {
+        "memberRoles": {
+          "00000000-0000-0000-0000-000000000091": {
+            "roles": "array<{'id': 'string', 'orgId': 'string', 'name': 'string', 'description': 'string', 'isSystem': 'boolean', 'createdAt': 'string', 'updatedAt': 'string', 'allowModelChoice': 'boolean'}>"
+          },
+          "00000000-0000-0000-0000-000000000295": {
+            "roles": "array<{'id': 'string', 'orgId': 'string', 'name': 'string', 'description': 'string', 'isSystem': 'boolean', 'createdAt': 'string', 'updatedAt': 'string', 'allowModelChoice': 'boolean'}>"
+          }
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

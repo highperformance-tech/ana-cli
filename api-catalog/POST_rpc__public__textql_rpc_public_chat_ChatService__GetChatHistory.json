@@ -1,0 +1,57 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.chat.ChatService/GetChatHistory",
+  "host": "app.textql.com",
+  "description": "Connect-RPC chat.ChatService/GetChatHistory",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.chat.ChatService/GetChatHistory",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {
+        "chatId": "00000000-0000-0000-0000-000000000030"
+      },
+      "status": 200,
+      "responseBody": {
+        "cells": [
+          {
+            "id": "00000000-0000-0000-0000-000000000038",
+            "timestamp": "2026-04-17T14:01:41.788607Z",
+            "complete": true,
+            "lifecycle": "LIFECYCLE_CREATED",
+            "senderMemberId": "00000000-0000-0000-0000-000000000003",
+            "mdCell": {
+              "content": "say hi in one word",
+              "renderedHtml": "<REDACTED>"
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000039",
+            "timestamp": "2026-04-17T14:02:27.601327Z",
+            "complete": true,
+            "generated": true,
+            "lifecycle": "LIFECYCLE_CREATED",
+            "mdCell": {
+              "content": "Hi!",
+              "renderedHtml": "<REDACTED>"
+            }
+          }
+        ]
+      },
+      "inferredRequestSchema": {
+        "chatId": "string"
+      },
+      "inferredResponseSchema": {
+        "cells": "array<{'id': 'string', 'timestamp': 'string', 'complete': 'boolean', 'lifecycle': 'string', 'senderMemberId': 'string', 'mdCell': {'content': 'string', 'renderedHtml': 'string'}}>"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via in-page fetch hook (authenticated browser session).",
+    "Field names are protobuf camelCase; snake_case alternates rejected (duplicate-field error)."
+  ]
+}

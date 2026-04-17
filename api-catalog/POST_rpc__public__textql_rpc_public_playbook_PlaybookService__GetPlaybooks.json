@@ -1,0 +1,146 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.playbook.PlaybookService/GetPlaybooks",
+  "host": "app.textql.com",
+  "description": "Connect-RPC playbook.PlaybookService/GetPlaybooks",
+  "lastVerified": "2026-04-17",
+  "samples": [
+    {
+      "capturedAt": "2026-04-17",
+      "url": "https://app.textql.com/rpc/public/textql.rpc.public.playbook.PlaybookService/GetPlaybooks",
+      "queryParams": {},
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "requestBody": {},
+      "status": 200,
+      "responseBody": {
+        "playbooks": [
+          {
+            "id": "00000000-0000-0000-0000-000000000099",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "memberId": "00000000-0000-0000-0000-000000000025",
+            "connectorId": 70,
+            "name": "Example Name 8",
+            "prompt": "<REDACTED>",
+            "createdAt": "2026-03-27T00:55:12.574720Z",
+            "updatedAt": "2026-03-31T17:00:42.073892Z",
+            "status": "STATUS_ACTIVE",
+            "triggerType": "TRIGGER_TYPE_CRON",
+            "cronString": "0 13 * * 1",
+            "emailAddresses": [
+              "user-2@example.com"
+            ],
+            "paradigmOptions": {
+              "universal": {
+                "webSearchEnabled": true,
+                "pythonEnabled": true
+              }
+            },
+            "paradigmType": "TYPE_UNIVERSAL",
+            "isRunning": false,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000025",
+              "memberEmail": "user-2@example.com",
+              "memberName": "",
+              "memberPictureUrl": "https://example.com/redacted/asset"
+            },
+            "isSubscribed": false,
+            "reportOutputStyle": "CONCISE",
+            "maxConcurrentTemplates": 2,
+            "autoOptimizeConcurrency": true,
+            "connectorIds": [
+              70
+            ]
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000048",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "connectorId": 503,
+            "name": "Example Name 105",
+            "prompt": "<REDACTED>",
+            "createdAt": "2025-11-13T22:46:07.607051Z",
+            "updatedAt": "2026-04-05T15:11:41.835904Z",
+            "status": "STATUS_ACTIVE",
+            "triggerType": "TRIGGER_TYPE_CRON",
+            "cronString": "0 14 5 * *",
+            "slackChannelId": "CREDACTED00001",
+            "taggedSlackUserIds": [
+              "UREDACTED00002"
+            ],
+            "paradigmOptions": {
+              "universal": {
+                "webSearchEnabled": true,
+                "pythonEnabled": true
+              }
+            },
+            "paradigmType": "TYPE_UNIVERSAL",
+            "isRunning": false,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003",
+              "memberEmail": "user-1@example.com",
+              "memberName": "",
+              "memberPictureUrl": "https://example.com/redacted/asset"
+            },
+            "isSubscribed": false,
+            "reportOutputStyle": "EXECUTIVE_REPORT",
+            "maxConcurrentTemplates": 2,
+            "autoOptimizeConcurrency": true,
+            "connectorIds": [
+              503
+            ]
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000057",
+            "orgId": "00000000-0000-0000-0000-000000000002",
+            "memberId": "00000000-0000-0000-0000-000000000003",
+            "connectorId": 503,
+            "name": "Example Name 106",
+            "prompt": "<REDACTED>",
+            "createdAt": "2025-10-31T17:06:23.233075Z",
+            "updatedAt": "2025-11-03T19:22:21.757342Z",
+            "status": "STATUS_ACTIVE",
+            "triggerType": "TRIGGER_TYPE_CRON",
+            "cronString": "0 14 * * *",
+            "slackChannelId": "CREDACTED00001",
+            "paradigmOptions": {
+              "universal": {
+                "connectorIds": [
+                  503
+                ],
+                "webSearchEnabled": true,
+                "pythonEnabled": true
+              }
+            },
+            "paradigmType": "TYPE_UNIVERSAL",
+            "isRunning": false,
+            "owner": {
+              "memberId": "00000000-0000-0000-0000-000000000003",
+              "memberEmail": "user-1@example.com",
+              "memberName": "",
+              "memberPictureUrl": "https://example.com/redacted/asset"
+            },
+            "isSubscribed": false,
+            "reportOutputStyle": "EXECUTIVE_REPORT",
+            "maxConcurrentTemplates": 2,
+            "autoOptimizeConcurrency": true,
+            "connectorIds": [
+              503
+            ]
+          }
+        ],
+        "totalCount": 3
+      },
+      "inferredRequestSchema": null,
+      "inferredResponseSchema": {
+        "playbooks": "array<{'id': 'string', 'orgId': 'string', 'memberId': 'string', 'connectorId': 'integer', 'name': 'string', 'prompt': 'string', 'createdAt': 'string', 'updatedAt': 'string', 'status': 'string', 'triggerType': 'string', 'cronString': 'string', 'emailAddresses': 'array<string>', 'paradigmOptions': {'universal': {'webSearchEnabled': '…', 'pythonEnabled': '…'}}, 'paradigmType': 'string', 'isRunning': 'boolean', 'owner': {'memberId': 'string', 'memberEmail': 'string', 'memberName': 'string', 'memberPictureUrl': 'string'}, 'isSubscribed': 'boolean', 'reportOutputStyle': 'string', 'maxConcurrentTemplates': 'integer', 'autoOptimizeConcurrency': 'boolean', 'connectorIds': 'array<integer>'}>",
+        "totalCount": "integer"
+      }
+    }
+  ],
+  "notes": [
+    "Captured via authenticated fetch from app.textql.com.",
+    "Field names are protobuf camelCase; snake_case alternates are rejected (duplicate-field error)."
+  ]
+}
