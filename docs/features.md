@@ -32,8 +32,20 @@ Per-endpoint request/response schemas live in `api-catalog/` (~85 endpoints as o
 ## Auth & organization
 
 - **Service:** `auth.PublicAuthService`
-- **Methods:** `GetGoogleOAuthUrl`, `HandleGoogleOAuthCallback`, `ValidateIntermediaryToken`, `ExchangeIntermediaryToken`, `GetOrganization`, `GetMember`, `GetMemberInOrgById`, `GetOrgOIDCProviders`, `ListOrganizations`.
-- **Notes:** Users belong to 1+ organizations (current: "High Performance Technologies"). OAuth via Google with intermediary-token handoff. OIDC providers configurable per org. `GetMember` returns self; `GetMemberInOrgById {memberId}` resolves any member by UUID and returns same shape.
+- **Methods:** `GetGoogleOAuthUrl`, `HandleGoogleOAuthCallback`, `ValidateIntermediaryToken`, `ExchangeIntermediaryToken`, `ExchangeSession`, `GetOrganization`, `GetMember`, `GetMemberInOrgById`, `GetOrgOIDCProviders`, `ListOrganizations`.
+- **Notes:** Users can be members of many organizations but the session is **single-org at a time**. `GetMember` returns self for the active org; `GetMemberInOrgById {memberId}` resolves any member by UUID and returns same shape.
+- **Login flow (verified 2026-04-17):**
+  1. `GetGoogleOAuthUrl {}` → `{authUrl}`; client redirects browser to Google.
+  2. Google redirects to `/auth/oauth/google/callback?code&state`.
+  3. `HandleGoogleOAuthCallback {code, state}` → intermediary JWT (short-lived, `iss=textql`, ~15m exp, no org claim).
+  4. `ValidateIntermediaryToken {intermediaryToken}` from the callback page — gates rendering of the org picker at `/org-selection`.
+  5. `ExchangeIntermediaryToken {intermediaryToken, organizationId}` from `/org-selection` → sets an **httpOnly session cookie** scoped to the chosen org.
+- **Org switching (verified 2026-04-17):**
+  - While authenticated, the profile menu at the bottom of the nav lists the user's orgs. Clicking another org calls `ExchangeSession {organizationId}` → `{member:{…new-org member record…}}`.
+  - This **rewrites** the session cookie server-side — the old org context is lost in the current tab. The webapp then re-issues `GetMember`, `GetOrganization`, and `ListOrganizations` with the new context.
+  - There is **no X-Org-ID header** and **no client-visible orgId cookie**. The server binds active org to the session by server-side lookup. The only client-observable signal is that `tql_analytics_id` changes from an anonymous UUID to the per-org `memberId` after login.
+- **Member identity:** `id` is an integer member row id; `memberId` is a UUID used by RBAC. **Both change per org** — the same user has a different `memberId` in each org they belong to.
+- **Do NOT:** assume the intermediary-token flow is reusable for CLI login — it requires a browser for Google OAuth. CLI uses API keys. To switch orgs from the CLI, mint a separate API key per org (keys are org-scoped via their issuing member).
 - **Last verified:** 2026-04-17
 
 ## Chats / Threads
