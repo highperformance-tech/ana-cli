@@ -33,6 +33,7 @@ func New(deps Deps) *cli.Group {
 		Summary: "Inspect the current organization, members, roles, and permissions.",
 		Children: map[string]cli.Command{
 			"show":        &showCmd{deps: deps},
+			"list":        &listCmd{deps: deps},
 			"members":     newMembersGroup(deps),
 			"roles":       newRolesGroup(deps),
 			"permissions": newPermissionsGroup(deps),
