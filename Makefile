@@ -31,8 +31,8 @@ clean:
 ENV_FILE := .env
 # LOAD_ENV sources the repo-root .env if present, exporting each KEY=VAL so
 # the spawned `go test` process inherits ANA_E2E_ENDPOINT / ANA_E2E_TOKEN /
-# ANA_E2E_EXPECT_ORG. No-op when .env is absent. Must stay inline (a single
-# shell line) because each make-recipe line spawns its own shell.
+# ANA_E2E_EXPECT_ORG_ID. No-op when .env is absent. Must stay inline (a
+# single shell line) because each make-recipe line spawns its own shell.
 LOAD_ENV := if [ -f $(ENV_FILE) ]; then set -a; . ./$(ENV_FILE); set +a; fi;
 
 # e2e runs the live smoke suite against app.textql.com. Requires env:
