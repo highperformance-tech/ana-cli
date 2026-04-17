@@ -25,6 +25,7 @@ import (
 	"github.com/highperformance-tech/ana-cli/internal/ontology"
 	"github.com/highperformance-tech/ana-cli/internal/org"
 	"github.com/highperformance-tech/ana-cli/internal/playbook"
+	"github.com/highperformance-tech/ana-cli/internal/profile"
 	"github.com/highperformance-tech/ana-cli/internal/transport"
 )
 
@@ -115,6 +116,7 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 func buildVerbs(client *transport.Client, env func(string) string, cfgPath, profileName string) map[string]cli.Command {
 	return map[string]cli.Command{
 		"auth":      auth.New(authDeps(client, env, cfgPath, profileName)),
+		"profile":   profile.New(profileDeps(env, cfgPath)),
 		"org":       org.New(org.Deps{Unary: client.Unary}),
 		"connector": connector.New(connector.Deps{Unary: client.Unary}),
 		"chat":      chat.New(chatDeps(client)),
@@ -176,6 +178,43 @@ func authDeps(client *transport.Client, env func(string) string, cfgPath, profil
 				OrgName:  prev.OrgName,
 			})
 			return config.Save(path, existing)
+		},
+		ConfigPath: func() (string, error) {
+			if cfgPath != "" {
+				return cfgPath, nil
+			}
+			return config.DefaultPath(env)
+		},
+	}
+}
+
+// profileDeps wires profile.Deps. Unlike authDeps there is no adapter between
+// config.Config and a narrower type: the profile verb package imports
+// internal/config directly because managing profiles IS the whole config
+// surface. LoadCfg/SaveCfg therefore pass config.Config through as-is.
+func profileDeps(env func(string) string, cfgPath string) profile.Deps {
+	return profile.Deps{
+		LoadCfg: func() (config.Config, error) {
+			path := cfgPath
+			if path == "" {
+				p, err := config.DefaultPath(env)
+				if err != nil {
+					return config.Config{}, err
+				}
+				path = p
+			}
+			return config.Load(path)
+		},
+		SaveCfg: func(c config.Config) error {
+			path := cfgPath
+			if path == "" {
+				p, err := config.DefaultPath(env)
+				if err != nil {
+					return err
+				}
+				path = p
+			}
+			return config.Save(path, c)
 		},
 		ConfigPath: func() (string, error) {
 			if cfgPath != "" {
