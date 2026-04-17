@@ -25,6 +25,17 @@ type updateReq struct {
 	Config      configEnvelope `json:"config"`
 }
 
+// getConnectorResp narrows the GetConnector response to the fields the update
+// flow needs to merge as a baseline. PostgresMetadata carries host/port/user/
+// database/sslMode (no password — the server keeps that secret).
+type getConnectorResp struct {
+	Connector struct {
+		ConnectorType    string       `json:"connectorType"`
+		Name             string       `json:"name"`
+		PostgresMetadata postgresSpec `json:"postgresMetadata"`
+	} `json:"connector"`
+}
+
 func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := newFlagSet("connector update")
 	typ := fs.String("type", "", "connector type (postgres)")
@@ -51,60 +62,65 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return usageErrf("connector update: --type must be \"postgres\" (got %q)", *typ)
 	}
 
-	// Assemble the partial config from only the user-supplied flags.
-	cfg := configEnvelope{}
-	// If any dialect field was touched, we must include connectorType so the
-	// server knows which oneof to interpret. The catalog shows the full body
-	// includes connectorType alongside the dialect block.
-	dialectTouched := false
-	pg := &postgresSpec{}
+	// Track which dialect-level flags the user explicitly set; those override
+	// the pre-fetched baseline below.
+	dialectTouched := flagWasSet(fs, "host") || flagWasSet(fs, "port") ||
+		flagWasSet(fs, "user") || flagWasSet(fs, "database") ||
+		flagWasSet(fs, "ssl") || flagWasSet(fs, "password") ||
+		flagWasSet(fs, "password-stdin")
+
+	if !flagWasSet(fs, "name") && !flagWasSet(fs, "type") && !dialectTouched {
+		return usageErrf("connector update: at least one field flag is required")
+	}
+
+	// The server rejects partial updates: if connectorType is POSTGRES the
+	// postgres block must accompany it ("postgres metadata missing"), and a
+	// missing connectorType fails with "CONNECTOR_TYPE_UNSPECIFIED". So we
+	// always pre-fetch the current connector and merge the user's flag
+	// overrides on top — a rename or single-field tweak produces a valid
+	// full-spec update without forcing the user to re-type every field.
+	var curr getConnectorResp
+	if err := c.deps.Unary(ctx, servicePath+"/GetConnector", map[string]any{"connectorId": id}, &curr); err != nil {
+		return fmt.Errorf("connector update: fetch current: %w", err)
+	}
+
+	cfg := configEnvelope{
+		ConnectorType: curr.Connector.ConnectorType,
+		Name:          curr.Connector.Name,
+	}
+	pg := curr.Connector.PostgresMetadata
+	if flagWasSet(fs, "type") {
+		cfg.ConnectorType = "POSTGRES"
+	}
+	if flagWasSet(fs, "name") {
+		cfg.Name = *name
+	}
 	if flagWasSet(fs, "host") {
 		pg.Host = *host
-		dialectTouched = true
 	}
 	if flagWasSet(fs, "port") {
 		pg.Port = *port
-		dialectTouched = true
 	}
 	if flagWasSet(fs, "user") {
 		pg.User = *user
-		dialectTouched = true
 	}
 	if flagWasSet(fs, "database") {
 		pg.Database = *database
-		dialectTouched = true
 	}
 	if flagWasSet(fs, "ssl") {
 		pg.SSLMode = *ssl
-		dialectTouched = true
 	}
-	// Password can come from either flag or stdin; --password-stdin implies
-	// the user wants to change it.
+	// Password isn't returned by GetConnector (server-side secret). If the
+	// user didn't touch --password{,-stdin}, leave pg.Password empty and the
+	// server keeps the existing secret. Otherwise resolve and overlay.
 	if flagWasSet(fs, "password") || flagWasSet(fs, "password-stdin") {
 		resolved, err := resolvePassword(*pass, *passStdin, stdio.Stdin)
 		if err != nil {
 			return fmt.Errorf("connector update: %w", err)
 		}
 		pg.Password = resolved
-		dialectTouched = true
 	}
-
-	if flagWasSet(fs, "name") {
-		cfg.Name = *name
-	}
-	if flagWasSet(fs, "type") || dialectTouched {
-		cfg.ConnectorType = "POSTGRES"
-	}
-	if dialectTouched {
-		cfg.Postgres = pg
-	}
-
-	// Reject no-op updates — sending an empty config would clobber the server
-	// record's name/type in some implementations and is almost certainly a
-	// user error.
-	if !flagWasSet(fs, "name") && !flagWasSet(fs, "type") && !dialectTouched {
-		return usageErrf("connector update: at least one field flag is required")
-	}
+	cfg.Postgres = &pg
 
 	req := updateReq{ConnectorID: id, Config: cfg}
 	global := cli.GlobalFrom(ctx)

@@ -25,11 +25,30 @@ func usageErrf(format string, a ...any) error {
 	return fmt.Errorf("%s: %w", fmt.Sprintf(format, a...), cli.ErrUsage)
 }
 
-// parseFlags invokes fs.Parse and wraps any error with cli.ErrUsage. Keeps
-// every command's "return parseFlags(...)" line a single line.
+// parseFlags invokes fs.Parse and wraps any error with cli.ErrUsage. Accepts
+// positional args interleaved with flags — Go's flag package stops at the
+// first non-flag arg, so without this loop `update <id> --name X` would
+// leave --name unparsed. After collecting all positionals, a final Parse
+// with a `--` terminator restores them to fs.Args()/fs.NArg() so callers
+// can read them through the normal API.
 func parseFlags(fs *flag.FlagSet, args []string) error {
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("%s: %w: %w", fs.Name(), err, cli.ErrUsage)
+	var positional []string
+	remaining := args
+	for {
+		if err := fs.Parse(remaining); err != nil {
+			return fmt.Errorf("%s: %w: %w", fs.Name(), err, cli.ErrUsage)
+		}
+		if fs.NArg() == 0 {
+			break
+		}
+		positional = append(positional, fs.Arg(0))
+		remaining = fs.Args()[1:]
+	}
+	if len(positional) > 0 {
+		trailing := append([]string{"--"}, positional...)
+		if err := fs.Parse(trailing); err != nil {
+			return fmt.Errorf("%s: %w: %w", fs.Name(), err, cli.ErrUsage)
+		}
 	}
 	return nil
 }

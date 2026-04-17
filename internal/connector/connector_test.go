@@ -526,14 +526,25 @@ func TestSortStrings(t *testing.T) {
 
 func TestUpdateHappyPartial(t *testing.T) {
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			// Pre-fetch inherits connectorType + full postgres block; server
+			// requires both on every UpdateConnector call (captured 400).
+			if strings.HasSuffix(path, "/GetConnector") {
+				out := resp.(*getConnectorResp)
+				out.Connector.ConnectorType = "POSTGRES"
+				out.Connector.Name = "old-name"
+				out.Connector.PostgresMetadata = postgresSpec{
+					Host: "oldhost", Port: 5432, User: "olduser",
+					Database: "olddb", SSLMode: false,
+				}
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"connector": map[string]any{"id": 1.0, "name": "renamed"}}
 			return nil
 		},
 	}
 	cmd := &updateCmd{deps: f.deps()}
-	// Only --name set; neither type nor dialect fields.
 	args := []string{"--name", "renamed", "1"}
 	stdio, out, _ := newIO(strings.NewReader(""))
 	if err := cmd.Run(context.Background(), args, stdio); err != nil {
@@ -542,8 +553,8 @@ func TestUpdateHappyPartial(t *testing.T) {
 	if !strings.Contains(out.String(), "name:") {
 		t.Errorf("stdout=%q", out.String())
 	}
-	// Wire body: connectorId at top level, config.name only, no connectorType
-	// (type flag was not touched), no postgres block.
+	// Wire body (final UpdateConnector call): connectorId top-level, renamed
+	// config.name, inherited connectorType + full postgres block.
 	req := string(f.lastRawReq)
 	if !strings.Contains(req, `"connectorId":1`) {
 		t.Errorf("connectorId must be top-level: %s", req)
@@ -551,17 +562,28 @@ func TestUpdateHappyPartial(t *testing.T) {
 	if !strings.Contains(req, `"name":"renamed"`) {
 		t.Errorf("config.name missing: %s", req)
 	}
-	if strings.Contains(req, `"postgres":`) {
-		t.Errorf("postgres must be omitted on name-only update: %s", req)
+	if !strings.Contains(req, `"connectorType":"POSTGRES"`) {
+		t.Errorf("connectorType must be inherited from GetConnector: %s", req)
 	}
-	if strings.Contains(req, `"connectorType"`) {
-		t.Errorf("connectorType must be omitted on name-only update: %s", req)
+	// Server rejects updates without the full postgres block even when only
+	// --name changes — baseline values must be forwarded as-is.
+	if !strings.Contains(req, `"host":"oldhost"`) || !strings.Contains(req, `"port":5432`) {
+		t.Errorf("postgres baseline must be inherited: %s", req)
+	}
+	// Password isn't returned by GetConnector — must not leak into the body.
+	if strings.Contains(req, `"password":`) {
+		t.Errorf("password must be omitted when user didn't touch it: %s", req)
 	}
 }
 
 func TestUpdateDialectFields(t *testing.T) {
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				out := resp.(*getConnectorResp)
+				out.Connector.ConnectorType = "POSTGRES"
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"connector": map[string]any{"id": 1.0}}
 			return nil
@@ -708,7 +730,12 @@ func TestUpdateUnaryErr(t *testing.T) {
 
 func TestUpdateJSONBypass(t *testing.T) {
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				out := resp.(*getConnectorResp)
+				out.Connector.ConnectorType = "POSTGRES"
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"connector": map[string]any{"id": 1.0}}
 			return nil
@@ -728,7 +755,12 @@ func TestUpdateJSONBypass(t *testing.T) {
 func TestUpdateNoConnectorKey(t *testing.T) {
 	// Response without "connector" — falls back to raw JSON dump.
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				out := resp.(*getConnectorResp)
+				out.Connector.ConnectorType = "POSTGRES"
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"weird": 1.0}
 			return nil
