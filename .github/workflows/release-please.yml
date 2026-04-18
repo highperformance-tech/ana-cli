@@ -1,0 +1,37 @@
+name: release-please
+
+on:
+  workflow_dispatch:
+  # PR merge is the only trigger. Do NOT add on:push — it fires for the same
+  # merge event and causes duplicate release creation (GitHub 422 already_exists).
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    # Run on workflow_dispatch or merged PRs targeting main.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.HPT_BOT_APP_ID }}
+          private-key: ${{ secrets.HPT_BOT_KEY }}
+
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

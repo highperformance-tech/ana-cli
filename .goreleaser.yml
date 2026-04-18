@@ -1,0 +1,77 @@
+version: 2
+
+# project_name drives the default archive prefix — without it, GoReleaser
+# derives the name from the module path (ana-cli), which would diverge from
+# the binary name and break install.sh's URL template.
+project_name: ana
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: ana
+    main: ./cmd/ana
+    binary: ana
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: ana
+    ids:
+      - ana
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+sboms:
+  - artifacts: archive
+
+changelog:
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Dependencies
+      regexp: '^.*?(deps|build\(deps\))(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: highperformance-tech
+    name: ana-cli
+  draft: false
+  prerelease: auto

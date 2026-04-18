@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Check formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Code is not formatted. Run 'go fmt ./...'"
+            gofmt -d .
+            exit 1
+          fi
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Run tests
+        run: go test -race -vet=off ./...
+
+  cover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Enforce 100% internal coverage
+        run: make cover
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build binary
+        run: make build
+
+  goreleaser-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          install-only: true
+
+      - name: Validate GoReleaser config
+        run: goreleaser check
+
+  # Sentinel required-status-check consumed by the branch ruleset + merge queue.
+  # Having a single gate means the ruleset doesn't have to enumerate every job,
+  # so adding/removing CI jobs doesn't require a ruleset edit.
+  ci-complete:
+    name: CI Complete
+    needs: [lint, test, cover, build, goreleaser-check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate job results
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          COVER_RESULT: ${{ needs.cover.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          GORELEASER_RESULT: ${{ needs.goreleaser-check.result }}
+        run: |
+          echo "lint=$LINT_RESULT test=$TEST_RESULT cover=$COVER_RESULT build=$BUILD_RESULT goreleaser=$GORELEASER_RESULT"
+          for r in "$LINT_RESULT" "$TEST_RESULT" "$COVER_RESULT" "$BUILD_RESULT" "$GORELEASER_RESULT"; do
+            if [ "$r" != "success" ]; then
+              echo "one or more required jobs failed or were skipped"
+              exit 1
+            fi
+          done
+          echo "all required checks passed"

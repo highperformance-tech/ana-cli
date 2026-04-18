@@ -275,7 +275,7 @@ func TestAuthDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
 func TestBuildVerbs_Shape(t *testing.T) {
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
 	verbs := buildVerbs(client, func(string) string { return "" }, "", "default")
-	want := []string{"auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit"}
+	want := []string{"auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit", "version"}
 	for _, v := range want {
 		if _, ok := verbs[v]; !ok {
 			t.Errorf("missing verb: %q", v)
@@ -396,6 +396,48 @@ func TestChatDeps_Fields(t *testing.T) {
 	}
 	if u := d.UUIDFn(); !uuidRe.MatchString(u) {
 		t.Fatalf("UUIDFn returned non-canonical: %q", u)
+	}
+}
+
+// TestVersionCmd_PrintsBanner covers the `ana version` verb itself: the
+// module-level version/commit/date vars should appear in the output, and Run
+// should return nil (exit 0).
+func TestVersionCmd_PrintsBanner(t *testing.T) {
+	var out bytes.Buffer
+	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
+	if err := (versionCmd{}).Run(context.Background(), nil, stdio); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !strings.Contains(out.String(), "ana version") {
+		t.Fatalf("expected banner, got %q", out.String())
+	}
+}
+
+// TestVersionCmd_Help covers the --help short-circuit.
+func TestVersionCmd_Help(t *testing.T) {
+	var out bytes.Buffer
+	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
+	err := (versionCmd{}).Run(context.Background(), []string{"--help"}, stdio)
+	if err != cli.ErrHelp {
+		t.Fatalf("err = %v, want ErrHelp", err)
+	}
+	if !strings.Contains(out.String(), "Print ana version") {
+		t.Fatalf("help body missing: %q", out.String())
+	}
+}
+
+// TestRun_VersionFlag exercises the --version rewrite in run(): passing the
+// flag at the top level must route through the `version` verb and print the
+// banner on stdout with exit code 0.
+func TestRun_VersionFlag(t *testing.T) {
+	var out, errb bytes.Buffer
+	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: func(string) string { return "" }, Now: time.Now}
+	err := run([]string{"--version"}, stdio, func(string) string { return "" })
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if !strings.Contains(out.String(), "ana version") {
+		t.Fatalf("expected banner, got %q", out.String())
 	}
 }
 
