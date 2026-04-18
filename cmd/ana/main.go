@@ -44,6 +44,15 @@ func main() {
 // run is the testable entrypoint: same signature as main() but with args,
 // stdio, and env injected. Returns the error that main() feeds to ExitCode.
 func run(args []string, stdio cli.IO, env func(string) string) error {
+	// Short-circuit --version / -V: rewrite to the `version` verb so the
+	// same code path renders the banner whether the user typed the flag or
+	// the subcommand. Done before global-flag parsing so the flag doesn't
+	// need to be declared in cli.Global (which would ripple into every test
+	// that constructs a Global).
+	if len(args) == 1 && (args[0] == "--version" || args[0] == "-V") {
+		args = []string{"version"}
+	}
+
 	// Parse global flags up front so the token-file/endpoint/profile
 	// overrides are available before we touch config on disk. cli.Dispatch
 	// re-parses globals, but doing it here lets us wire deps correctly
@@ -125,6 +134,7 @@ func buildVerbs(client *transport.Client, env func(string) string, cfgPath, prof
 		"ontology":  ontology.New(ontology.Deps{Unary: client.Unary}),
 		"feed":      feed.New(feed.Deps{Unary: client.Unary}),
 		"audit":     audit.New(audit.Deps{Unary: client.Unary, Now: time.Now}),
+		"version":   versionCmd{},
 	}
 }
 

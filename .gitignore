@@ -12,6 +12,7 @@ __pycache__/
 *.out
 coverage.out
 c.out
+c.internal.out
 
 # e2e manual-revert ledger files (written by the live smoke harness when
 # auto-cleanup fails and human intervention is required)

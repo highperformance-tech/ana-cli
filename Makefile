@@ -1,7 +1,8 @@
-.PHONY: all build test cover vet clean e2e e2e-sweep e2e-dryrun
+.PHONY: all build test cover vet lint deps release-local clean e2e e2e-sweep e2e-dryrun
 
 GO ?= go
 PKGS := ./...
+STATICCHECK_VERSION := 2025.1.1
 
 all: test build
 
@@ -10,6 +11,28 @@ build:
 
 vet:
 	$(GO) vet $(PKGS)
+
+# deps installs development tools pinned for reproducibility.
+deps:
+	$(GO) install honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
+
+# lint mirrors the CI lint job: gofmt check, go vet, staticcheck. Assumes
+# `make deps` has been run at least once so staticcheck is on PATH.
+lint:
+	@if [ -n "$$(gofmt -l .)" ]; then \
+		echo "Code is not formatted. Run 'go fmt ./...'"; \
+		gofmt -d .; \
+		exit 1; \
+	fi
+	$(GO) vet $(PKGS)
+	staticcheck $(PKGS)
+
+# release-local validates .goreleaser.yml and produces a throwaway snapshot
+# in dist/. Requires goreleaser on PATH (brew install goreleaser or
+# https://goreleaser.com/install/). No publish, no tag push.
+release-local:
+	goreleaser check
+	goreleaser release --snapshot --clean
 
 test:
 	$(GO) test -race $(PKGS)
@@ -26,7 +49,7 @@ cover:
 	@$(GO) tool cover -func=c.internal.out | awk '/^total:/ { split($$3, a, "%"); if (a[1]+0 < 100) { print "internal coverage below 100% ("$$3")"; exit 1 } }'
 
 clean:
-	rm -rf bin c.out c.internal.out
+	rm -rf bin dist c.out c.internal.out
 
 ENV_FILE := .env
 # LOAD_ENV sources the repo-root .env if present, exporting each KEY=VAL so
