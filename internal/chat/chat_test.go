@@ -772,9 +772,11 @@ func TestSendStreamError(t *testing.T) {
 func TestSendMessageError(t *testing.T) {
 	// SendMessage fails → no Stream call at all.
 	f := &fakeDeps{
-		uuidFn:   func() string { return "X" },
-		unaryFn:  func(_ context.Context, _ string, _, _ any) error { return errors.New("send-boom") },
-		streamFn: func(_ context.Context, _ string, _ any) (StreamSession, error) { return nil, errors.New("should not be called") },
+		uuidFn:  func() string { return "X" },
+		unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("send-boom") },
+		streamFn: func(_ context.Context, _ string, _ any) (StreamSession, error) {
+			return nil, errors.New("should not be called")
+		},
 	}
 	cmd := &sendCmd{deps: f.deps()}
 	stdio, _, _ := newIO(nil)

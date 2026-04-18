@@ -28,12 +28,12 @@ import (
 
 // envSpec is the env-var contract required by the harness. See e2e/README.md.
 type envSpec struct {
-	endpoint     string
-	token        string
-	expectOrgID  string
-	dryRun       bool
-	sweepOnly    bool
-	configHome   string
+	endpoint    string
+	token       string
+	expectOrgID string
+	dryRun      bool
+	sweepOnly   bool
+	configHome  string
 }
 
 func loadEnv() (envSpec, bool) {

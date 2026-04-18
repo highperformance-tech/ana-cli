@@ -16,8 +16,9 @@ import (
 // issuance would needlessly double command latency.
 //
 // Paths:
-//   /rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember
-//   /rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization
+//
+//	/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember
+//	/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization
 type whoamiCmd struct{ deps Deps }
 
 func (c *whoamiCmd) Help() string {
