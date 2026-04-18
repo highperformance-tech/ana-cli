@@ -9,6 +9,16 @@ on:
       - main
     types:
       - closed
+    # Skip release-please for docs-only merges — release-please would scan
+    # and find no bumpable commits anyway. Leaving it enabled just burned
+    # runner minutes. Code + release-please config changes still trigger.
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE'
+      - 'docs/**'
+      - 'api-catalog/**'
+      - '.claude/**'
+      - '.gitignore'
 
 permissions:
   contents: write
