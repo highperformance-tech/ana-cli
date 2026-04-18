@@ -18,13 +18,13 @@ func (c *removeCmd) Help() string {
 }
 
 func (c *removeCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("profile remove")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("profile remove")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	rest := fs.Args()
 	if len(rest) == 0 || rest[0] == "" {
-		return usageErrf("profile remove: name is required")
+		return cli.UsageErrf("profile remove: name is required")
 	}
 	name := rest[0]
 

@@ -87,47 +87,6 @@ func TestNew_ReturnsGroupWithExpectedChildren(t *testing.T) {
 	}
 }
 
-// --- shared helpers ---
-
-func TestParseFlags_WrapsErrors(t *testing.T) {
-	fs := newFlagSet("x")
-	fs.Bool("flag", false, "")
-	err := parseFlags(fs, []string{"--nope"})
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Fatalf("expected cli.ErrUsage, got %v", err)
-	}
-}
-
-func TestUsageErrf_WrapsErrUsage(t *testing.T) {
-	err := usageErrf("bad %s", "thing")
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Fatalf("expected cli.ErrUsage, got %v", err)
-	}
-	if !strings.Contains(err.Error(), "bad thing") {
-		t.Fatalf("msg: %q", err.Error())
-	}
-}
-
-func TestWriteJSON_IndentsAndNewline(t *testing.T) {
-	var buf bytes.Buffer
-	if err := writeJSON(&buf, map[string]int{"x": 1}); err != nil {
-		t.Fatalf("writeJSON: %v", err)
-	}
-	if !strings.Contains(buf.String(), "\n") {
-		t.Fatal("expected trailing newline")
-	}
-	if !strings.Contains(buf.String(), "  ") {
-		t.Fatal("expected 2-space indent")
-	}
-}
-
-// writeJSON must surface encoder errors; a channel cannot be JSON-encoded.
-func TestWriteJSON_EncodeError(t *testing.T) {
-	if err := writeJSON(io.Discard, make(chan int)); err == nil {
-		t.Fatal("expected encode error")
-	}
-}
-
 // --- list ---
 
 func TestList_Help(t *testing.T) {

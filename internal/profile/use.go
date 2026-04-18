@@ -18,13 +18,13 @@ func (c *useCmd) Help() string {
 }
 
 func (c *useCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("profile use")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("profile use")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	rest := fs.Args()
 	if len(rest) == 0 || rest[0] == "" {
-		return usageErrf("profile use: name is required")
+		return cli.UsageErrf("profile use: name is required")
 	}
 	name := rest[0]
 

@@ -23,16 +23,16 @@ func (c *addCmd) Help() string {
 }
 
 func (c *addCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("profile add")
+	fs := cli.NewFlagSet("profile add")
 	endpoint := fs.String("endpoint", "", "API endpoint URL (defaults to https://app.textql.com)")
 	org := fs.String("org", "", "human-readable org label")
 	tokenStdin := fs.Bool("token-stdin", false, "read entire stdin as the token (trimmed)")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	rest := fs.Args()
 	if len(rest) == 0 || rest[0] == "" {
-		return usageErrf("profile add: name is required")
+		return cli.UsageErrf("profile add: name is required")
 	}
 	name := rest[0]
 

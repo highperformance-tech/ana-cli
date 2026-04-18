@@ -31,8 +31,8 @@ type showPayload struct {
 }
 
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("profile show")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("profile show")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 
@@ -54,7 +54,7 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	}
 
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, showPayload{
+		return cli.WriteJSON(stdio.Stdout, showPayload{
 			Name:     name,
 			Active:   name == cfg.Active,
 			Endpoint: p.Endpoint,
