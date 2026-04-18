@@ -387,12 +387,15 @@ func TestRootHelpWritesSortedList(t *testing.T) {
 }
 
 func TestWithGlobalAndFrom(t *testing.T) {
-	// nil context: WithGlobal should still succeed.
+	// nil context: WithGlobal should still succeed. The nil argument is
+	// intentional — this test covers the documented defensive fallback.
+	//lint:ignore SA1012 intentional: covers nil-context fallback
 	ctx := WithGlobal(nil, Global{JSON: true})
 	if g := GlobalFrom(ctx); !g.JSON {
 		t.Errorf("GlobalFrom returned %+v", g)
 	}
 	// nil context on GlobalFrom returns zero value.
+	//lint:ignore SA1012 intentional: covers nil-context fallback
 	if g := GlobalFrom(nil); g != (Global{}) {
 		t.Errorf("GlobalFrom(nil)=%+v want zero", g)
 	}
@@ -405,8 +408,8 @@ func TestWithGlobalAndFrom(t *testing.T) {
 // stubAuthErr implements authError for ExitCode tests.
 type stubAuthErr struct{ auth bool }
 
-func (s stubAuthErr) Error() string       { return "auth" }
-func (s stubAuthErr) IsAuthError() bool   { return s.auth }
+func (s stubAuthErr) Error() string     { return "auth" }
+func (s stubAuthErr) IsAuthError() bool { return s.auth }
 
 func TestExitCode(t *testing.T) {
 	if got := ExitCode(nil); got != 0 {

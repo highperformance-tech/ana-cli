@@ -10,10 +10,12 @@ import (
 // testCmd implements `ana connector test <id>` — TestConnector.
 //
 // CATALOG DEVIATION: the task brief specifies
-//   POST TestConnector {"connectorId": <int>}
+//
+//	POST TestConnector {"connectorId": <int>}
 //
 // but the captured API requires a full config body:
-//   POST TestConnector {"config": {connectorType, name, postgres: {...}}}
+//
+//	POST TestConnector {"config": {connectorType, name, postgres: {...}}}
 //
 // (see api-catalog/POST_...TestConnector.json). Since the brief says "if
 // catalog differs from this brief, prefer catalog," we follow the catalog
