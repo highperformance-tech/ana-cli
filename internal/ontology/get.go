@@ -36,33 +36,33 @@ type getResp struct {
 }
 
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("ontology get")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("ontology get")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	raw, err := requirePositionalID("ontology get", fs.Args())
+	raw, err := cli.RequireStringID("ontology get", fs.Args())
 	if err != nil {
 		return err
 	}
 	id, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil {
-		return usageErrf("ontology get: <id> must be an integer: %v", err)
+		return cli.UsageErrf("ontology get: <id> must be an integer: %v", err)
 	}
 	var rawResp map[string]any
 	if err := c.deps.Unary(ctx, ontologyServicePath+"/GetOntologyById", getReq{OntologyID: id}, &rawResp); err != nil {
 		return fmt.Errorf("ontology get: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, rawResp)
+		return cli.WriteJSON(stdio.Stdout, rawResp)
 	}
 	var typed getResp
-	if err := remarshal(rawResp, &typed); err != nil {
+	if err := cli.Remarshal(rawResp, &typed); err != nil {
 		return fmt.Errorf("ontology get: decode response: %w", err)
 	}
 	// A missing `ontology` envelope falls through to --json so the user sees
 	// the response shape rather than a block of empty fields.
 	if typed.Ontology.ID == 0 && typed.Ontology.Name == "" {
-		return writeJSON(stdio.Stdout, rawResp)
+		return cli.WriteJSON(stdio.Stdout, rawResp)
 	}
 	o := typed.Ontology
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
