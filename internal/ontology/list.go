@@ -31,8 +31,8 @@ type listResp struct {
 
 // Run issues GetOntologies and prints either a table or the raw payload.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("ontology list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("ontology list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	var raw map[string]any
@@ -40,10 +40,10 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("ontology list: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("ontology list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)

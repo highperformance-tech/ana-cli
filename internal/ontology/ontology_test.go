@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -366,65 +365,5 @@ func TestGetEmptyOntologyFallbackJSONEncodeErr(t *testing.T) {
 	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: failingWriter{}, Stderr: &bytes.Buffer{}, Env: func(string) string { return "" }, Now: time.Now}
 	if err := cmd.Run(context.Background(), []string{"5476"}, stdio); err == nil || !strings.Contains(err.Error(), "w boom") {
 		t.Errorf("err=%v", err)
-	}
-}
-
-// --- helpers ---
-
-func TestWriteJSONErr(t *testing.T) {
-	if err := writeJSON(io.Discard, make(chan int)); err == nil {
-		t.Errorf("want error on unsupported value")
-	}
-}
-
-func TestWriteJSONOK(t *testing.T) {
-	var buf bytes.Buffer
-	if err := writeJSON(&buf, map[string]string{"k": "v"}); err != nil {
-		t.Errorf("err=%v", err)
-	}
-	if !strings.Contains(buf.String(), "\"k\"") {
-		t.Errorf("out=%q", buf.String())
-	}
-}
-
-func TestRemarshalMarshalErr(t *testing.T) {
-	if err := remarshal(make(chan int), &struct{}{}); err == nil {
-		t.Errorf("want error on unsupported source")
-	}
-}
-
-func TestRemarshalOK(t *testing.T) {
-	src := map[string]any{"x": 1}
-	var dst struct {
-		X int `json:"x"`
-	}
-	if err := remarshal(src, &dst); err != nil {
-		t.Errorf("err=%v", err)
-	}
-	if dst.X != 1 {
-		t.Errorf("dst=%+v", dst)
-	}
-}
-
-func TestUsageErrf(t *testing.T) {
-	err := usageErrf("%s needs %s", "foo", "bar")
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("not a usage error: %v", err)
-	}
-	if !strings.Contains(err.Error(), "foo needs bar") {
-		t.Errorf("err=%q", err.Error())
-	}
-}
-
-func TestRequirePositionalID(t *testing.T) {
-	if _, err := requirePositionalID("x", nil); err == nil {
-		t.Errorf("want err on empty args")
-	}
-	if _, err := requirePositionalID("x", []string{""}); err == nil {
-		t.Errorf("want err on empty string")
-	}
-	id, err := requirePositionalID("x", []string{"abc"})
-	if err != nil || id != "abc" {
-		t.Errorf("id=%q err=%v", id, err)
 	}
 }

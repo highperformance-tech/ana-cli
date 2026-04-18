@@ -6,10 +6,6 @@ package ontology
 
 import (
 	"context"
-	"encoding/json"
-	"flag"
-	"fmt"
-	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -39,55 +35,4 @@ func New(deps Deps) *cli.Group {
 			"get":  &getCmd{deps: deps},
 		},
 	}
-}
-
-// newFlagSet returns a FlagSet the way every leaf command wants it: continue
-// on parse error (no os.Exit), all output silenced so each command's own
-// Help() is the single source of usage text.
-func newFlagSet(name string) *flag.FlagSet {
-	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-	return fs
-}
-
-// parseFlags delegates to cli.ParseFlags so positional args can be
-// interleaved with flags without silently dropping trailing flags.
-func parseFlags(fs *flag.FlagSet, args []string) error {
-	return cli.ParseFlags(fs, args)
-}
-
-// usageErrf is the canonical way to emit a user-facing usage error.
-func usageErrf(format string, a ...any) error {
-	return fmt.Errorf("%s: %w", fmt.Sprintf(format, a...), cli.ErrUsage)
-}
-
-// writeJSON indents a value to w with the 2-space convention used across the
-// CLI.
-func writeJSON(w io.Writer, v any) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(v); err != nil {
-		return fmt.Errorf("encode response: %w", err)
-	}
-	return nil
-}
-
-// remarshal round-trips src through JSON into dst.
-func remarshal(src, dst any) error {
-	b, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, dst)
-}
-
-// requirePositionalID extracts a non-empty positional <id> from the first arg,
-// returning a usage error otherwise. Ontology IDs are integer-valued on the
-// wire; the wire shape is produced by the caller (the positional is kept as a
-// raw string here for flexibility).
-func requirePositionalID(verb string, args []string) (string, error) {
-	if len(args) == 0 || args[0] == "" {
-		return "", usageErrf("%s: <id> positional argument required", verb)
-	}
-	return args[0], nil
 }
