@@ -1,0 +1,21 @@
+# internal
+
+All domain logic for the `ana` CLI. Each verb package is pure dispatch: it declares a narrow `Deps` struct, registers its Connect-RPC service prefix, and exposes a `New(deps) *cli.Group` that `cmd/ana/main.go` wires up. Verb packages do not import `internal/transport` or `internal/config` (except `cli`, which is the dispatch core, and `profile`, whose whole purpose is config management).
+
+## Children
+
+| Path | What lives here |
+|------|-----------------|
+| `cli/` | Dispatch core: `Command` interface, `Group`, `ParseFlags`, `ParseGlobal`, `Dispatch`, exit-code mapping. |
+| `config/` | Multi-profile config file reader/writer. XDG path resolution, `Resolve` precedence. |
+| `transport/` | Connect-RPC HTTP client. Unary JSON + server-streaming JSON framing. |
+| `auth/` | `ana auth` verb tree — login/logout/whoami/keys/service-accounts. |
+| `profile/` | `ana profile` verb tree — add/use/remove/list/show. Imports `internal/config` by design. |
+| `org/` | `ana org` — list/show + nested members/roles/permissions. |
+| `chat/` | `ana chat` — CRUD + streaming `send` + share. |
+| `connector/` | `ana connector` — CRUD + test/tables/examples. |
+| `dashboard/` | `ana dashboard` — readonly list/get/folders/health + `spawn`. |
+| `playbook/` | `ana playbook` — readonly list/get/reports/lineage. |
+| `ontology/` | `ana ontology` — readonly list/get. |
+| `feed/` | `ana feed` — show + stats. |
+| `audit/` | `ana audit tail` — audit-log listing with `--since`. Injectable clock. |

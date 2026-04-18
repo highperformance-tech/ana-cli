@@ -8,9 +8,40 @@ on:
 
 permissions:
   contents: read
+  # pull-requests: read is needed so dorny/paths-filter can diff the PR.
+  pull-requests: read
 
 jobs:
+  # changes detects whether this PR touches code or build config. Docs-only
+  # PRs skip the heavy jobs entirely but still produce a green CI Complete
+  # so the branch ruleset lets them merge.
+  #
+  # merge_group doesn't pass a useful base ref to dorny; the action falls
+  # back to treating every file as changed, which is exactly what we want —
+  # the merge queue should always run the full suite.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'Makefile'
+              - '.goreleaser.yml'
+              - '.github/workflows/**'
+              - 'install.sh'
+
   lint:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +69,8 @@ jobs:
         run: staticcheck ./...
 
   test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +88,8 @@ jobs:
         run: go test -race -vet=off ./...
 
   cover:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +103,8 @@ jobs:
         run: make cover
 
   build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,6 +118,8 @@ jobs:
         run: make build
 
   goreleaser-check:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,27 +140,43 @@ jobs:
         run: goreleaser check
 
   # Sentinel required-status-check consumed by the branch ruleset + merge queue.
-  # Having a single gate means the ruleset doesn't have to enumerate every job,
-  # so adding/removing CI jobs doesn't require a ruleset edit.
+  # Runs unconditionally so docs-only PRs still report green. Code-gated jobs
+  # count as success when they ran AND succeeded, or when they were skipped
+  # because no code changed; any other result (failure, cancelled) fails the
+  # gate.
   ci-complete:
     name: CI Complete
-    needs: [lint, test, cover, build, goreleaser-check]
+    needs: [changes, lint, test, cover, build, goreleaser-check]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate job results
         env:
+          CODE_CHANGED: ${{ needs.changes.outputs.code }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
           LINT_RESULT: ${{ needs.lint.result }}
           TEST_RESULT: ${{ needs.test.result }}
           COVER_RESULT: ${{ needs.cover.result }}
           BUILD_RESULT: ${{ needs.build.result }}
           GORELEASER_RESULT: ${{ needs.goreleaser-check.result }}
         run: |
-          echo "lint=$LINT_RESULT test=$TEST_RESULT cover=$COVER_RESULT build=$BUILD_RESULT goreleaser=$GORELEASER_RESULT"
-          for r in "$LINT_RESULT" "$TEST_RESULT" "$COVER_RESULT" "$BUILD_RESULT" "$GORELEASER_RESULT"; do
-            if [ "$r" != "success" ]; then
-              echo "one or more required jobs failed or were skipped"
-              exit 1
-            fi
+          echo "code_changed=$CODE_CHANGED"
+          echo "changes=$CHANGES_RESULT lint=$LINT_RESULT test=$TEST_RESULT cover=$COVER_RESULT build=$BUILD_RESULT goreleaser=$GORELEASER_RESULT"
+          # Include changes in the validation loop: if the paths-filter job
+          # itself fails (checkout error, dorny bug), every downstream job
+          # reports `skipped` and the gate would otherwise pass despite no
+          # actual verification having run.
+          # Acceptable per-job results:
+          #   success — ran and passed
+          #   skipped — no code changed, so no work to do
+          # Anything else (failure, cancelled) fails the gate.
+          for r in "$CHANGES_RESULT" "$LINT_RESULT" "$TEST_RESULT" "$COVER_RESULT" "$BUILD_RESULT" "$GORELEASER_RESULT"; do
+            case "$r" in
+              success|skipped) ;;
+              *)
+                echo "one or more required jobs failed: $r"
+                exit 1
+                ;;
+            esac
           done
           echo "all required checks passed"

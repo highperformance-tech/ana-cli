@@ -1,16 +1,24 @@
 # ana-cli
 
-Reverse-engineered API catalog + planning docs for a CLI targeting `app.textql.com`. No CLI source yet — this repo is the specification the CLI will be built against.
+`ana` is a Go CLI for [TextQL](https://app.textql.com) that speaks the public Connect-RPC endpoints. Module `github.com/highperformance-tech/ana-cli`, Go 1.25, binary at `cmd/ana`. Verbs are implemented as pure dispatch packages under `internal/` that inject a transport/config boundary, so every package stays unit-testable without a live server.
 
 ## Directories
 
-- `api-catalog/` — one JSON file per captured Connect-RPC endpoint (~85 entries). Request/response samples, inferred schemas, quirks. Source of truth for endpoint shapes.
-- `docs/` — human-readable guides: feature inventory (`features.md`) and CLI-readiness review (`cli-readiness.md`). Start here before coding.
-- `.claude/` — Claude Code configuration: permissions (`settings.json`, `settings.local.json`) and the `textql-webapp-probe` skill that drives the browser to capture new endpoints.
-- `.playwright-mcp/` — raw Playwright capture artifacts (page snapshots, network dumps, emit scripts). Scratchpad; safe to prune between probe sessions. Gitignored.
+- `cmd/ana/` — main package: wires global flags + config into a transport client, builds the verb map, and hands off to `cli.Dispatch`. `--version` short-circuits to the `version` verb so the banner goes through the same code path regardless of entry shape.
+- `internal/` — verb packages (one per top-level noun) plus the shared `cli`, `config`, and `transport` primitives. Each verb package owns its Connect-RPC service prefix and its narrow `Deps` struct; nothing here imports `internal/transport` or `internal/config` except `cli` and `profile`.
+- `e2e/` — live smoke tests that run real RPCs against `app.textql.com` via the harness in `e2e/harness/`. Opt-in; require `ANA_E2E_*` env vars.
+- `docs/` — human-readable planning docs. `features.md` catalogs TextQL surfaces; `cli-readiness.md` grades CLI coverage per surface.
+- `api-catalog/` — JSON entries (~90) capturing every observed Connect-RPC request/response. Source of truth for endpoint shapes and known quirks.
+- `.claude/` — Claude Code config + the `textql-webapp-probe` skill that captures new endpoints from the browser.
+- `.playwright-mcp/` — scratchpad for Playwright capture artifacts. Gitignored, prune freely.
+- `.github/workflows/` — CI (`ci.yml` + release pipeline). Docs-only PRs skip the heavy jobs; see README § "CI scope".
+- `install.sh` — curl-friendly installer that fetches the matching `ana_<version>_<os>_<arch>` archive, verifies the sha256, and drops `ana` on `PATH`.
+- `.goreleaser.yml`, `release-please-config.json`, `.release-please-manifest.json` — release pipeline config. Conventional commits drive release-please → goreleaser.
 
 ## Workflow at a glance
 
-1. Read `docs/features.md` for the surface you care about.
-2. Look up the endpoint in `api-catalog/` (grep by `<Service>__<Method>`).
-3. If missing, run the `textql-webapp-probe` skill to capture it — outputs land in `.playwright-mcp/`, then get emitted into `api-catalog/`.
+- Build / test / cover: `make build`, `make test`, `make cover` (100% coverage gate on `./internal/...`).
+- Lint: `make lint` (gofmt, go vet, staticcheck).
+- Local release smoke: `make release-local` (`goreleaser check` + `--snapshot`).
+- Live smoke tests: `make e2e` (requires `ANA_E2E_ENDPOINT` + `ANA_E2E_TOKEN`; see `e2e/README.md`).
+- Capture a new endpoint: run the `textql-webapp-probe` skill — output lands in `.playwright-mcp/`, then gets emitted into `api-catalog/`.

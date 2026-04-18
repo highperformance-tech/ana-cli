@@ -2,12 +2,12 @@
 
 One JSON entry per captured Connect-RPC endpoint. Filename format: `POST_rpc__public__textql_rpc_public_<service>_<Service>__<Method>.json`. Entry schema in `.claude/skills/textql-webapp-probe/references/catalog-schema.md` (method, pathTemplate, host, lastVerified, samples[], notes[], inferredRequestSchema, inferredResponseSchema).
 
-~85 entries across 19 services. Group summary:
+~90 entries across 19 services. Group summary:
 
-- `auth_PublicAuthService__*` — GetMember, GetMemberInOrgById, GetOrganization, GetOrgOIDCProviders, ListOrganizations.
+- `auth_PublicAuthService__*` — GetMember, GetMemberInOrgById, GetOrganization, GetOrgOIDCProviders, ListOrganizations, ExchangeIntermediaryToken, ExchangeSession, GetGoogleOAuthUrl, HandleGoogleOAuthCallback, ValidateIntermediaryToken.
 - `chat_ChatService__*` — CRUD + streaming: CreateChat, SendMessage, StreamChat, GetChat(s), GetChatHistory, UpdateChat (rename via `summary`), Bookmark/Unbookmark, Duplicate, Delete, MarkChatRead, Get{Artifacts,Thread,Llm,Observability,Billing,Backfill}*.
 - `connector_ConnectorService__*` — Test/Create/Get/Update/Delete, GetConnectors, ListConnectorTables, GetExampleQueries. Postgres dialect verified; other dialects assumed.
-- `rbac_RBACService__*` — CreateApiKey (plaintext returned once as `apiKeyHash`), Rotate/Revoke/ListApiKeys, Create/Delete/ListServiceAccounts, ListRoles, ListPermissions, GetMemberRoles, GetObjectAccess, ListAccessRequests, GetCurrentMemberRolesAndPermissions.
+- `rbac_RBACService__*` — CreateApiKey (plaintext returned once as `apiKeyHash`) + RotateApiKey (public-namespace variants), Revoke/ListApiKeys, Create/Delete/ListServiceAccounts, ListRoles, ListPermissions, GetMemberRoles, GetObjectAccess, ListAccessRequests, GetCurrentMemberRolesAndPermissions.
 - `dashboard_DashboardService__*` — ListDashboards, ListDashboardFolders, GetDashboard, SpawnDashboard, CheckDashboardHealth, GetMembersWithDashboards. No create/update/delete captured yet.
 - `playbook_PlaybookService__*` — GetPlaybook(s), GetPlaybookLineage, GetPlaybookReports, GetChatReportsSummary. No create/update/run captured yet.
 - `ontology_OntologyService__*` — GetOntologies, GetOntologiesSummary, GetOntologyById. Readonly.
