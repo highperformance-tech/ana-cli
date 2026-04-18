@@ -12,11 +12,6 @@
 package profile
 
 import (
-	"encoding/json"
-	"flag"
-	"fmt"
-	"io"
-
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 	"github.com/highperformance-tech/ana-cli/internal/config"
 )
@@ -43,33 +38,4 @@ func New(deps Deps) *cli.Group {
 			"show":   &showCmd{deps: deps},
 		},
 	}
-}
-
-// newFlagSet mirrors the idiom in internal/org: continue-on-error parsing
-// and silenced output so each command owns its own Help() rendering.
-func newFlagSet(name string) *flag.FlagSet {
-	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-	return fs
-}
-
-// parseFlags delegates to cli.ParseFlags so positional args can be
-// interleaved with flags without silently dropping trailing flags.
-func parseFlags(fs *flag.FlagSet, args []string) error {
-	return cli.ParseFlags(fs, args)
-}
-
-// usageErrf produces a cli.ErrUsage-wrapped error with a formatted message.
-func usageErrf(format string, a ...any) error {
-	return fmt.Errorf("%s: %w", fmt.Sprintf(format, a...), cli.ErrUsage)
-}
-
-// writeJSON indents v to w with the same 2-space style the other verbs use.
-func writeJSON(w io.Writer, v any) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(v); err != nil {
-		return fmt.Errorf("encode response: %w", err)
-	}
-	return nil
 }

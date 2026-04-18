@@ -34,8 +34,8 @@ type listPayload struct {
 }
 
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("profile list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("profile list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	cfg, err := c.deps.LoadCfg()
@@ -60,7 +60,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 				HasToken: p.Token != "",
 			})
 		}
-		return writeJSON(stdio.Stdout, payload)
+		return cli.WriteJSON(stdio.Stdout, payload)
 	}
 
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
