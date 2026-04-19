@@ -29,11 +29,11 @@ type getReq struct {
 // JSON (--json) or renders a compact key:value summary. The fallback (no
 // `dashboard` key) prints raw JSON so we never silently swallow a response.
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("dashboard get")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("dashboard get")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requireID("dashboard get", fs.Args())
+	id, err := cli.RequireStringID("dashboard get", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -43,11 +43,11 @@ func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("dashboard get: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	dash, ok := raw["dashboard"].(map[string]any)
 	if !ok {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
 	for _, k := range []string{"id", "name", "orgId", "creatorId"} {

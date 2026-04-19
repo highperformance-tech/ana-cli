@@ -35,8 +35,8 @@ type listResp struct {
 // ID/NAME/FOLDER table. FOLDER prefers a human-readable folderName, falls
 // back to folderId, and renders an em-dash when neither is set.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("dashboard list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("dashboard list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	global := cli.GlobalFrom(ctx)
@@ -45,10 +45,10 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("dashboard list: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("dashboard list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)

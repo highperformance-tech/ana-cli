@@ -29,11 +29,11 @@ type spawnReq struct {
 // response (--json) or the refreshedAt field. If refreshedAt is absent we
 // fall back to raw JSON so we never lose information.
 func (c *spawnCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("dashboard spawn")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("dashboard spawn")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requireID("dashboard spawn", fs.Args())
+	id, err := cli.RequireStringID("dashboard spawn", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -43,11 +43,11 @@ func (c *spawnCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("dashboard spawn: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	if ts, ok := raw["refreshedAt"].(string); ok {
 		fmt.Fprintf(stdio.Stdout, "spawned %s (refreshedAt=%s)\n", id, ts)
 		return nil
 	}
-	return writeJSON(stdio.Stdout, raw)
+	return cli.WriteJSON(stdio.Stdout, raw)
 }

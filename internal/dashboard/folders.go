@@ -44,8 +44,8 @@ type foldersResp struct {
 // Run issues ListDashboardFolders, then either dumps raw JSON or renders an
 // ID/NAME table sorted by name for determinism.
 func (c *foldersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("dashboard folders list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("dashboard folders list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	global := cli.GlobalFrom(ctx)
@@ -54,10 +54,10 @@ func (c *foldersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 		return fmt.Errorf("dashboard folders list: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed foldersResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("dashboard folders list: decode response: %w", err)
 	}
 	sort.Slice(typed.Folders, func(i, j int) bool {
