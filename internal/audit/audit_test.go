@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -192,6 +191,57 @@ func TestTailSinceInvalid(t *testing.T) {
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
 	}
+	// The user-facing message should hint at both accepted forms so the
+	// operator does not have to re-read --help.
+	if !strings.Contains(err.Error(), "RFC3339") {
+		t.Errorf("err=%q should mention RFC3339", err.Error())
+	}
+}
+
+// TestTailSinceRFC3339 verifies an absolute timestamp is accepted and
+// re-emitted in UTC RFC3339 form. The clock is irrelevant here — the input
+// itself carries the wall-clock instant.
+func TestTailSinceRFC3339(t *testing.T) {
+	// Now should NOT be consulted for the absolute path; using the zero
+	// time would surface any mistaken `Now().Add(...)` arithmetic.
+	f := &fakeDeps{now: time.Time{}}
+	cmd := &tailCmd{deps: f.deps()}
+	stdio, _, _ := newIO()
+	in := "2026-04-18T05:30:00-04:00"
+	if err := cmd.Run(context.Background(), []string{"--since", in}, stdio); err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(f.lastRawReq, &got); err != nil {
+		t.Fatalf("unmarshal err=%v raw=%s", err, f.lastRawReq)
+	}
+	want := "2026-04-18T09:30:00Z" // same instant, normalised to UTC.
+	if got["since"] != want {
+		t.Errorf("since=%v want %q", got["since"], want)
+	}
+}
+
+// TestTailSinceFractional verifies that callers can paste timestamps copied
+// from logs (which often carry fractional seconds) without truncating them.
+// Go's time.RFC3339 parser is permissive enough to accept the nano form, and
+// the formatted output drops the fractional part to match the duration
+// branch's wire shape.
+func TestTailSinceFractional(t *testing.T) {
+	f := &fakeDeps{}
+	cmd := &tailCmd{deps: f.deps()}
+	stdio, _, _ := newIO()
+	in := "2026-04-18T09:30:00.123456789Z"
+	if err := cmd.Run(context.Background(), []string{"--since", in}, stdio); err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(f.lastRawReq, &got); err != nil {
+		t.Fatalf("unmarshal err=%v raw=%s", err, f.lastRawReq)
+	}
+	want := "2026-04-18T09:30:00Z"
+	if got["since"] != want {
+		t.Errorf("since=%v want %q", got["since"], want)
+	}
 }
 
 // --- tail: --limit pass-through ---
@@ -241,7 +291,10 @@ func TestTailNoSinceOmitsKey(t *testing.T) {
 
 // --- tail: --json ---
 
-func TestTailJSON(t *testing.T) {
+// TestTailJSONEmpty: zero entries means zero JSONL lines (not even an empty
+// envelope). Verifies the per-record loop produces no output when the response
+// has no entries.
+func TestTailJSONEmpty(t *testing.T) {
 	f := &fakeDeps{
 		unaryFn: func(_ context.Context, _ string, _, resp any) error {
 			out := resp.(*map[string]any)
@@ -255,11 +308,66 @@ func TestTailJSON(t *testing.T) {
 	if err := cmd.Run(ctx, nil, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
-	if !strings.HasPrefix(strings.TrimSpace(out.String()), "{") {
-		t.Errorf("stdout=%q should start with {", out.String())
+	if out.Len() != 0 {
+		t.Errorf("stdout=%q want empty for zero-entry JSONL", out.String())
 	}
-	if !strings.Contains(out.String(), "\"entries\"") {
-		t.Errorf("stdout=%q", out.String())
+}
+
+// TestTailJSONLines: multi-entry response should produce one JSON object per
+// line, no envelope wrapping. Each line must independently parse as JSON and
+// the final byte must be a newline so downstream tools can append.
+func TestTailJSONLines(t *testing.T) {
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{
+				"entries": []any{
+					map[string]any{
+						"actorEmail": "brad@example.com",
+						"action":     "api_key.created",
+						"createdAt":  "2026-04-17T15:19:15Z",
+					},
+					map[string]any{
+						"actorEmail": "ken@example.com",
+						"action":     "auth.login_success",
+						"createdAt":  "2026-04-14T20:04:35Z",
+					},
+				},
+			}
+			return nil
+		},
+	}
+	cmd := &tailCmd{deps: f.deps()}
+	ctx := cli.WithGlobal(context.Background(), cli.Global{JSON: true})
+	stdio, out, _ := newIO()
+	if err := cmd.Run(ctx, nil, stdio); err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	raw := out.String()
+	// Must NOT be a pretty envelope: the old behaviour wrapped everything in
+	// `{ "entries": [...] }`. JSONL must not contain that key.
+	if strings.Contains(raw, "\"entries\"") {
+		t.Errorf("stdout=%q should not contain envelope key", raw)
+	}
+	if !strings.HasSuffix(raw, "\n") {
+		t.Errorf("stdout=%q should end with newline", raw)
+	}
+	lines := strings.Split(strings.TrimRight(raw, "\n"), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("got %d lines, want 2: %q", len(lines), raw)
+	}
+	for i, line := range lines {
+		var v map[string]any
+		if err := json.Unmarshal([]byte(line), &v); err != nil {
+			t.Errorf("line %d not valid JSON (%v): %q", i, err, line)
+		}
+	}
+	// Spot-check that the per-record fields are present (not the envelope).
+	if !strings.Contains(lines[0], "brad@example.com") {
+		t.Errorf("line 0 missing actorEmail: %q", lines[0])
+	}
+	if !strings.Contains(lines[1], "auth.login_success") {
+		t.Errorf("line 1 missing action: %q", lines[1])
 	}
 }
 
@@ -306,10 +414,15 @@ func TestTailRemarshalErr(t *testing.T) {
 }
 
 func TestTailJSONEncodeErr(t *testing.T) {
+	// Entries must be non-empty: encoding now happens per-record, so a zero-
+	// entry response would skip the encoder entirely and the failingWriter
+	// would never fire.
 	f := &fakeDeps{
 		unaryFn: func(_ context.Context, _ string, _, resp any) error {
 			out := resp.(*map[string]any)
-			*out = map[string]any{"entries": []any{}}
+			*out = map[string]any{"entries": []any{
+				map[string]any{"actorEmail": "brad@example.com"},
+			}}
 			return nil
 		},
 	}
@@ -318,52 +431,5 @@ func TestTailJSONEncodeErr(t *testing.T) {
 	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: failingWriter{}, Stderr: &bytes.Buffer{}, Env: func(string) string { return "" }, Now: time.Now}
 	if err := cmd.Run(ctx, nil, stdio); err == nil || !strings.Contains(err.Error(), "w boom") {
 		t.Errorf("err=%v", err)
-	}
-}
-
-// --- helpers ---
-
-func TestWriteJSONErr(t *testing.T) {
-	if err := writeJSON(io.Discard, make(chan int)); err == nil {
-		t.Errorf("want error on unsupported value")
-	}
-}
-
-func TestWriteJSONOK(t *testing.T) {
-	var buf bytes.Buffer
-	if err := writeJSON(&buf, map[string]string{"k": "v"}); err != nil {
-		t.Errorf("err=%v", err)
-	}
-	if !strings.Contains(buf.String(), "\"k\"") {
-		t.Errorf("out=%q", buf.String())
-	}
-}
-
-func TestRemarshalMarshalErr(t *testing.T) {
-	if err := remarshal(make(chan int), &struct{}{}); err == nil {
-		t.Errorf("want error on unsupported source")
-	}
-}
-
-func TestRemarshalOK(t *testing.T) {
-	src := map[string]any{"x": 1}
-	var dst struct {
-		X int `json:"x"`
-	}
-	if err := remarshal(src, &dst); err != nil {
-		t.Errorf("err=%v", err)
-	}
-	if dst.X != 1 {
-		t.Errorf("dst=%+v", dst)
-	}
-}
-
-func TestUsageErrf(t *testing.T) {
-	err := usageErrf("%s needs %s", "foo", "bar")
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("not a usage error: %v", err)
-	}
-	if !strings.Contains(err.Error(), "foo needs bar") {
-		t.Errorf("err=%q", err.Error())
 	}
 }
