@@ -46,11 +46,11 @@ type healthResp struct {
 // contains no matching entry we surface an error rather than silently
 // succeeding.
 func (c *healthCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("dashboard health")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("dashboard health")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requireID("dashboard health", fs.Args())
+	id, err := cli.RequireStringID("dashboard health", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -60,10 +60,10 @@ func (c *healthCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("dashboard health: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed healthResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("dashboard health: decode response: %w", err)
 	}
 	if len(typed.Dashboards) == 0 {

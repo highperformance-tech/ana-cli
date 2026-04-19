@@ -51,11 +51,6 @@ func newIO(stdin io.Reader) (cli.IO, *bytes.Buffer, *bytes.Buffer) {
 	}, &out, &errb
 }
 
-// failingWriter trips writeJSON's encoder error path.
-type failingWriter struct{}
-
-func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("w boom") }
-
 // --- New / Group surface ---
 
 func TestNewReturnsGroupWithExpectedChildren(t *testing.T) {
@@ -638,52 +633,5 @@ func TestHealthRemarshalErr(t *testing.T) {
 	err := cmd.Run(context.Background(), []string{"d1"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "decode response") {
 		t.Errorf("err=%v", err)
-	}
-}
-
-// --- direct util tests ---
-
-func TestWriteJSONErr(t *testing.T) {
-	// Channel value → Marshal fails inside writeJSON (via encoder).
-	if err := writeJSON(&bytes.Buffer{}, make(chan int)); err == nil {
-		t.Errorf("want encode error")
-	}
-}
-
-func TestWriteJSONWriterErr(t *testing.T) {
-	// failingWriter trips the encoder's write path.
-	if err := writeJSON(failingWriter{}, map[string]any{"a": 1}); err == nil {
-		t.Errorf("want writer error")
-	}
-}
-
-func TestRemarshalMarshalErr(t *testing.T) {
-	if err := remarshal(make(chan int), &struct{}{}); err == nil {
-		t.Errorf("want marshal error")
-	}
-}
-
-func TestRequireIDPaths(t *testing.T) {
-	if _, err := requireID("x", nil); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("nil: %v", err)
-	}
-	if _, err := requireID("x", []string{""}); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("empty: %v", err)
-	}
-	if _, err := requireID("x", []string{"   "}); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("ws: %v", err)
-	}
-	if v, err := requireID("x", []string{"abc"}); err != nil || v != "abc" {
-		t.Errorf("good: v=%q err=%v", v, err)
-	}
-}
-
-func TestUsageErrfWraps(t *testing.T) {
-	err := usageErrf("boom %d", 1)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("not wrapped: %v", err)
-	}
-	if !strings.Contains(err.Error(), "boom 1") {
-		t.Errorf("msg=%q", err.Error())
 	}
 }
