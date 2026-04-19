@@ -180,6 +180,77 @@ func TestRequireIntID(t *testing.T) {
 	}
 }
 
+func TestReadTokenNilReader(t *testing.T) {
+	if _, err := ReadToken(nil, false); err == nil {
+		t.Errorf("want error on nil reader")
+	}
+}
+
+func TestReadTokenLineMode(t *testing.T) {
+	tok, err := ReadToken(strings.NewReader("  my-token  \n"), false)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if tok != "my-token" {
+		t.Errorf("tok=%q", tok)
+	}
+}
+
+func TestReadTokenStdinMode(t *testing.T) {
+	tok, err := ReadToken(strings.NewReader("line1\nline2\n  \n"), true)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if tok != "line1\nline2" {
+		t.Errorf("tok=%q", tok)
+	}
+}
+
+func TestReadTokenEmptyStream(t *testing.T) {
+	tok, err := ReadToken(strings.NewReader(""), false)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if tok != "" {
+		t.Errorf("tok=%q", tok)
+	}
+}
+
+// errReader returns err on every Read so ReadToken exercises its error paths.
+type errReader struct{ err error }
+
+func (e errReader) Read([]byte) (int, error) { return 0, e.err }
+
+func TestReadTokenStdinReadError(t *testing.T) {
+	_, err := ReadToken(errReader{err: errors.New("boom")}, true)
+	if err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestReadTokenLineReadError(t *testing.T) {
+	_, err := ReadToken(errReader{err: errors.New("boom")}, false)
+	if err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestNewTableWriterFormats(t *testing.T) {
+	var buf bytes.Buffer
+	tw := NewTableWriter(&buf)
+	if _, err := tw.Write([]byte("A\tB\nalpha\tbeta\n")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := tw.Flush(); err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	// Two-space gutter between column 1 and column 2.
+	want := "A      B\nalpha  beta\n"
+	if buf.String() != want {
+		t.Errorf("got=%q want %q", buf.String(), want)
+	}
+}
+
 func TestRenderTwoColScalarsThenNested(t *testing.T) {
 	var buf bytes.Buffer
 	m := map[string]any{

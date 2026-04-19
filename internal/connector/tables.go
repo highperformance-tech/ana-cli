@@ -3,7 +3,6 @@ package connector
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -52,7 +51,7 @@ func (c *tablesCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("connector tables: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "SCHEMA\tNAME")
 	for _, t := range typed.Tables {
 		fmt.Fprintf(tw, "%s\t%s\n", t.TableSchema, t.TableName)

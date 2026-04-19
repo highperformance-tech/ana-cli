@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -63,7 +62,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return cli.WriteJSON(stdio.Stdout, payload)
 	}
 
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "NAME\tACTIVE\tENDPOINT\tORG")
 	for _, n := range names {
 		p := cfg.Profiles[n]

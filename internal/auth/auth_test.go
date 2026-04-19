@@ -289,25 +289,6 @@ func TestLoginStdinReadError_LineMode(t *testing.T) {
 	}
 }
 
-func TestLoginNilStdin(t *testing.T) {
-	// readToken rejects nil reader explicitly.
-	if _, err := readToken(nil, false); err == nil {
-		t.Errorf("want error on nil reader")
-	}
-}
-
-func TestReadTokenEmptyEOF(t *testing.T) {
-	// Fully empty stream: Scanner.Scan() returns false with Err()==nil, so
-	// readToken takes the terminal return path.
-	tok, err := readToken(strings.NewReader(""), false)
-	if err != nil {
-		t.Errorf("err=%v", err)
-	}
-	if tok != "" {
-		t.Errorf("tok=%q", tok)
-	}
-}
-
 // --- logout ---
 
 func TestLogoutClearsToken(t *testing.T) {

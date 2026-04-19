@@ -1,11 +1,8 @@
 package profile
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 	"github.com/highperformance-tech/ana-cli/internal/config"
@@ -36,7 +33,7 @@ func (c *addCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	}
 	name := rest[0]
 
-	token, err := readToken(stdio.Stdin, *tokenStdin)
+	token, err := cli.ReadToken(stdio.Stdin, *tokenStdin)
 	if err != nil {
 		return fmt.Errorf("profile add: %w", err)
 	}
@@ -67,30 +64,4 @@ func (c *addCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	}
 	fmt.Fprintf(stdio.Stdout, "saved profile %s to %s\n", name, path)
 	return nil
-}
-
-// readToken matches internal/auth/login.go's token reader: one line by
-// default, full stream with --token-stdin. Duplicated here (rather than
-// shared via an imported helper) so internal/profile stays independent of
-// internal/auth — same rule as the other per-verb helpers.
-func readToken(r io.Reader, tokenStdin bool) (string, error) {
-	if r == nil {
-		return "", fmt.Errorf("stdin is nil")
-	}
-	if tokenStdin {
-		b, err := io.ReadAll(r)
-		if err != nil {
-			return "", fmt.Errorf("read stdin: %w", err)
-		}
-		return strings.TrimSpace(string(b)), nil
-	}
-	scan := bufio.NewScanner(r)
-	scan.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	if scan.Scan() {
-		return strings.TrimSpace(scan.Text()), nil
-	}
-	if err := scan.Err(); err != nil {
-		return "", fmt.Errorf("read stdin: %w", err)
-	}
-	return "", nil
 }

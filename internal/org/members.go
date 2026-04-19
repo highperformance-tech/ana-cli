@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -68,7 +67,7 @@ func (c *membersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org members list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tEMAIL\tROLE")
 	for _, m := range typed.Members {
 		role := m.Role

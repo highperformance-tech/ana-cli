@@ -3,7 +3,6 @@ package chat
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -46,7 +45,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("chat list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tTITLE\tUPDATED")
 	for _, ch := range typed.Chats {
 		fmt.Fprintf(tw, "%s\t%s\t%s\n", ch.ID, ch.Summary, ch.UpdatedAt)

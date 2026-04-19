@@ -3,7 +3,6 @@ package playbook
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -76,7 +75,7 @@ func (c *lineageCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 		fmt.Fprintln(stdio.Stdout, "(no lineage edges)")
 		return nil
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "FROM\tTO\tTYPE")
 	for _, e := range edges {
 		from := e.From

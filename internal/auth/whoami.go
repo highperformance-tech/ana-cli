@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -127,7 +126,7 @@ func (c *whoamiCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("auth whoami: response missing member.emailAddress")
 	}
 
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	// Keys mirror the `org show` aesthetic: camelCase wire names where they
 	// exist (orgId), human-friendly shortenings where brevity helps
 	// (organization, not organizationName).

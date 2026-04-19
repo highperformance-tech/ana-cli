@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -63,7 +62,7 @@ func (c *foldersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 	sort.Slice(typed.Folders, func(i, j int) bool {
 		return typed.Folders[i].Name < typed.Folders[j].Name
 	})
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME")
 	for _, f := range typed.Folders {
 		fmt.Fprintf(tw, "%s\t%s\n", f.ID, f.Name)

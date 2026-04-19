@@ -1,11 +1,8 @@
 package auth
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -38,7 +35,7 @@ func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return err
 	}
 
-	token, err := readToken(stdio.Stdin, *tokenStdin)
+	token, err := cli.ReadToken(stdio.Stdin, *tokenStdin)
 	if err != nil {
 		return fmt.Errorf("auth login: %w", err)
 	}
@@ -68,35 +65,6 @@ func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	}
 	fmt.Fprintf(stdio.Stdout, "saved to %s\n", path)
 	return nil
-}
-
-// readToken consumes stdin and returns a trimmed token. With tokenStdin=true
-// the whole stream is consumed; otherwise a single newline-terminated line is
-// read. Whitespace is trimmed in both modes so common pipe quirks (trailing
-// newline from `echo`) don't poison the saved value.
-func readToken(r io.Reader, tokenStdin bool) (string, error) {
-	if r == nil {
-		return "", fmt.Errorf("stdin is nil")
-	}
-	if tokenStdin {
-		b, err := io.ReadAll(r)
-		if err != nil {
-			return "", fmt.Errorf("read stdin: %w", err)
-		}
-		return strings.TrimSpace(string(b)), nil
-	}
-	// Line-oriented path: bufio.Scanner handles the common interactive and
-	// piped-single-line cases identically. We ignore io.EOF without a line.
-	scan := bufio.NewScanner(r)
-	// Boost the buffer so unusually long tokens (JWTs etc.) fit in one line.
-	scan.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	if scan.Scan() {
-		return strings.TrimSpace(scan.Text()), nil
-	}
-	if err := scan.Err(); err != nil {
-		return "", fmt.Errorf("read stdin: %w", err)
-	}
-	return "", nil
 }
 
 // pickEndpoint applies the precedence rule global > loaded > default.

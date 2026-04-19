@@ -3,7 +3,6 @@ package profile
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 	"github.com/highperformance-tech/ana-cli/internal/config"
@@ -63,7 +62,7 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		})
 	}
 
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintf(tw, "name\t%s\n", name)
 	fmt.Fprintf(tw, "active\t%t\n", name == cfg.Active)
 	fmt.Fprintf(tw, "endpoint\t%s\n", p.Endpoint)

@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -62,7 +61,7 @@ func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("auth service-accounts list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME\tDESCRIPTION")
 	for _, sa := range typed.ServiceAccounts {
 		desc := sa.Description
