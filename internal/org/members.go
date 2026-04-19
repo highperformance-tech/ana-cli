@@ -44,8 +44,8 @@ type listOrganizationMembersResp struct {
 // raw payload under --json. An empty Role cell renders as "-" so tabwriter
 // keeps the column aligned for old accounts without a role.
 func (c *membersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("org members list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("org members list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	var orgResp struct {
@@ -62,10 +62,10 @@ func (c *membersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 		return fmt.Errorf("org members list: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listOrganizationMembersResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org members list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)

@@ -42,8 +42,8 @@ type listPermissionsResp struct {
 // or the raw JSON payload under --json. A row missing both resource and
 // action falls back to "-" so the column stays aligned.
 func (c *permissionsListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("org permissions list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("org permissions list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	var raw map[string]any
@@ -51,10 +51,10 @@ func (c *permissionsListCmd) Run(ctx context.Context, args []string, stdio cli.I
 		return fmt.Errorf("org permissions list: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listPermissionsResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org permissions list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)

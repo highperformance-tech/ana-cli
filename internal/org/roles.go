@@ -41,8 +41,8 @@ type listRolesResp struct {
 // Run issues ListRoles with an empty body and renders a two-column table or
 // the raw JSON payload under --json.
 func (c *rolesListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("org roles list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("org roles list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	var raw map[string]any
@@ -50,10 +50,10 @@ func (c *rolesListCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 		return fmt.Errorf("org roles list: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listRolesResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org roles list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
