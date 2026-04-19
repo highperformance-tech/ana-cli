@@ -38,8 +38,8 @@ type listOrganizationsResp struct {
 // or the raw payload under --json. The --json branch preserves server order
 // since callers piping JSON may rely on it.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("org list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("org list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	var raw map[string]any
@@ -47,10 +47,10 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("org list: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listOrganizationsResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org list: decode response: %w", err)
 	}
 	// Case-insensitive sort so "acme" and "Acme Inc" order intuitively instead
