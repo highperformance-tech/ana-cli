@@ -46,8 +46,8 @@ type listServiceAccountsResp struct {
 // Description in the response isn't always populated; we fall back to the
 // auto-generated email so the third column isn't blank in practice.
 func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth service-accounts list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("auth service-accounts list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	global := cli.GlobalFrom(ctx)
@@ -56,10 +56,10 @@ func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("auth service-accounts list: %w", translateErr(err))
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listServiceAccountsResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("auth service-accounts list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
@@ -102,14 +102,14 @@ type createServiceAccountResp struct {
 // minimal human-readable confirmation. The task spec says "print
 // {serviceAccountId, name}" — the server returns memberId for that role.
 func (c *saCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth service-accounts create")
+	fs := cli.NewFlagSet("auth service-accounts create")
 	name := fs.String("name", "", "human-readable name (required)")
 	desc := fs.String("description", "", "optional description")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if *name == "" {
-		return usageErrf("auth service-accounts create: --name is required")
+		return cli.UsageErrf("auth service-accounts create: --name is required")
 	}
 	req := createServiceAccountReq{Name: *name, Description: *desc}
 	var resp createServiceAccountResp
@@ -146,14 +146,19 @@ type deleteServiceAccountReq struct {
 }
 
 func (c *saDeleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth service-accounts delete")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("auth service-accounts delete")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	if fs.NArg() != 1 {
-		return usageErrf("auth service-accounts delete: <id> positional argument required")
+	// Delete is destructive and cascades to key revocation; reject trailing
+	// positionals so a typo can't execute against an unintended target.
+	if fs.NArg() > 1 {
+		return cli.UsageErrf("auth service-accounts delete: exactly one <id> positional argument required")
 	}
-	id := fs.Arg(0)
+	id, err := cli.RequireStringID("auth service-accounts delete", fs.Args())
+	if err != nil {
+		return err
+	}
 	req := deleteServiceAccountReq{MemberID: id}
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/DeleteServiceAccount", req, nil); err != nil {
 		return fmt.Errorf("auth service-accounts delete: %w", translateErr(err))

@@ -9,6 +9,5 @@ The `ana auth` verb tree: `login`, `logout`, `whoami`, plus nested `keys` and `s
 - `whoami.go` — calls `PublicAuthService.GetMember` + resolves the active org; help text notes the org-scoping caveat.
 - `keys.go` — nested group: `ana auth keys create/rotate/revoke/list`. `CreateApiKey` returns the plaintext once as `apiKeyHash`; the command prints it and exits.
 - `service_accounts.go` — nested group: `ana auth service-accounts create/delete/list`.
-- `flags.go` — shared flag registration helpers for the subcommands.
 - `errors.go` — `ErrNotLoggedIn` (`cli.ExitCode` maps to 2), plus the `Error`/`Unwrap`/`IsAuthError` helpers.
 - `auth_test.go` — covers every subcommand end-to-end with fake `Deps` closures against a `t.TempDir` config.

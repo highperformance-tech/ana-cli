@@ -20,12 +20,12 @@ func (c *logoutCmd) Help() string {
 
 // Run loads the config, zeroes the token, and saves.
 func (c *logoutCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth logout")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("auth logout")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if fs.NArg() != 0 {
-		return usageErrf("auth logout: unexpected arguments")
+		return cli.UsageErrf("auth logout: unexpected arguments")
 	}
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {

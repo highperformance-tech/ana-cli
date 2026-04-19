@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"text/tabwriter"
 
@@ -49,8 +48,8 @@ type listApiKeysResp struct {
 // ID/NAME/LAST USED table. LastUsedAt is not always present in the captured
 // payload; empty strings render as "-" to keep the column aligned.
 func (c *keysListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth keys list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("auth keys list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	global := cli.GlobalFrom(ctx)
@@ -59,11 +58,11 @@ func (c *keysListCmd) Run(ctx context.Context, args []string, stdio cli.IO) erro
 		return fmt.Errorf("auth keys list: %w", translateErr(err))
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	// Narrow the map back into our typed shape for table rendering.
 	var typed listApiKeysResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("auth keys list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
@@ -113,14 +112,14 @@ type createApiKeyResp struct {
 // Run parses flags, asserts --name, issues the RPC, and prints the plaintext
 // token to stdout with a stderr reminder that it's one-shot.
 func (c *keysCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth keys create")
+	fs := cli.NewFlagSet("auth keys create")
 	name := fs.String("name", "", "human-readable name (required)")
 	sa := fs.String("service-account", "", "optional service account member id")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if *name == "" {
-		return usageErrf("auth keys create: --name is required")
+		return cli.UsageErrf("auth keys create: --name is required")
 	}
 
 	req := createApiKeyReq{Name: *name, ServiceAccountID: *sa}
@@ -149,14 +148,21 @@ type rotateApiKeyReq struct {
 // Run requires exactly one positional (the key id). Response re-uses the same
 // shape as create so we reuse createApiKeyResp for decoding.
 func (c *keysRotateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth keys rotate")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("auth keys rotate")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	if fs.NArg() != 1 {
-		return usageErrf("auth keys rotate: <id> positional argument required")
+	// Reject extra trailing positionals explicitly: cli.RequireStringID only
+	// inspects args[0], so without this guard `keys rotate id extra` would
+	// silently accept and rotate `id`, masking a typo.
+	if fs.NArg() > 1 {
+		return cli.UsageErrf("auth keys rotate: exactly one <id> positional argument required")
 	}
-	req := rotateApiKeyReq{APIKeyID: fs.Arg(0)}
+	id, err := cli.RequireStringID("auth keys rotate", fs.Args())
+	if err != nil {
+		return err
+	}
+	req := rotateApiKeyReq{APIKeyID: id}
 	var resp createApiKeyResp
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/RotateApiKey", req, &resp); err != nil {
 		return fmt.Errorf("auth keys rotate: %w", translateErr(err))
@@ -180,14 +186,19 @@ type revokeApiKeyReq struct {
 }
 
 func (c *keysRevokeCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth keys revoke")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("auth keys revoke")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	if fs.NArg() != 1 {
-		return usageErrf("auth keys revoke: <id> positional argument required")
+	// Revoke is destructive; extra positionals almost certainly indicate a
+	// user typo. Reject rather than silently targeting only args[0].
+	if fs.NArg() > 1 {
+		return cli.UsageErrf("auth keys revoke: exactly one <id> positional argument required")
 	}
-	id := fs.Arg(0)
+	id, err := cli.RequireStringID("auth keys revoke", fs.Args())
+	if err != nil {
+		return err
+	}
 	req := revokeApiKeyReq{APIKeyID: id}
 	// Response body is `{success: true}` — we don't need it; pass nil to
 	// signal "decode nothing" to the transport layer.
@@ -196,28 +207,4 @@ func (c *keysRevokeCmd) Run(ctx context.Context, args []string, stdio cli.IO) er
 	}
 	fmt.Fprintf(stdio.Stdout, "revoked %s\n", id)
 	return nil
-}
-
-// writeJSON indents a value to w using the stdlib encoder. Centralised so
-// every --json branch formats identically (2-space indent, trailing newline).
-func writeJSON(w interface {
-	Write(p []byte) (int, error)
-}, v any) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(v); err != nil {
-		return fmt.Errorf("encode response: %w", err)
-	}
-	return nil
-}
-
-// remarshal decodes src (usually a generic map from a first pass) into dst.
-// Used so commands can have both a typed path (for table rendering) and a
-// raw --json path without two separate RPC calls.
-func remarshal(src, dst any) error {
-	b, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, dst)
 }

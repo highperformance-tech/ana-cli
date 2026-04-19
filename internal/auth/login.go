@@ -32,9 +32,9 @@ func (c *loginCmd) Help() string {
 // Run reads a token from stdio.Stdin, merges endpoint precedence, and saves
 // via deps.SaveCfg. On success it prints `saved to <path>` to stdout.
 func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth login")
+	fs := cli.NewFlagSet("auth login")
 	tokenStdin := fs.Bool("token-stdin", false, "read entire stdin as the token (trimmed)")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 
@@ -43,7 +43,7 @@ func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("auth login: %w", err)
 	}
 	if token == "" {
-		return usageErrf("auth login: token is required")
+		return cli.UsageErrf("auth login: token is required")
 	}
 
 	loaded, err := c.deps.LoadCfg()

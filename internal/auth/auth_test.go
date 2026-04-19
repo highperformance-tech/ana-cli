@@ -987,6 +987,23 @@ func TestKeysRotateBadFlag(t *testing.T) {
 	}
 }
 
+// Extra trailing positionals must be rejected: the migration to
+// cli.RequireStringID introduced a regression where args[1:] were silently
+// dropped, so this test pins the strict-arity contract.
+func TestKeysRotateExtraPositional(t *testing.T) {
+	called := 0
+	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { called++; return nil }}
+	cmd := &keysRotateCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if called != 0 {
+		t.Errorf("Unary must not be invoked on arity failure, called=%d", called)
+	}
+}
+
 // --- keys revoke ---
 
 func TestKeysRevokeHappy(t *testing.T) {
@@ -1031,6 +1048,20 @@ func TestKeysRevokeBadFlag(t *testing.T) {
 	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+}
+
+func TestKeysRevokeExtraPositional(t *testing.T) {
+	called := 0
+	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { called++; return nil }}
+	cmd := &keysRevokeCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if called != 0 {
+		t.Errorf("Unary must not be invoked on arity failure, called=%d", called)
 	}
 }
 
@@ -1244,7 +1275,21 @@ func TestSADeleteBadFlag(t *testing.T) {
 	}
 }
 
-// --- translateErr + writeJSON + remarshal direct tests ---
+func TestSADeleteExtraPositional(t *testing.T) {
+	called := 0
+	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { called++; return nil }}
+	cmd := &saDeleteCmd{deps: f.deps()}
+	stdio, _, _ := newIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if called != 0 {
+		t.Errorf("Unary must not be invoked on arity failure, called=%d", called)
+	}
+}
+
+// --- translateErr direct tests ---
 
 func TestTranslateErrNil(t *testing.T) {
 	if translateErr(nil) != nil {
@@ -1270,20 +1315,5 @@ func TestAuthErrUnwrapAndError(t *testing.T) {
 	}
 	if !wrapped.IsAuthError() {
 		t.Errorf("IsAuthError should return true")
-	}
-}
-
-func TestWriteJSONErr(t *testing.T) {
-	// Pass a value that json.Marshal cannot handle (channel).
-	err := writeJSON(&bytes.Buffer{}, make(chan int))
-	if err == nil {
-		t.Errorf("want error")
-	}
-}
-
-func TestRemarshalMarshalErr(t *testing.T) {
-	// A channel cannot be marshaled.
-	if err := remarshal(make(chan int), &struct{}{}); err == nil {
-		t.Errorf("want error on unsupported source")
 	}
 }

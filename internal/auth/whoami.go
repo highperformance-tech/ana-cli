@@ -54,8 +54,8 @@ type getOrganizationResp struct {
 // parallel, then prints either the tabwriter summary or a wrapper object
 // containing both raw responses under --json.
 func (c *whoamiCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("auth whoami")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("auth whoami")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	cfg, err := c.deps.LoadCfg()
@@ -106,21 +106,21 @@ func (c *whoamiCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		// Wrap both raw maps so neither response is lost. This matches the
 		// "preserve what the server sent" contract the other --json paths
 		// follow (writeJSON uses the same 2-space indent).
-		return writeJSON(stdio.Stdout, map[string]any{
+		return cli.WriteJSON(stdio.Stdout, map[string]any{
 			"member":       memberRaw,
 			"organization": orgRaw,
 		})
 	}
 
 	var member getMemberResp
-	if err := remarshal(memberRaw, &member); err != nil {
+	if err := cli.Remarshal(memberRaw, &member); err != nil {
 		return fmt.Errorf("auth whoami: decode response: %w", err)
 	}
 	// Org is decoded lazily — a missing organizationName is tolerated (org is
 	// secondary to the "who am I" identity claim), but a missing email still
 	// errors because it's the primary assertion of this command.
 	var org getOrganizationResp
-	if err := remarshal(orgRaw, &org); err != nil {
+	if err := cli.Remarshal(orgRaw, &org); err != nil {
 		return fmt.Errorf("auth whoami: decode response: %w", err)
 	}
 	if member.Member.EmailAddress == "" {
