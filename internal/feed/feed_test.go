@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -347,41 +346,6 @@ func TestStatsJSONEncodeErr(t *testing.T) {
 }
 
 // --- helpers ---
-
-func TestWriteJSONErr(t *testing.T) {
-	if err := writeJSON(io.Discard, make(chan int)); err == nil {
-		t.Errorf("want error on unsupported value")
-	}
-}
-
-func TestWriteJSONOK(t *testing.T) {
-	var buf bytes.Buffer
-	if err := writeJSON(&buf, map[string]string{"k": "v"}); err != nil {
-		t.Errorf("err=%v", err)
-	}
-	if !strings.Contains(buf.String(), "\"k\"") {
-		t.Errorf("out=%q", buf.String())
-	}
-}
-
-func TestRemarshalMarshalErr(t *testing.T) {
-	if err := remarshal(make(chan int), &struct{}{}); err == nil {
-		t.Errorf("want error on unsupported source")
-	}
-}
-
-func TestRemarshalOK(t *testing.T) {
-	src := map[string]any{"x": 1}
-	var dst struct {
-		X int `json:"x"`
-	}
-	if err := remarshal(src, &dst); err != nil {
-		t.Errorf("err=%v", err)
-	}
-	if dst.X != 1 {
-		t.Errorf("dst=%+v", dst)
-	}
-}
 
 func TestJoinOrDash(t *testing.T) {
 	if got := joinOrDash(nil); got != "-" {

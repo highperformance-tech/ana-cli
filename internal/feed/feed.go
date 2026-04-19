@@ -6,10 +6,6 @@ package feed
 
 import (
 	"context"
-	"encoding/json"
-	"flag"
-	"fmt"
-	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -31,36 +27,4 @@ func New(deps Deps) *cli.Group {
 			"stats": &statsCmd{deps: deps},
 		},
 	}
-}
-
-// newFlagSet returns a FlagSet with ContinueOnError + silenced output.
-func newFlagSet(name string) *flag.FlagSet {
-	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-	return fs
-}
-
-// parseFlags delegates to cli.ParseFlags so positional args can be
-// interleaved with flags without silently dropping trailing flags.
-func parseFlags(fs *flag.FlagSet, args []string) error {
-	return cli.ParseFlags(fs, args)
-}
-
-// writeJSON indents a value to w with the 2-space convention.
-func writeJSON(w io.Writer, v any) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(v); err != nil {
-		return fmt.Errorf("encode response: %w", err)
-	}
-	return nil
-}
-
-// remarshal round-trips src through JSON into dst.
-func remarshal(src, dst any) error {
-	b, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, dst)
 }
