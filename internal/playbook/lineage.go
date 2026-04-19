@@ -46,11 +46,11 @@ type lineageResp struct {
 }
 
 func (c *lineageCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("playbook lineage")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("playbook lineage")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("playbook lineage", fs.Args())
+	id, err := cli.RequireStringID("playbook lineage", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -59,10 +59,10 @@ func (c *lineageCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 		return fmt.Errorf("playbook lineage: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed lineageResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("playbook lineage: decode response: %w", err)
 	}
 	edges := typed.Edges
