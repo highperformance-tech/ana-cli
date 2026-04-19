@@ -29,14 +29,14 @@ type tablesResp struct {
 }
 
 func (c *tablesCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("connector tables")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("connector tables")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
-		return usageErrf("connector tables: <id> positional argument required")
+		return cli.UsageErrf("connector tables: <id> positional argument required")
 	}
-	id, err := atoiID("connector tables", fs.Arg(0))
+	id, err := cli.RequireIntID("connector tables", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -46,10 +46,10 @@ func (c *tablesCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("connector tables: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed tablesResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("connector tables: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)

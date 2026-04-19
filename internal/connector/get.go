@@ -3,8 +3,6 @@ package connector
 import (
 	"context"
 	"fmt"
-	"sort"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -25,14 +23,14 @@ type getReq struct {
 }
 
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("connector get")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("connector get")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
-		return usageErrf("connector get: <id> positional argument required")
+		return cli.UsageErrf("connector get: <id> positional argument required")
 	}
-	id, err := atoiID("connector get", fs.Arg(0))
+	id, err := cli.RequireIntID("connector get", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -42,49 +40,13 @@ func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("connector get: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	conn, _ := raw["connector"].(map[string]any)
 	if conn == nil {
 		// Fall back to raw dump rather than render an empty table; still use
-		// writeJSON so callers can diagnose unexpected shapes.
-		return writeJSON(stdio.Stdout, raw)
+		// cli.WriteJSON so callers can diagnose unexpected shapes.
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
-	return renderTwoCol(stdio.Stdout, conn)
-}
-
-// renderTwoCol prints top-level scalar fields then any nested map fields
-// (e.g. postgresMetadata) as an indented sub-block. Keys are sorted so the
-// output is stable across runs for snapshot-style tests.
-func renderTwoCol(w interface {
-	Write(p []byte) (int, error)
-}, m map[string]any) error {
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	scalarKeys := make([]string, 0, len(m))
-	nestedKeys := make([]string, 0)
-	for k, v := range m {
-		if _, ok := v.(map[string]any); ok {
-			nestedKeys = append(nestedKeys, k)
-			continue
-		}
-		scalarKeys = append(scalarKeys, k)
-	}
-	sort.Strings(scalarKeys)
-	sort.Strings(nestedKeys)
-	for _, k := range scalarKeys {
-		fmt.Fprintf(tw, "%s:\t%v\n", k, m[k])
-	}
-	for _, k := range nestedKeys {
-		fmt.Fprintf(tw, "%s:\t\n", k)
-		sub := m[k].(map[string]any)
-		subKeys := make([]string, 0, len(sub))
-		for sk := range sub {
-			subKeys = append(subKeys, sk)
-		}
-		sort.Strings(subKeys)
-		for _, sk := range subKeys {
-			fmt.Fprintf(tw, "  %s:\t%v\n", sk, sub[sk])
-		}
-	}
-	return tw.Flush()
+	return cli.RenderTwoCol(stdio.Stdout, conn)
 }

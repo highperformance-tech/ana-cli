@@ -56,11 +56,6 @@ type errReader struct{ err error }
 
 func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 
-// failingWriter trips writeJSON's encoder error path.
-type failingWriter struct{}
-
-func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("w boom") }
-
 // --- New / Group surface ---
 
 func TestNewReturnsGroupWithExpectedChildren(t *testing.T) {
@@ -309,14 +304,6 @@ func TestGetBadFlag(t *testing.T) {
 	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
-	}
-}
-
-// renderTwoCol's tabwriter.Flush error path: ensure failingWriter triggers err.
-func TestRenderTwoColWriteErr(t *testing.T) {
-	err := renderTwoCol(failingWriter{}, map[string]any{"a": 1, "b": map[string]any{"x": 1}})
-	if err == nil {
-		t.Errorf("want write error")
 	}
 }
 
@@ -1217,33 +1204,8 @@ func TestExamplesRemarshalErr(t *testing.T) {
 
 // --- direct util tests ---
 
-func TestWriteJSONErr(t *testing.T) {
-	// Channel value → Marshal fails inside writeJSON (via encoder).
-	if err := writeJSON(&bytes.Buffer{}, make(chan int)); err == nil {
-		t.Errorf("want encode error")
-	}
-}
-
-func TestRemarshalMarshalErr(t *testing.T) {
-	if err := remarshal(make(chan int), &struct{}{}); err == nil {
-		t.Errorf("want marshal error")
-	}
-}
-
-func TestAtoiIDPaths(t *testing.T) {
-	if _, err := atoiID("x", ""); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("empty: %v", err)
-	}
-	if _, err := atoiID("x", "abc"); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("bad: %v", err)
-	}
-	if v, err := atoiID("x", "12"); err != nil || v != 12 {
-		t.Errorf("good: v=%d err=%v", v, err)
-	}
-}
-
 func TestFlagWasSet(t *testing.T) {
-	fs := newFlagSet("t")
+	fs := cli.NewFlagSet("t")
 	_ = fs.String("a", "", "")
 	_ = fs.String("b", "", "")
 	if err := fs.Parse([]string{"--a", "x"}); err != nil {

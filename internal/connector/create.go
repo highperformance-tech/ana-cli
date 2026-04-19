@@ -55,7 +55,7 @@ type createResp struct {
 }
 
 func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("connector create")
+	fs := cli.NewFlagSet("connector create")
 	typ := fs.String("type", "", "connector type (postgres — required)")
 	name := fs.String("name", "", "connector name (required)")
 	host := fs.String("host", "", "database host (required)")
@@ -65,11 +65,11 @@ func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	passStdin := fs.Bool("password-stdin", false, "read password from the first stdin line")
 	database := fs.String("database", "", "database name (required)")
 	ssl := fs.Bool("ssl", false, "enable SSL/TLS")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if *typ != "postgres" {
-		return usageErrf("connector create: --type must be \"postgres\" (got %q)", *typ)
+		return cli.UsageErrf("connector create: --type must be \"postgres\" (got %q)", *typ)
 	}
 	missing := requiredMissing(map[string]string{
 		"--name":     *name,
@@ -81,7 +81,7 @@ func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		missing = append(missing, "--port")
 	}
 	if len(missing) > 0 {
-		return usageErrf("connector create: missing required flags: %s", strings.Join(missing, ", "))
+		return cli.UsageErrf("connector create: missing required flags: %s", strings.Join(missing, ", "))
 	}
 	resolvedPass, err := resolvePassword(*pass, *passStdin, stdio.Stdin)
 	if err != nil {
@@ -106,10 +106,10 @@ func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("connector create: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed createResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("connector create: decode response: %w", err)
 	}
 	fmt.Fprintf(stdio.Stdout, "connectorId: %d\nname: %s\nconnectorType: %s\n",
@@ -148,10 +148,10 @@ func resolvePassword(passFlag string, stdinFlag bool, r io.Reader) (string, erro
 			return "", fmt.Errorf("read password: %w", err)
 		}
 		// Empty stream is a usage error; the flag explicitly promised a line.
-		return "", usageErrf("--password-stdin set but stdin was empty")
+		return "", cli.UsageErrf("--password-stdin set but stdin was empty")
 	}
 	if passFlag == "" {
-		return "", usageErrf("--password or --password-stdin is required")
+		return "", cli.UsageErrf("--password or --password-stdin is required")
 	}
 	return passFlag, nil
 }

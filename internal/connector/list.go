@@ -30,8 +30,8 @@ type listResp struct {
 // Run issues GetConnectors then either dumps raw JSON or prints a fixed-width
 // ID/NAME/TYPE table.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("connector list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("connector list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	global := cli.GlobalFrom(ctx)
@@ -40,10 +40,10 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("connector list: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("connector list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
