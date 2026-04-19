@@ -149,6 +149,8 @@ func TestRequireIntID(t *testing.T) {
 		{"extra-args-ok", []string{"99", "more"}, false, 99, ""},
 		{"missing", nil, true, 0, "verb: <id> positional argument required"},
 		{"empty-string", []string{""}, true, 0, "verb: <id> positional argument required"},
+		{"whitespace-only", []string{"   "}, true, 0, "verb: <id> positional argument required"},
+		{"tab-only", []string{"\t"}, true, 0, "verb: <id> positional argument required"},
 		{"non-numeric", []string{"abc"}, true, 0, "verb: <id> must be an integer:"},
 		{"trailing-junk", []string{"12x"}, true, 0, "verb: <id> must be an integer:"},
 	}
