@@ -46,11 +46,11 @@ type getResp struct {
 }
 
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("playbook get")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("playbook get")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("playbook get", fs.Args())
+	id, err := cli.RequireStringID("playbook get", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -59,16 +59,16 @@ func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("playbook get: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed getResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("playbook get: decode response: %w", err)
 	}
 	// A missing `playbook` envelope falls through to --json so the user sees
 	// the response shape rather than a block of empty fields.
 	if typed.Playbook.ID == "" {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	p := typed.Playbook
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)

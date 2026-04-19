@@ -36,11 +36,11 @@ type reportsResp struct {
 }
 
 func (c *reportsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("playbook reports")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("playbook reports")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("playbook reports", fs.Args())
+	id, err := cli.RequireStringID("playbook reports", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -49,10 +49,10 @@ func (c *reportsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 		return fmt.Errorf("playbook reports: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed reportsResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("playbook reports: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)

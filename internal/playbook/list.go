@@ -31,8 +31,8 @@ type listResp struct {
 // Empty CronString cells render as "-" so tabwriter keeps the column aligned
 // for playbooks without a schedule.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("playbook list")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("playbook list")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	var raw map[string]any
@@ -40,10 +40,10 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("playbook list: %w", err)
 	}
 	if cli.GlobalFrom(ctx).JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed listResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("playbook list: decode response: %w", err)
 	}
 	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
