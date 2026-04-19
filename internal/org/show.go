@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -46,7 +45,7 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org show: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	// Two-column key/value list. Keys mirror the wire-level camelCase so users
 	// searching docs land on the same identifier.
 	fmt.Fprintf(tw, "organizationName\t%s\n", typed.Organization.OrganizationName)

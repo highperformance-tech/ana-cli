@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"text/tabwriter"
 	"time"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
@@ -95,7 +94,7 @@ func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		}
 		return nil
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "TIME\tACTOR\tACTION\tTARGET")
 	for _, e := range typed.Entries {
 		target := e.ResourceType

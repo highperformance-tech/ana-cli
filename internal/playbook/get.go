@@ -3,7 +3,6 @@ package playbook
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -71,7 +70,7 @@ func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	p := typed.Playbook
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	// Two-column key/value list. Keys mirror the wire-level camelCase so users
 	// searching docs land on the same identifier.
 	fmt.Fprintf(tw, "id\t%s\n", p.ID)

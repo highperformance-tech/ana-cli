@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -58,7 +57,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	sort.SliceStable(typed.Organizations, func(i, j int) bool {
 		return strings.ToLower(typed.Organizations[i].OrganizationName) < strings.ToLower(typed.Organizations[j].OrganizationName)
 	})
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "NAME\tORG ID\tDEFAULT CONNECTOR")
 	for _, o := range typed.Organizations {
 		var conn string

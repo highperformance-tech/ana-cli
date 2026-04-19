@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -57,7 +56,7 @@ func (c *permissionsListCmd) Run(ctx context.Context, args []string, stdio cli.I
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org permissions list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME")
 	for _, p := range typed.Permissions {
 		name := permissionName(p.Resource, p.Action)

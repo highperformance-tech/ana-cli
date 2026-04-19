@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -81,12 +82,47 @@ func RequireIntID(verb string, args []string) (int, error) {
 	return id, nil
 }
 
+// ReadToken consumes stdin and returns a trimmed token. With tokenStdin=true
+// the whole stream is consumed; otherwise a single newline-terminated line is
+// read. Whitespace is trimmed in both modes so common pipe quirks (trailing
+// newline from `echo`) don't poison the saved value. Centralised here because
+// auth login and profile add share this exact behaviour.
+func ReadToken(r io.Reader, tokenStdin bool) (string, error) {
+	if r == nil {
+		return "", fmt.Errorf("stdin is nil")
+	}
+	if tokenStdin {
+		b, err := io.ReadAll(r)
+		if err != nil {
+			return "", fmt.Errorf("read stdin: %w", err)
+		}
+		return strings.TrimSpace(string(b)), nil
+	}
+	// Boost the buffer so unusually long tokens (JWTs etc.) fit in one line.
+	scan := bufio.NewScanner(r)
+	scan.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	if scan.Scan() {
+		return strings.TrimSpace(scan.Text()), nil
+	}
+	if err := scan.Err(); err != nil {
+		return "", fmt.Errorf("read stdin: %w", err)
+	}
+	return "", nil
+}
+
+// NewTableWriter returns a *tabwriter.Writer configured the way every verb's
+// list/show table wants it: no min-width, no tab-stop, two-space padding.
+// Callers must call Flush() (or defer it) once they finish writing rows.
+func NewTableWriter(w io.Writer) *tabwriter.Writer {
+	return tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+}
+
 // RenderTwoCol prints top-level scalar fields then any nested map fields
 // (e.g. postgresMetadata) as an indented sub-block. Keys are sorted so the
 // output is stable across runs for snapshot-style tests. Output is
 // byte-identical to the pre-refactor connector/get.go::renderTwoCol.
 func RenderTwoCol(w io.Writer, m map[string]any) error {
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	tw := NewTableWriter(w)
 	scalarKeys := make([]string, 0, len(m))
 	nestedKeys := make([]string, 0)
 	for k, v := range m {

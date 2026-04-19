@@ -3,7 +3,6 @@ package dashboard
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -49,7 +48,7 @@ func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if !ok {
 		return cli.WriteJSON(stdio.Stdout, raw)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	for _, k := range []string{"id", "name", "orgId", "creatorId"} {
 		if v, ok := dash[k]; ok {
 			fmt.Fprintf(tw, "%s:\t%v\n", k, v)

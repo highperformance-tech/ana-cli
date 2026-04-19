@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -65,7 +64,7 @@ func (c *keysListCmd) Run(ctx context.Context, args []string, stdio cli.IO) erro
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("auth keys list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME\tLAST USED")
 	for _, k := range typed.APIKeys {
 		last := k.LastUsedAt

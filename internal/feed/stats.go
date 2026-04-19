@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -47,7 +46,7 @@ func (c *statsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("feed stats: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintf(tw, "messagesToday\t%d\n", typed.MessagesToday)
 	fmt.Fprintf(tw, "messagesAllTime\t%d\n", typed.MessagesAllTime)
 	fmt.Fprintf(tw, "activeAgents\t%d\n", typed.ActiveAgents)

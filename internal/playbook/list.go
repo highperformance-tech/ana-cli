@@ -3,7 +3,6 @@ package playbook
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -46,7 +45,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("playbook list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME\tSCHEDULE")
 	for _, p := range typed.Playbooks {
 		sched := p.CronString

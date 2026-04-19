@@ -499,16 +499,6 @@ func TestCreateRemarshalErr(t *testing.T) {
 	}
 }
 
-// sortStrings helper is exercised indirectly by create tests' flag-missing
-// cases; cover directly for sanity.
-func TestSortStrings(t *testing.T) {
-	in := []string{"b", "a", "c"}
-	sortStrings(in)
-	if in[0] != "a" || in[1] != "b" || in[2] != "c" {
-		t.Errorf("%v", in)
-	}
-}
-
 // --- update ---
 
 func TestUpdateHappyPartial(t *testing.T) {

@@ -3,7 +3,6 @@ package connector
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -46,7 +45,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("connector list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME\tTYPE")
 	for _, k := range typed.Connectors {
 		fmt.Fprintf(tw, "%d\t%s\t%s\n", k.ID, k.Name, k.ConnectorType)

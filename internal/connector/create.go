@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
@@ -128,7 +129,7 @@ func requiredMissing(pairs map[string]string) []string {
 		}
 	}
 	// Deterministic order for stable test assertions.
-	sortStrings(missing)
+	sort.Strings(missing)
 	return missing
 }
 
@@ -154,16 +155,6 @@ func resolvePassword(passFlag string, stdinFlag bool, r io.Reader) (string, erro
 		return "", cli.UsageErrf("--password or --password-stdin is required")
 	}
 	return passFlag, nil
-}
-
-// sortStrings is strings.Sort-like but avoids importing sort from a utility
-// file where only this tiny helper is needed. Kept private to flags.
-func sortStrings(s []string) {
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && s[j-1] > s[j]; j-- {
-			s[j-1], s[j] = s[j], s[j-1]
-		}
-	}
 }
 
 // flagWasSet reports whether fs saw name as an explicit argument. Used by the

@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -56,7 +55,7 @@ func (c *rolesListCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("org roles list: decode response: %w", err)
 	}
-	tw := tabwriter.NewWriter(stdio.Stdout, 0, 0, 2, ' ', 0)
+	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME")
 	for _, r := range typed.Roles {
 		fmt.Fprintf(tw, "%s\t%s\n", r.ID, r.Name)
