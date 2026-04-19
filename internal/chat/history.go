@@ -69,11 +69,11 @@ func (h historyCell) kindAndContent() (string, string) {
 }
 
 func (c *historyCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat history")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("chat history")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("chat history", fs.Args())
+	id, err := cli.RequireStringID("chat history", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -83,10 +83,10 @@ func (c *historyCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 		return fmt.Errorf("chat history: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed historyResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("chat history: decode response: %w", err)
 	}
 	for _, cell := range typed.Cells {

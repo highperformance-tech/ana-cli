@@ -36,11 +36,11 @@ type showResp struct {
 }
 
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat show")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("chat show")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("chat show", fs.Args())
+	id, err := cli.RequireStringID("chat show", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -50,16 +50,16 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("chat show: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed showResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("chat show: decode response: %w", err)
 	}
 	// A missing `chat` envelope falls through to --json so the user sees the
 	// response shape rather than a block of empty fields.
 	if typed.Chat.ID == "" {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	fmt.Fprintf(stdio.Stdout, "id: %s\n", typed.Chat.ID)
 	fmt.Fprintf(stdio.Stdout, "title: %s\n", typed.Chat.Summary)

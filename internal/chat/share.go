@@ -37,11 +37,11 @@ type shareResp struct {
 }
 
 func (c *shareCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat share")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("chat share")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("chat share", fs.Args())
+	id, err := cli.RequireStringID("chat share", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -56,10 +56,10 @@ func (c *shareCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("chat share: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed shareResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("chat share: decode response: %w", err)
 	}
 	if typed.URL != "" {

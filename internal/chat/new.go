@@ -66,10 +66,10 @@ type newResp struct {
 }
 
 func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat new")
+	fs := cli.NewFlagSet("chat new")
 	connectorsFlag := fs.String("connector", "", "connector id(s), comma-separated (required)")
 	title := fs.String("title", "", "optional chat summary/title")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	ids, err := parseConnectorIDs(*connectorsFlag)
@@ -99,10 +99,10 @@ func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("chat new: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed newResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("chat new: decode response: %w", err)
 	}
 	fmt.Fprintln(stdio.Stdout, typed.Chat.ID)

@@ -29,17 +29,17 @@ func (c *renameCmd) Help() string {
 }
 
 func (c *renameCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat rename")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("chat rename")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	rest := fs.Args()
-	id, err := requirePositionalID("chat rename", rest)
+	id, err := cli.RequireStringID("chat rename", rest)
 	if err != nil {
 		return err
 	}
 	if len(rest) < 2 || rest[1] == "" {
-		return usageErrf("chat rename: <title> positional argument required")
+		return cli.UsageErrf("chat rename: <title> positional argument required")
 	}
 	title := rest[1]
 	global := cli.GlobalFrom(ctx)
@@ -49,7 +49,7 @@ func (c *renameCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("chat rename: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	fmt.Fprintln(stdio.Stdout, "ok")
 	return nil
@@ -96,11 +96,11 @@ func (c *deleteCmd) Help() string {
 }
 
 func (c *deleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat delete")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("chat delete")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("chat delete", fs.Args())
+	id, err := cli.RequireStringID("chat delete", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (c *deleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("chat delete: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	fmt.Fprintf(stdio.Stdout, "deleted %s\n", id)
 	return nil
@@ -133,11 +133,11 @@ type duplicateResp struct {
 }
 
 func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat duplicate")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("chat duplicate")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID("chat duplicate", fs.Args())
+	id, err := cli.RequireStringID("chat duplicate", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -147,10 +147,10 @@ func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 		return fmt.Errorf("chat duplicate: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed duplicateResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("chat duplicate: decode response: %w", err)
 	}
 	fmt.Fprintln(stdio.Stdout, typed.Chat.ID)
@@ -160,11 +160,11 @@ func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 // simpleAck is the bookmark/unbookmark path — positional id, no-body
 // response, prints `ok`. Extracted so the two verbs aren't literal copies.
 func simpleAck(ctx context.Context, args []string, stdio cli.IO, deps Deps, verb, suffix string) error {
-	fs := newFlagSet(verb)
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet(verb)
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	id, err := requirePositionalID(verb, fs.Args())
+	id, err := cli.RequireStringID(verb, fs.Args())
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func simpleAck(ctx context.Context, args []string, stdio cli.IO, deps Deps, verb
 		return fmt.Errorf("%s: %w", verb, err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	fmt.Fprintln(stdio.Stdout, "ok")
 	return nil

@@ -98,17 +98,17 @@ func (f streamFrame) frameContent() string {
 func resolveMessage(positional string, messageFile string, stdin io.Reader) (string, error) {
 	switch {
 	case messageFile != "" && positional != "":
-		return "", usageErrf("chat send: cannot combine positional <message> and --message-file")
+		return "", cli.UsageErrf("chat send: cannot combine positional <message> and --message-file")
 	case messageFile == "-":
 		if stdin == nil {
-			return "", usageErrf("chat send: --message-file - requires stdin")
+			return "", cli.UsageErrf("chat send: --message-file - requires stdin")
 		}
 		b, err := io.ReadAll(stdin)
 		if err != nil {
 			return "", fmt.Errorf("chat send: read stdin: %w", err)
 		}
 		if len(b) == 0 {
-			return "", usageErrf("chat send: --message-file - read empty input")
+			return "", cli.UsageErrf("chat send: --message-file - read empty input")
 		}
 		return string(b), nil
 	case messageFile != "":
@@ -120,19 +120,19 @@ func resolveMessage(positional string, messageFile string, stdin io.Reader) (str
 	case positional != "":
 		return positional, nil
 	default:
-		return "", usageErrf("chat send: <message> or --message-file required")
+		return "", cli.UsageErrf("chat send: <message> or --message-file required")
 	}
 }
 
 func (c *sendCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("chat send")
+	fs := cli.NewFlagSet("chat send")
 	messageFile := fs.String("message-file", "", "read message from PATH (or - for stdin)")
 	waitAll := fs.Bool("wait-all", false, "wait for ALL cells to reach LIFECYCLE_EXECUTED (default: just ours)")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	rest := fs.Args()
-	id, err := requirePositionalID("chat send", rest)
+	id, err := cli.RequireStringID("chat send", rest)
 	if err != nil {
 		return err
 	}

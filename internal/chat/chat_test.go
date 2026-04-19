@@ -190,53 +190,6 @@ func TestFirstLine(t *testing.T) {
 	}
 }
 
-func TestRequirePositionalID(t *testing.T) {
-	if _, err := requirePositionalID("v", nil); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("nil should be usage: %v", err)
-	}
-	if _, err := requirePositionalID("v", []string{""}); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("empty should be usage: %v", err)
-	}
-	if id, err := requirePositionalID("v", []string{"abc"}); err != nil || id != "abc" {
-		t.Errorf("got id=%q err=%v", id, err)
-	}
-}
-
-type failWriter struct{}
-
-func (failWriter) Write([]byte) (int, error) { return 0, errors.New("boom") }
-
-func TestWriteJSONMarshalErr(t *testing.T) {
-	// chan values cannot be marshaled — covers the encoder error branch.
-	if err := writeJSON(&bytes.Buffer{}, make(chan int)); err == nil {
-		t.Errorf("want error")
-	}
-}
-
-func TestRemarshalMarshalErr(t *testing.T) {
-	if err := remarshal(make(chan int), &struct{}{}); err == nil {
-		t.Errorf("want error")
-	}
-}
-
-func TestUsageErrf(t *testing.T) {
-	err := usageErrf("hello %s", "world")
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("expected usage err: %v", err)
-	}
-	if !strings.Contains(err.Error(), "hello world") {
-		t.Errorf("msg missing: %v", err)
-	}
-}
-
-func TestNewFlagSetParseErrWrapsUsage(t *testing.T) {
-	fs := newFlagSet("t")
-	err := parseFlags(fs, []string{"--nope"})
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("want usage err: %v", err)
-	}
-}
-
 // --- new ------------------------------------------------------------------
 
 func TestNewHappy(t *testing.T) {
@@ -1397,10 +1350,6 @@ func TestShareRemarshalErr(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 }
-
-// Silences failWriter unused warning when all-JSON tests run; the helper is
-// kept even if unused to mirror the connector_test convention.
-var _ io.Writer = failWriter{}
 
 // TestFrameContentAllVariants exercises every branch of frameContent. The send
 // renderer picks md > py > status > summary > playbook; we construct a frame
