@@ -71,7 +71,7 @@ func RequireStringID(verb string, args []string) (string, error) {
 // Behaviour matches the pre-refactor connector.atoiID with the addition of
 // the args-slice indirection.
 func RequireIntID(verb string, args []string) (int, error) {
-	if len(args) == 0 || args[0] == "" {
+	if len(args) == 0 || strings.TrimSpace(args[0]) == "" {
 		return 0, UsageErrf("%s: <id> positional argument required", verb)
 	}
 	id, err := strconv.Atoi(args[0])
