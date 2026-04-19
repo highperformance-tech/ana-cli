@@ -39,14 +39,14 @@ type testResp struct {
 }
 
 func (c *testCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("connector test")
-	if err := parseFlags(fs, args); err != nil {
+	fs := cli.NewFlagSet("connector test")
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
-		return usageErrf("connector test: <id> positional argument required")
+		return cli.UsageErrf("connector test: <id> positional argument required")
 	}
-	id, err := atoiID("connector test", fs.Arg(0))
+	id, err := cli.RequireIntID("connector test", fs.Args())
 	if err != nil {
 		return err
 	}
@@ -56,10 +56,10 @@ func (c *testCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("connector test: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	var typed testResp
-	if err := remarshal(raw, &typed); err != nil {
+	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("connector test: decode response: %w", err)
 	}
 	if typed.Error != "" {

@@ -37,7 +37,7 @@ type getConnectorResp struct {
 }
 
 func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := newFlagSet("connector update")
+	fs := cli.NewFlagSet("connector update")
 	typ := fs.String("type", "", "connector type (postgres)")
 	name := fs.String("name", "", "new name")
 	host := fs.String("host", "", "new host")
@@ -47,19 +47,19 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	passStdin := fs.Bool("password-stdin", false, "read new password from stdin")
 	database := fs.String("database", "", "new database")
 	ssl := fs.Bool("ssl", false, "enable SSL/TLS")
-	if err := parseFlags(fs, args); err != nil {
+	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
-		return usageErrf("connector update: <id> positional argument required")
+		return cli.UsageErrf("connector update: <id> positional argument required")
 	}
-	id, err := atoiID("connector update", fs.Arg(0))
+	id, err := cli.RequireIntID("connector update", fs.Args())
 	if err != nil {
 		return err
 	}
 
 	if flagWasSet(fs, "type") && *typ != "postgres" {
-		return usageErrf("connector update: --type must be \"postgres\" (got %q)", *typ)
+		return cli.UsageErrf("connector update: --type must be \"postgres\" (got %q)", *typ)
 	}
 
 	// Track which dialect-level flags the user explicitly set; those override
@@ -70,7 +70,7 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		flagWasSet(fs, "password-stdin")
 
 	if !flagWasSet(fs, "name") && !flagWasSet(fs, "type") && !dialectTouched {
-		return usageErrf("connector update: at least one field flag is required")
+		return cli.UsageErrf("connector update: at least one field flag is required")
 	}
 
 	// The server rejects partial updates: if connectorType is POSTGRES the
@@ -129,10 +129,10 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("connector update: %w", err)
 	}
 	if global.JSON {
-		return writeJSON(stdio.Stdout, raw)
+		return cli.WriteJSON(stdio.Stdout, raw)
 	}
 	if conn, ok := raw["connector"].(map[string]any); ok {
-		return renderTwoCol(stdio.Stdout, conn)
+		return cli.RenderTwoCol(stdio.Stdout, conn)
 	}
-	return writeJSON(stdio.Stdout, raw)
+	return cli.WriteJSON(stdio.Stdout, raw)
 }
