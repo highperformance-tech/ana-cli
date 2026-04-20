@@ -15,7 +15,7 @@
       "requestBody": {
         "config": {
           "connectorType": "POSTGRES",
-          "name": "slug-7",
+          "name": "slug-5",
           "postgres": {
             "host": "127.0.0.1",
             "port": 5432,
@@ -30,7 +30,7 @@
       "status": 200,
       "responseBody": {
         "connectorId": 6445,
-        "name": "slug-7",
+        "name": "slug-5",
         "connectorType": "POSTGRES"
       },
       "inferredRequestSchema": {

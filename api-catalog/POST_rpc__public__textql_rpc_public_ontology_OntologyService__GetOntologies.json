@@ -215,7 +215,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000203",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-10",
+                "name": "slug-8",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -226,7 +226,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000204",
                 "objectId": "00000000-0000-0000-0000-000000000197",
-                "name": "slug-11",
+                "name": "slug-9",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isDimension": true,
                 "data": {
@@ -238,7 +238,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000202",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-12",
+                "name": "slug-10",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -249,7 +249,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000205",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-13",
+                "name": "slug-11",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -260,7 +260,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000206",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-14",
+                "name": "slug-12",
                 "description": "Order status",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "isDimension": true,
@@ -273,7 +273,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000207",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-15",
+                "name": "slug-13",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -284,7 +284,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000208",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-16",
+                "name": "slug-14",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -295,7 +295,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000209",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-17",
+                "name": "slug-15",
                 "description": "Order total price",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -308,7 +308,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000210",
                 "objectId": "00000000-0000-0000-0000-000000000195",
-                "name": "slug-18",
+                "name": "slug-16",
                 "description": "Region name",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "isDimension": true,
@@ -321,7 +321,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000211",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-19",
+                "name": "slug-17",
                 "description": "Line item quantity",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -334,7 +334,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000212",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-20",
+                "name": "slug-18",
                 "description": "Order date",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
                 "isDimension": true,
@@ -347,7 +347,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000213",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-21",
+                "name": "slug-19",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -358,7 +358,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000214",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-22",
+                "name": "slug-20",
                 "description": "Line status",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "isDimension": true,
@@ -371,7 +371,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000190",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-23",
+                "name": "slug-21",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -382,7 +382,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000215",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-24",
+                "name": "slug-22",
                 "description": "Discount amount",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -395,7 +395,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000216",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-25",
+                "name": "slug-23",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -406,7 +406,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000217",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-26",
+                "name": "slug-24",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -417,7 +417,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000218",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-27",
+                "name": "slug-25",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -428,7 +428,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000219",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-28",
+                "name": "slug-26",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -439,7 +439,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000198",
                 "objectId": "00000000-0000-0000-0000-000000000197",
-                "name": "slug-29",
+                "name": "slug-27",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -450,7 +450,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000220",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-30",
+                "name": "slug-28",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -461,7 +461,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000221",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-31",
+                "name": "slug-29",
                 "description": "Shipping mode",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "isDimension": true,
@@ -474,7 +474,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000222",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-32",
+                "name": "slug-30",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
                 "data": {
                   "unlinked": {
@@ -485,7 +485,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000223",
                 "objectId": "00000000-0000-0000-0000-000000000193",
-                "name": "slug-33",
+                "name": "slug-31",
                 "description": "Supply cost",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -498,7 +498,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000196",
                 "objectId": "00000000-0000-0000-0000-000000000195",
-                "name": "slug-34",
+                "name": "slug-32",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -509,7 +509,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000224",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-35",
+                "name": "slug-33",
                 "description": "Ship date",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
                 "isDimension": true,
@@ -522,7 +522,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000225",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-36",
+                "name": "slug-34",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -533,7 +533,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000226",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-37",
+                "name": "slug-35",
                 "description": "Tax amount",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -546,7 +546,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000227",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-38",
+                "name": "slug-36",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -557,7 +557,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000192",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-39",
+                "name": "slug-37",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -568,7 +568,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000228",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-40",
+                "name": "slug-38",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -579,7 +579,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000229",
                 "objectId": "00000000-0000-0000-0000-000000000187",
-                "name": "slug-41",
+                "name": "slug-39",
                 "description": "Nation name",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "isDimension": true,
@@ -592,7 +592,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000230",
                 "objectId": "00000000-0000-0000-0000-000000000187",
-                "name": "slug-42",
+                "name": "slug-40",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "data": {
                   "unlinked": {
@@ -603,7 +603,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000231",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-43",
+                "name": "slug-41",
                 "description": "Customer market segment",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "isDimension": true,
@@ -616,7 +616,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000232",
                 "objectId": "00000000-0000-0000-0000-000000000193",
-                "name": "slug-44",
+                "name": "slug-42",
                 "description": "Available quantity",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "isMeasure": true,
@@ -629,7 +629,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000233",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-45",
+                "name": "slug-43",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -640,7 +640,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000234",
                 "objectId": "00000000-0000-0000-0000-000000000193",
-                "name": "slug-46",
+                "name": "slug-44",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -651,7 +651,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000235",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-47",
+                "name": "slug-45",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -662,7 +662,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000236",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-48",
+                "name": "slug-46",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isDimension": true,
                 "data": {
@@ -674,7 +674,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000237",
                 "objectId": "00000000-0000-0000-0000-000000000197",
-                "name": "slug-49",
+                "name": "slug-47",
                 "description": "Supplier account balance",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -687,7 +687,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000238",
                 "objectId": "00000000-0000-0000-0000-000000000187",
-                "name": "slug-50",
+                "name": "slug-48",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -698,7 +698,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000239",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-51",
+                "name": "slug-49",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -709,7 +709,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000240",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-52",
+                "name": "slug-50",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_DATE",
                 "data": {
                   "unlinked": {
@@ -720,7 +720,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000241",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-53",
+                "name": "slug-51",
                 "description": "Return flag",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "isDimension": true,
@@ -733,7 +733,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000242",
                 "objectId": "00000000-0000-0000-0000-000000000195",
-                "name": "slug-54",
+                "name": "slug-52",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -744,7 +744,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000243",
                 "objectId": "00000000-0000-0000-0000-000000000197",
-                "name": "slug-55",
+                "name": "slug-53",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -755,7 +755,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000244",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-56",
+                "name": "slug-54",
                 "description": "Part retail price",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -768,7 +768,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000245",
                 "objectId": "00000000-0000-0000-0000-000000000197",
-                "name": "slug-57",
+                "name": "slug-55",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -779,7 +779,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000246",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-58",
+                "name": "slug-56",
                 "description": "Customer account balance",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -792,7 +792,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000247",
                 "objectId": "00000000-0000-0000-0000-000000000193",
-                "name": "slug-59",
+                "name": "slug-57",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -803,7 +803,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000248",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-60",
+                "name": "slug-58",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -814,7 +814,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000249",
                 "objectId": "00000000-0000-0000-0000-000000000189",
-                "name": "slug-61",
+                "name": "slug-59",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -825,7 +825,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000250",
                 "objectId": "00000000-0000-0000-0000-000000000201",
-                "name": "slug-62",
+                "name": "slug-60",
                 "description": "Extended price",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "isMeasure": true,
@@ -838,7 +838,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000251",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-63",
+                "name": "slug-61",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -849,7 +849,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000252",
                 "objectId": "00000000-0000-0000-0000-000000000197",
-                "name": "slug-64",
+                "name": "slug-62",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -860,7 +860,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000253",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-65",
+                "name": "slug-63",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -871,7 +871,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000194",
                 "objectId": "00000000-0000-0000-0000-000000000193",
-                "name": "slug-66",
+                "name": "slug-64",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -882,7 +882,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000200",
                 "objectId": "00000000-0000-0000-0000-000000000199",
-                "name": "slug-67",
+                "name": "slug-65",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_INT",
                 "data": {
                   "unlinked": {
@@ -893,7 +893,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000254",
                 "objectId": "00000000-0000-0000-0000-000000000191",
-                "name": "slug-68",
+                "name": "slug-66",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {
@@ -904,7 +904,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000188",
                 "objectId": "00000000-0000-0000-0000-000000000187",
-                "name": "slug-69",
+                "name": "slug-67",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_NUMBER",
                 "data": {
                   "unlinked": {
@@ -915,7 +915,7 @@
               {
                 "id": "00000000-0000-0000-0000-000000000255",
                 "objectId": "00000000-0000-0000-0000-000000000197",
-                "name": "slug-70",
+                "name": "slug-68",
                 "type": "ONTOLOGY_ATTRIBUTE_TYPE_STRING",
                 "data": {
                   "unlinked": {

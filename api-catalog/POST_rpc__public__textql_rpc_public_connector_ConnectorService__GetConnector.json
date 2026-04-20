@@ -19,7 +19,7 @@
       "responseBody": {
         "connector": {
           "id": 6445,
-          "name": "slug-8",
+          "name": "slug-6",
           "connectorType": "POSTGRES",
           "memberId": "00000000-0000-0000-0000-000000000003",
           "createdAt": "2026-04-17T15:28:50.108101Z",

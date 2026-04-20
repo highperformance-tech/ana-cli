@@ -30,5 +30,9 @@ e2e-manual-revert-*.md
 CLAUDE.local.md
 .claude/scheduled_tasks.lock
 
+# Anonymizer identity-token table — contains real names we never want in git.
+# See scripts/CLAUDE.md for contents/shape.
+.claude/skills/textql-webapp-probe/scripts/identity_tokens.local.py
+
 # CodeGraph — local-only semantic index
 .codegraph/

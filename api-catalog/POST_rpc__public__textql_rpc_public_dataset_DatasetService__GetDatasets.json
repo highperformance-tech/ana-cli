@@ -506,7 +506,7 @@
           {
             "id": "00000000-0000-0000-0000-000000000138",
             "type": "TYPE_TABULAR",
-            "name": "file-16.parquet",
+            "name": "file-1.parquet",
             "version": 1,
             "owner": {
               "memberId": "00000000-0000-0000-0000-000000000139"
@@ -525,7 +525,7 @@
           {
             "id": "00000000-0000-0000-0000-000000000140",
             "type": "TYPE_TABULAR",
-            "name": "file-17.parquet",
+            "name": "file-2.parquet",
             "version": 1,
             "owner": {
               "memberId": "00000000-0000-0000-0000-000000000139"
