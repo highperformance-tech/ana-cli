@@ -3,7 +3,7 @@ package profile
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -46,7 +46,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	for n := range cfg.Profiles {
 		names = append(names, n)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 
 	if cli.GlobalFrom(ctx).JSON {
 		payload := listPayload{Profiles: make([]listEntry, 0, len(names)), Active: cfg.Active}

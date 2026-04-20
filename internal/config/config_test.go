@@ -4,13 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 	"testing"
 )
+
+// sameConfig reports whether two Config values carry identical Profile maps
+// and Active pointers. Replaces reflect.DeepEqual now that Profile is a
+// string-only struct (so Profile is comparable and maps.Equal suffices).
+func sameConfig(a, b Config) bool {
+	return a.Active == b.Active && maps.Equal(a.Profiles, b.Profiles)
+}
 
 // envMap builds an env lookup function backed by a map.
 func envMap(m map[string]string) func(string) string {
@@ -18,6 +25,7 @@ func envMap(m map[string]string) func(string) string {
 }
 
 func TestDefaultPath_XDG(t *testing.T) {
+	t.Parallel()
 	got, err := DefaultPath(envMap(map[string]string{
 		"XDG_CONFIG_HOME": "/xdg",
 		"HOME":            "/home/u",
@@ -32,6 +40,7 @@ func TestDefaultPath_XDG(t *testing.T) {
 }
 
 func TestDefaultPath_HomeFallback(t *testing.T) {
+	t.Parallel()
 	got, err := DefaultPath(envMap(map[string]string{"HOME": "/home/u"}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -43,6 +52,7 @@ func TestDefaultPath_HomeFallback(t *testing.T) {
 }
 
 func TestDefaultPath_NeitherSet(t *testing.T) {
+	t.Parallel()
 	_, err := DefaultPath(envMap(map[string]string{}))
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -53,6 +63,7 @@ func TestDefaultPath_NeitherSet(t *testing.T) {
 }
 
 func TestLoad_Missing(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "nope.json")
 	cfg, err := Load(path)
 	if err != nil {
@@ -64,6 +75,7 @@ func TestLoad_Missing(t *testing.T) {
 }
 
 func TestLoad_ValidNewShape(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	want := Config{
@@ -84,12 +96,13 @@ func TestLoad_ValidNewShape(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !reflect.DeepEqual(got, want) {
+	if !sameConfig(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 }
 
 func TestLoad_Malformed(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, []byte("{not json"), 0o600); err != nil {
@@ -112,6 +125,7 @@ func TestLoad_Malformed(t *testing.T) {
 // Load: top-level object parses (so the probe succeeds and "profiles" key is
 // present), but the Profiles value itself is the wrong type.
 func TestLoad_MalformedProfilesBody(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	// "profiles" is a string, not an object — second Unmarshal will fail.
@@ -128,6 +142,7 @@ func TestLoad_MalformedProfilesBody(t *testing.T) {
 // top-level object parses and has an "endpoint" key, but its value is not a
 // string.
 func TestLoad_MalformedLegacyBody(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, []byte(`{"endpoint":123}`), 0o600); err != nil {
@@ -140,6 +155,7 @@ func TestLoad_MalformedLegacyBody(t *testing.T) {
 }
 
 func TestLoad_UnreadablePath(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	_, err := Load(dir)
 	if err == nil {
@@ -154,6 +170,7 @@ func TestLoad_UnreadablePath(t *testing.T) {
 }
 
 func TestLoad_LegacyMigrationBothFields(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, []byte(`{"endpoint":"https://legacy","token":"lt"}`), 0o600); err != nil {
@@ -167,12 +184,13 @@ func TestLoad_LegacyMigrationBothFields(t *testing.T) {
 		Profiles: map[string]Profile{"default": {Endpoint: "https://legacy", Token: "lt"}},
 		Active:   "default",
 	}
-	if !reflect.DeepEqual(got, want) {
+	if !sameConfig(got, want) {
 		t.Fatalf("got %+v want %+v", got, want)
 	}
 }
 
 func TestLoad_LegacyMigrationEndpointOnly(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, []byte(`{"endpoint":"https://legacy"}`), 0o600); err != nil {
@@ -191,6 +209,7 @@ func TestLoad_LegacyMigrationEndpointOnly(t *testing.T) {
 }
 
 func TestLoad_LegacyMigrationTokenOnly(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, []byte(`{"token":"ltok"}`), 0o600); err != nil {
@@ -208,6 +227,7 @@ func TestLoad_LegacyMigrationTokenOnly(t *testing.T) {
 // TestLoad_EmptyObject covers the "no profiles key, no legacy fields" branch
 // which must return zero Config.
 func TestLoad_EmptyObject(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, []byte(`{}`), 0o600); err != nil {
@@ -223,6 +243,7 @@ func TestLoad_EmptyObject(t *testing.T) {
 }
 
 func TestLoad_InferActiveWhenSingleProfile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	raw := []byte(`{"profiles":{"only":{"endpoint":"https://x","token":"t"}},"active":""}`)
@@ -239,6 +260,7 @@ func TestLoad_InferActiveWhenSingleProfile(t *testing.T) {
 }
 
 func TestLoad_MultipleProfilesNoActive(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	raw := []byte(`{"profiles":{"a":{"endpoint":"u"},"b":{"endpoint":"v"}},"active":""}`)
@@ -257,6 +279,7 @@ func TestLoad_MultipleProfilesNoActive(t *testing.T) {
 // TestLoad_ActiveMissingProfileKept verifies that Load does NOT silently fix
 // up a dangling Active pointer; Resolve is the layer that surfaces the error.
 func TestLoad_ActiveMissingProfileKept(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	raw := []byte(`{"profiles":{"a":{"endpoint":"u"}},"active":"ghost"}`)
@@ -273,6 +296,7 @@ func TestLoad_ActiveMissingProfileKept(t *testing.T) {
 }
 
 func TestSave_CreatesDirAndFileWithModes(t *testing.T) {
+	t.Parallel()
 	base := t.TempDir()
 	path := filepath.Join(base, "nested", "dir", "config.json")
 	cfg := Config{
@@ -301,6 +325,7 @@ func TestSave_CreatesDirAndFileWithModes(t *testing.T) {
 }
 
 func TestSave_NoTempFileRemains(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	cfg := Config{Profiles: map[string]Profile{"default": {Endpoint: "e"}}, Active: "default"}
@@ -313,6 +338,7 @@ func TestSave_NoTempFileRemains(t *testing.T) {
 }
 
 func TestSave_MkdirFails(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	blocker := filepath.Join(dir, "blocker")
 	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
@@ -329,6 +355,7 @@ func TestSave_MkdirFails(t *testing.T) {
 }
 
 func TestSave_RenameFails(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.MkdirAll(path, 0o700); err != nil {
@@ -350,6 +377,7 @@ func TestSave_RenameFails(t *testing.T) {
 }
 
 func TestSave_WriteFails(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	if err := os.MkdirAll(path+".tmp", 0o700); err != nil {
@@ -365,6 +393,7 @@ func TestSave_WriteFails(t *testing.T) {
 }
 
 func TestRoundTrip(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "sub", "config.json")
 	want := Config{
@@ -380,12 +409,13 @@ func TestRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	if !reflect.DeepEqual(got, want) {
+	if !sameConfig(got, want) {
 		t.Errorf("round trip: got %+v, want %+v", got, want)
 	}
 }
 
 func TestActiveProfile(t *testing.T) {
+	t.Parallel()
 	// Active set and present.
 	c := Config{
 		Profiles: map[string]Profile{"a": {Endpoint: "e", Token: "t"}},
@@ -408,6 +438,7 @@ func TestActiveProfile(t *testing.T) {
 }
 
 func TestUpsert_NewMap(t *testing.T) {
+	t.Parallel()
 	var c Config
 	c.Upsert("default", Profile{Endpoint: "e", Token: "t"})
 	if c.Profiles["default"].Endpoint != "e" {
@@ -419,6 +450,7 @@ func TestUpsert_NewMap(t *testing.T) {
 }
 
 func TestUpsert_ExistingOverrides(t *testing.T) {
+	t.Parallel()
 	c := Config{
 		Profiles: map[string]Profile{"a": {Endpoint: "old"}},
 		Active:   "a",
@@ -433,6 +465,7 @@ func TestUpsert_ExistingOverrides(t *testing.T) {
 }
 
 func TestUpsert_LeavesActiveAloneWhenSet(t *testing.T) {
+	t.Parallel()
 	c := Config{
 		Profiles: map[string]Profile{"existing": {}},
 		Active:   "existing",
@@ -444,6 +477,7 @@ func TestUpsert_LeavesActiveAloneWhenSet(t *testing.T) {
 }
 
 func TestRemove_Missing(t *testing.T) {
+	t.Parallel()
 	c := Config{Profiles: map[string]Profile{"a": {}}, Active: "a"}
 	if c.Remove("ghost") {
 		t.Fatal("Remove should return false for missing")
@@ -454,6 +488,7 @@ func TestRemove_Missing(t *testing.T) {
 }
 
 func TestRemove_NonActive(t *testing.T) {
+	t.Parallel()
 	c := Config{
 		Profiles: map[string]Profile{"a": {}, "b": {}},
 		Active:   "a",
@@ -470,6 +505,7 @@ func TestRemove_NonActive(t *testing.T) {
 }
 
 func TestRemove_ActiveDeterministicReplacement(t *testing.T) {
+	t.Parallel()
 	c := Config{
 		Profiles: map[string]Profile{"z": {}, "a": {}, "m": {}},
 		Active:   "z",
@@ -484,6 +520,7 @@ func TestRemove_ActiveDeterministicReplacement(t *testing.T) {
 }
 
 func TestRemove_LastProfileClearsActive(t *testing.T) {
+	t.Parallel()
 	c := Config{Profiles: map[string]Profile{"only": {}}, Active: "only"}
 	if !c.Remove("only") {
 		t.Fatal("Remove should return true")
@@ -494,6 +531,7 @@ func TestRemove_LastProfileClearsActive(t *testing.T) {
 }
 
 func TestResolve_ExplicitProfileWins(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{
 			"default": {Endpoint: "https://default", Token: "dtok"},
@@ -512,6 +550,7 @@ func TestResolve_ExplicitProfileWins(t *testing.T) {
 }
 
 func TestResolve_EnvProfileWinsOverActive(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{
 			"default": {Endpoint: "https://default"},
@@ -530,6 +569,7 @@ func TestResolve_EnvProfileWinsOverActive(t *testing.T) {
 }
 
 func TestResolve_ActiveUsed(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{"default": {Endpoint: "https://d", Token: "t"}},
 		Active:   "default",
@@ -544,6 +584,7 @@ func TestResolve_ActiveUsed(t *testing.T) {
 }
 
 func TestResolve_FirstSortedKeyFallback(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{
 			"zed":   {Endpoint: "https://z"},
@@ -561,6 +602,7 @@ func TestResolve_FirstSortedKeyFallback(t *testing.T) {
 }
 
 func TestResolve_DefaultNameFallback(t *testing.T) {
+	t.Parallel()
 	// No profiles at all: picks "default", returns empty profile with
 	// DefaultEndpoint filled in.
 	p, name, err := Resolve(envMap(map[string]string{}), Config{}, "")
@@ -576,6 +618,7 @@ func TestResolve_DefaultNameFallback(t *testing.T) {
 }
 
 func TestResolve_EnvOverridesApplied(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{"default": {Endpoint: "https://loaded", Token: "lt"}},
 		Active:   "default",
@@ -594,6 +637,7 @@ func TestResolve_EnvOverridesApplied(t *testing.T) {
 }
 
 func TestResolve_DefaultEndpointFilledWhenEmpty(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{"default": {Token: "t"}},
 		Active:   "default",
@@ -608,6 +652,7 @@ func TestResolve_DefaultEndpointFilledWhenEmpty(t *testing.T) {
 }
 
 func TestResolve_UnknownProfileError(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{"default": {Endpoint: "e"}},
 		Active:   "default",
@@ -628,6 +673,7 @@ func TestResolve_UnknownProfileError(t *testing.T) {
 // pointing at a non-existent slot is fine when ANA_ENDPOINT/TOKEN override.
 // This matches the first-run login use case.
 func TestResolve_UnknownProfileButEnvBypass(t *testing.T) {
+	t.Parallel()
 	env := envMap(map[string]string{"ANA_ENDPOINT": "https://env", "ANA_TOKEN": "env-tok"})
 	p, name, err := Resolve(env, Config{}, "fresh")
 	if err != nil {
@@ -643,6 +689,7 @@ func TestResolve_UnknownProfileButEnvBypass(t *testing.T) {
 // fallback. The contract says this returns an empty profile (no error) —
 // Resolve only errors when the user explicitly asked by name.
 func TestResolve_ImplicitMissingProfileNoError(t *testing.T) {
+	t.Parallel()
 	loaded := Config{
 		Profiles: map[string]Profile{"a": {Endpoint: "https://a"}},
 		Active:   "ghost", // dangling

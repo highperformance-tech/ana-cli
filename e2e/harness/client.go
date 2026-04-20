@@ -144,11 +144,21 @@ func chatDeps(client *transport.Client) chat.Deps {
 			if err != nil {
 				return nil, err
 			}
-			return sr, nil
+			return &boundStream{ctx: ctx, sr: sr}, nil
 		},
 		UUIDFn: newUUID,
 	}
 }
+
+// boundStream binds ctx alongside the StreamReader so chat.StreamSession.Next
+// stays ctx-free.
+type boundStream struct {
+	ctx context.Context
+	sr  *transport.StreamReader
+}
+
+func (b *boundStream) Next(out any) (bool, error) { return b.sr.Next(b.ctx, out) }
+func (b *boundStream) Close() error               { return b.sr.Close() }
 
 // newUUID mirrors cmd/ana/main.go:newUUID with the same fallback — crypto/rand
 // may fail on locked-down hosts and we do not want a streamed send test to
@@ -157,7 +167,7 @@ func newUUID() string {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
 		now := time.Now().UnixNano()
-		for i := 0; i < 16; i++ {
+		for i := range 16 {
 			b[i] = byte(now >> (uint(i%8) * 8))
 		}
 	}

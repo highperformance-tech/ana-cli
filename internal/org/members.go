@@ -70,11 +70,7 @@ func (c *membersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tEMAIL\tROLE")
 	for _, m := range typed.Members {
-		role := m.Role
-		if role == "" {
-			role = "-"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", m.MemberID, m.EmailAddress, role)
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", m.MemberID, m.EmailAddress, cli.DashIfEmpty(m.Role))
 	}
 	return tw.Flush()
 }

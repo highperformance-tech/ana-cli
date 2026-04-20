@@ -35,9 +35,10 @@ type Config struct {
 //
 // Unary performs one Connect-RPC call: the request value is JSON-encoded,
 // the response pointer is JSON-decoded. If the returned error satisfies the
-// unexported authSignaler interface with IsAuthError() == true, or has an
-// error string containing "unauthenticated", it is translated into this
-// package's own auth-error wrapper so cli.ExitCode can map it to exit 3.
+// unexported authSignaler interface with IsAuthError() == true (the typed
+// path *transport.Error takes), or as a last-resort fallback has an error
+// string containing "unauthenticated", it is translated into this package's
+// own auth-error wrapper so cli.ExitCode can map it to exit 3.
 type Deps struct {
 	Unary      func(ctx context.Context, path string, req, resp any) error
 	LoadCfg    func() (Config, error)

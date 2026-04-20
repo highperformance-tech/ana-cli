@@ -48,11 +48,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME\tSCHEDULE")
 	for _, p := range typed.Playbooks {
-		sched := p.CronString
-		if sched == "" {
-			sched = "-"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", p.ID, p.Name, sched)
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", p.ID, p.Name, cli.DashIfEmpty(p.CronString))
 	}
 	return tw.Flush()
 }

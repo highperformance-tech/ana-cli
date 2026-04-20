@@ -2,11 +2,16 @@
 
 All domain logic for the `ana` CLI. Each verb package is pure dispatch: it declares a narrow `Deps` struct, registers its Connect-RPC service prefix, and exposes a `New(deps) *cli.Group` that `cmd/ana/main.go` wires up. Verb packages do not import `internal/transport` or `internal/config` (except `cli`, which is the dispatch core, and `profile`, whose whole purpose is config management).
 
+## Test layout convention
+
+Multi-file verb packages use one `<source>_test.go` per source file (e.g. `list.go` ↔ `list_test.go`). Shared test helpers (`fakeDeps`, `newIO`, etc.) plus package-surface tests (`TestNew*`, `TestHelp*`) live in `<pkg>_test.go`. A helper that is only used by one source file's tests travels with those tests; helpers used across multiple files stay in `<pkg>_test.go`.
+
 ## Children
 
 | Path | What lives here |
 |------|-----------------|
 | `cli/` | Dispatch core: `Command` interface, `Group`, `ParseFlags`, `ParseGlobal`, `Dispatch`, exit-code mapping. |
+| `testcli/` | Test helpers for verb packages (stdlib `httptest` analogue): `FailingWriter`, `FailingIO`, `NewIO`. |
 | `config/` | Multi-profile config file reader/writer. XDG path resolution, `Resolve` precedence. |
 | `transport/` | Connect-RPC HTTP client. Unary JSON + server-streaming JSON framing. |
 | `auth/` | `ana auth` verb tree — login/logout/whoami/keys/service-accounts. |

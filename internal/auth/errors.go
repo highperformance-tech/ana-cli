@@ -32,20 +32,16 @@ func (e *authErr) IsAuthError() bool { return true }
 
 // translateErr returns err as-is unless it looks like an auth failure; in
 // that case it returns a *authErr so the signal flows through to the root.
-// Two detection paths: explicit interface (transport.Error.IsAuth) and a
-// string match on "unauthenticated" for servers that only return the code.
 func translateErr(err error) error {
 	if err == nil {
 		return nil
 	}
-	// If the underlying error already exposes IsAuthError via its own
-	// interface, honor that first — this is the transport.Error path.
+	// Typed path:
 	var s authSignaler
 	if errors.As(err, &s) && s.IsAuthError() {
 		return &authErr{wrapped: err}
 	}
-	// Fallback: servers sometimes surface the Connect "unauthenticated" code
-	// only in the error message. We match case-insensitively to be lenient.
+	// Stringly-typed fallback:
 	if strings.Contains(strings.ToLower(err.Error()), "unauthenticated") {
 		return &authErr{wrapped: err}
 	}

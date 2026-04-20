@@ -10,4 +10,5 @@ The `ana dashboard` verb tree: `list`, `folders`, `get`, `spawn`, `health`. Disp
 - `get.go` — `GetDashboard`.
 - `spawn.go` — `SpawnDashboard` (produces a new dashboard from a template).
 - `health.go` — `CheckDashboardHealth`.
-- `dashboard_test.go` — fake `Unary` covers each subcommand.
+- `dashboard_test.go` — shared `fakeDeps` + `TestNew*`/`TestHelp*`.
+- `list_test.go` / `folders_test.go` / `get_test.go` / `spawn_test.go` / `health_test.go` — one per source file; `health_test.go` also covers the `healthLabel` helper defined in `health.go`.

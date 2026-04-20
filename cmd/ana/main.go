@@ -246,17 +246,26 @@ func chatDeps(client *transport.Client) chat.Deps {
 	}
 }
 
-// streamAdapter exposes client.Stream through chat.StreamSession. Factored as
-// a named helper so main_test can cover it without standing up a live server.
+// streamAdapter exposes client.Stream through chat.StreamSession.
 func streamAdapter(client *transport.Client) func(ctx context.Context, path string, req any) (chat.StreamSession, error) {
 	return func(ctx context.Context, path string, req any) (chat.StreamSession, error) {
 		sr, err := client.Stream(ctx, path, req)
 		if err != nil {
 			return nil, err
 		}
-		return sr, nil
+		return &boundStream{ctx: ctx, sr: sr}, nil
 	}
 }
+
+// boundStream binds ctx alongside the StreamReader so chat.StreamSession.Next
+// stays ctx-free.
+type boundStream struct {
+	ctx context.Context
+	sr  *transport.StreamReader
+}
+
+func (b *boundStream) Next(out any) (bool, error) { return b.sr.Next(b.ctx, out) }
+func (b *boundStream) Close() error               { return b.sr.Close() }
 
 // profileToAuthConfig projects a config.Profile down to the subset
 // internal/auth cares about. Keeping the projection in main.go means auth
@@ -276,7 +285,7 @@ func newUUID() string {
 		// Fallback: 16 bytes derived from the wall clock. Not cryptographic,
 		// but good enough to avoid a hard failure in a chat send loop.
 		now := time.Now().UnixNano()
-		for i := 0; i < 16; i++ {
+		for i := range 16 {
 			b[i] = byte(now >> (uint(i%8) * 8))
 		}
 	}

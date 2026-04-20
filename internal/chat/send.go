@@ -50,7 +50,7 @@ type streamChatReq struct {
 
 // streamFrame is the minimal view of a streamed frame that the renderer
 // needs. Real frames carry one of many variant blocks (mdCell/pyCell/...); we
-// decode a tiny projection of each so `firstLine(content)` gives us something
+// decode a tiny projection of each so `cli.FirstLine(content)` gives us something
 // readable no matter which variant is present.
 type streamFrame struct {
 	ID        string `json:"id"`
@@ -180,7 +180,7 @@ func (c *sendCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	defer sess.Close()
 
 	executed := make(map[string]bool) // cellId -> saw LIFECYCLE_EXECUTED
-	seen := make(map[string]bool)     // cellId -> ever rendered
+	seen := make(map[string]struct{}) // cellId -> ever rendered (set semantics)
 
 	for {
 		var frame streamFrame
@@ -195,10 +195,10 @@ func (c *sendCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		}
 		content := frame.frameContent()
 		fmt.Fprintf(stdio.Stdout, "[%s] %s: %s\n",
-			frame.Lifecycle, frame.ID, truncate(firstLine(content), 100))
+			frame.Lifecycle, frame.ID, truncate(cli.FirstLine(content), 100))
 
 		if frame.ID != "" {
-			seen[frame.ID] = true
+			seen[frame.ID] = struct{}{}
 			if frame.Lifecycle == "LIFECYCLE_EXECUTED" {
 				executed[frame.ID] = true
 			}
@@ -221,7 +221,7 @@ func (c *sendCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 // allExecuted returns true when every key in seen has a true value in
 // executed. Extracted so the loop body stays flat and the tests can prod it
 // directly if needed via a public-enough name within the package.
-func allExecuted(seen, executed map[string]bool) bool {
+func allExecuted(seen map[string]struct{}, executed map[string]bool) bool {
 	for id := range seen {
 		if !executed[id] {
 			return false

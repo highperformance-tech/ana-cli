@@ -78,25 +78,9 @@ func (c *lineageCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "FROM\tTO\tTYPE")
 	for _, e := range edges {
-		from := e.From
-		if from == "" {
-			from = e.Source
-		}
-		to := e.To
-		if to == "" {
-			to = e.Target
-		}
-		typ := e.Type
-		if typ == "" {
-			typ = "-"
-		}
-		if from == "" {
-			from = "-"
-		}
-		if to == "" {
-			to = "-"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", from, to, typ)
+		from := cli.DashIfEmpty(cli.FirstNonEmpty(e.From, e.Source))
+		to := cli.DashIfEmpty(cli.FirstNonEmpty(e.To, e.Target))
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", from, to, cli.DashIfEmpty(e.Type))
 	}
 	return tw.Flush()
 }

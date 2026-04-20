@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -110,11 +110,73 @@ func ReadToken(r io.Reader, tokenStdin bool) (string, error) {
 	return "", nil
 }
 
+// ReadPassword reads a single password line from r and returns the bytes
+// exactly as supplied, stripping only the trailing line terminator (\n or
+// \r\n). Unlike ReadToken, no whitespace trimming is applied: a password may
+// legitimately contain leading or trailing spaces or tabs, and silently
+// mutating it would cause hard-to-diagnose auth failures. The same JWT-sized
+// scanner buffer is used so very long credentials round-trip intact.
+func ReadPassword(r io.Reader) (string, error) {
+	if r == nil {
+		return "", fmt.Errorf("stdin is nil")
+	}
+	scan := bufio.NewScanner(r)
+	scan.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	if scan.Scan() {
+		// bufio.Scanner with ScanLines (the default) already strips a trailing
+		// \n or \r\n from each returned token, so scan.Text() is the raw
+		// payload with the line terminator removed and nothing else.
+		return scan.Text(), nil
+	}
+	if err := scan.Err(); err != nil {
+		return "", fmt.Errorf("read stdin: %w", err)
+	}
+	return "", nil
+}
+
 // NewTableWriter returns a *tabwriter.Writer configured the way every verb's
 // list/show table wants it: no min-width, no tab-stop, two-space padding.
 // Callers must call Flush() (or defer it) once they finish writing rows.
 func NewTableWriter(w io.Writer) *tabwriter.Writer {
 	return tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+}
+
+// DashIfEmpty renders an em-dash placeholder for empty cells so tabwriter
+// keeps table columns aligned. Every verb's list/show table uses this fallback.
+func DashIfEmpty(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
+// FirstNonEmpty returns the first non-empty string from the arguments. Used
+// to collapse "prefer X, else Y, else fallback" chains (e.g. folderName →
+// folderId → "-") into a single call.
+func FirstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+// RedactToken returns a user-facing display for a bearer token or API key.
+// Empty tokens render as "(unset)" so operators can see the slot needs a
+// login; any other value shows a fixed mask plus the last four characters so
+// two tokens can be disambiguated at a glance without leaking them. Tokens
+// shorter than four bytes (never expected from a real API key but exercised
+// defensively) still get fully masked — echoing the whole value in the
+// "last 4:" slot would defeat the redaction for short/malformed/test tokens.
+func RedactToken(token string) string {
+	if token == "" {
+		return "(unset)"
+	}
+	if len(token) < 4 {
+		return "********** (last 4: ****)"
+	}
+	return "********** (last 4: " + token[len(token)-4:] + ")"
 }
 
 // RenderTwoCol prints top-level scalar fields then any nested map fields
@@ -132,8 +194,8 @@ func RenderTwoCol(w io.Writer, m map[string]any) error {
 		}
 		scalarKeys = append(scalarKeys, k)
 	}
-	sort.Strings(scalarKeys)
-	sort.Strings(nestedKeys)
+	slices.Sort(scalarKeys)
+	slices.Sort(nestedKeys)
 	for _, k := range scalarKeys {
 		fmt.Fprintf(tw, "%s:\t%v\n", k, m[k])
 	}
@@ -144,7 +206,7 @@ func RenderTwoCol(w io.Writer, m map[string]any) error {
 		for sk := range sub {
 			subKeys = append(subKeys, sk)
 		}
-		sort.Strings(subKeys)
+		slices.Sort(subKeys)
 		for _, sk := range subKeys {
 			fmt.Fprintf(tw, "  %s:\t%v\n", sk, sub[sk])
 		}

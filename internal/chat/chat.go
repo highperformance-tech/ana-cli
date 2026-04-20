@@ -95,6 +95,12 @@ func parseConnectorIDs(raw string) ([]int, error) {
 // every streamed line compact regardless of terminal width — we don't probe a
 // TTY (stdlib-only) so a fixed cap is the predictable choice.
 func truncate(s string, n int) string {
+	// Byte-length fast path: every rune takes at least one byte, so a string
+	// whose byte length already fits can't exceed n runes either. Skips the
+	// []rune allocation for the overwhelmingly common short-string case.
+	if len(s) <= n {
+		return s
+	}
 	// Walking runes keeps multi-byte characters whole rather than slicing a
 	// UTF-8 sequence mid-way.
 	runes := []rune(s)
@@ -102,14 +108,4 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return string(runes[:n])
-}
-
-// firstLine returns the first line of s without any trailing newline. Used by
-// the send renderer — cells can carry multi-line markdown/code, and dumping a
-// whole code block per frame drowns the stream.
-func firstLine(s string) string {
-	if i := strings.IndexByte(s, '\n'); i >= 0 {
-		return s[:i]
-	}
-	return s
 }

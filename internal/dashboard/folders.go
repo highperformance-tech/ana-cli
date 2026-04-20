@@ -1,9 +1,10 @@
 package dashboard
 
 import (
+	"cmp"
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -29,15 +30,18 @@ func (c *foldersListCmd) Help() string {
 		"Usage: ana dashboard folders list"
 }
 
+// folderEntry is the per-folder projection used to render the ID/NAME table.
+type folderEntry struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // foldersResp reflects the catalogued (empty) response shape plus the
 // likely-camelCase field names the webapp sorts by. The captured sample is
 // `{}` so any field we name here is a best-effort guess; the key detail is
 // that unknown fields decode silently and `--json` still emits raw.
 type foldersResp struct {
-	Folders []struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"folders"`
+	Folders []folderEntry `json:"folders"`
 }
 
 // Run issues ListDashboardFolders, then either dumps raw JSON or renders an
@@ -59,8 +63,8 @@ func (c *foldersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 	if err := cli.Remarshal(raw, &typed); err != nil {
 		return fmt.Errorf("dashboard folders list: decode response: %w", err)
 	}
-	sort.Slice(typed.Folders, func(i, j int) bool {
-		return typed.Folders[i].Name < typed.Folders[j].Name
+	slices.SortFunc(typed.Folders, func(a, b folderEntry) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME")

@@ -8,17 +8,17 @@ import (
 )
 
 // reportsCmd implements `ana playbook reports <id>` — GetPlaybookReports with
-// `{playbookId: "..."}`. Table columns per the brief: RUN_ID, STATUS, RAN_AT.
+// `{playbookId: "..."}`. Table columns: RUN_ID, SUBJECT, RAN_AT.
 //
 // Catalog deviation: the captured report entries have no explicit `status` or
-// `ranAt` fields. We map RUN_ID -> report `id`, STATUS -> `subject` (the
+// `ranAt` fields. We map RUN_ID -> report `id`, SUBJECT -> `subject` (the
 // closest human-readable label we have — defaults to "-" if missing), and
 // RAN_AT -> `createdAt` (the only timestamp in the payload). --json still
 // surfaces the raw response verbatim.
 type reportsCmd struct{ deps Deps }
 
 func (c *reportsCmd) Help() string {
-	return "reports   List a playbook's report runs (RUN_ID/STATUS/RAN_AT table, --json for raw).\n" +
+	return "reports   List a playbook's report runs (RUN_ID/SUBJECT/RAN_AT table, --json for raw).\n" +
 		"Usage: ana playbook reports <id>"
 }
 
@@ -55,17 +55,9 @@ func (c *reportsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 		return fmt.Errorf("playbook reports: decode response: %w", err)
 	}
 	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "RUN_ID\tSTATUS\tRAN_AT")
+	fmt.Fprintln(tw, "RUN_ID\tSUBJECT\tRAN_AT")
 	for _, r := range typed.Reports {
-		status := r.Subject
-		if status == "" {
-			status = "-"
-		}
-		ranAt := r.CreatedAt
-		if ranAt == "" {
-			ranAt = "-"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", r.ID, status, ranAt)
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", r.ID, cli.DashIfEmpty(r.Subject), cli.DashIfEmpty(r.CreatedAt))
 	}
 	return tw.Flush()
 }
