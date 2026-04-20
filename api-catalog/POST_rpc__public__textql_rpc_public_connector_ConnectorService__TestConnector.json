@@ -15,7 +15,7 @@
       "requestBody": {
         "config": {
           "connectorType": "POSTGRES",
-          "name": "slug-9",
+          "name": "slug-7",
           "postgres": {
             "host": "127.0.0.1",
             "port": 5432,

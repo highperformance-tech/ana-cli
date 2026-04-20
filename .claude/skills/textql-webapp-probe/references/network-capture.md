@@ -45,15 +45,41 @@ For each kept request, persist:
 
 ## Redaction
 
-Run every record through `scripts/normalize_request.sh` before writing to disk. The script:
+Two stages, both required. Stage 1 kills secrets. Stage 2 kills PII / unique IDs. The project `pre-commit` hook enforces stage 2 via `anonymize_catalog.py --check`.
+
+### Stage 1 — secrets (`scripts/normalize_request.sh`)
+
+Run every record through this first. The script:
 
 - Deletes `authorization`, `cookie`, `set-cookie` headers case-insensitively.
 - Blanks values of headers ending in `-token`, `-secret`, `-key`.
 - Walks request + response bodies recursively and replaces string values with `"<REDACTED>"` when the key name (case-insensitive, underscores ignored) is sensitive. Covered: `apiKeyHash`, `plaintextKey`, `password`, `secret`, `clientSecret`, `accessToken`, `refreshToken`, `sessionToken`, `bearerToken`, `authToken`, `privateKey`, `signingKey`, `apiSecret`, `oauthSecret`, `webhookSecret`, plus any key ending in those suffixes (`refreshBearerToken`, `fooPassword`, …). Exempted: `apiKeyShort` (display fingerprint), `tokenType` (metadata), `csrfToken`, `publicKey`.
 
-The body scrub is a safety net, not a substitute for review. After normalizing, eyeball the output before writing to `api-catalog/`: look for any remaining high-entropy strings, base64 blobs, or JWT-shaped values (three dot-separated segments). If a capture returns credential material under a field name not on the list above, **extend the list in `scripts/normalize_request.sh`** before writing the catalog entry — don't just edit the one file.
+The body scrub is a safety net, not a substitute for review. After normalizing, eyeball the output: look for any remaining high-entropy strings, base64 blobs, or JWT-shaped values (three dot-separated segments). If a capture returns credential material under a field name not on the list above, **extend the list in `scripts/normalize_request.sh`** before writing the catalog entry — don't just edit the one file.
 
-Never commit until a diff review shows no plaintext secrets remain.
+### Stage 2 — PII and unique IDs (`scripts/anonymize_catalog.py`)
+
+`normalize_request.sh` only handles secrets. Real captures still contain emails, member/org UUIDs, Slack user/channel/team IDs, signed asset URLs, customer names baked into channel slugs, and free-text business content inside playbook prompts or generated Python. All of that must be scrubbed before the file lands in `api-catalog/`.
+
+Run on every new or changed catalog file:
+
+```
+python3 .claude/skills/textql-webapp-probe/scripts/anonymize_catalog.py api-catalog/<file>.json
+```
+
+Deterministic per run (same UUID → same placeholder across every file in one invocation), idempotent (re-running produces no diff). Rewrites:
+
+- UUIDs → `00000000-0000-0000-0000-<seq>` (both values and dict keys, including inside `inferredResponseSchema` where schema inference captures data-shaped keys).
+- Emails → `user-<seq>@example.com`.
+- Slack IDs (`U…`, `C…`, `T…`, `D…`, `G…`, `W…`) → `<prefix>REDACTED<seq>`.
+- Integer IDs ≥ 100 000 under `id` / `memberId` / `userId` / `ownerId` → small deterministic ints.
+- Signed asset URLs (`keyId=…`, `signature=…`) → `https://example.com/redacted/asset`.
+- Known identity tokens (real person/org/customer/third-party SaaS names in `IDENTITY_TOKENS`) → neutral placeholders. When a new identifying token appears, **extend `IDENTITY_TOKENS`** in the script — don't hand-edit catalog files.
+- Free-text keys that carry customer prose (`prompt`, `code`, `renderedHtml`, `output`, plus `content` / `summary` / `toolSummary` / `description` over 80 chars) → `"<REDACTED>"`. The schema under `inferredResponseSchema` is preserved so the catalog still tells you what shape the endpoint returns.
+
+### Commit gate
+
+`.git/hooks/pre-commit` runs `anonymize_catalog.py --check` against every staged `api-catalog/*.json` and blocks the commit if any file would change. If it fires, run the script (without `--check`) on the listed files, review the diff, and re-stage. Never commit until a diff review shows no plaintext secrets, emails, real UUIDs, or known identity tokens remain.
 
 ## Inferring schema from a sample body
 

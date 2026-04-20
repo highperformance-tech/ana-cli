@@ -2,6 +2,8 @@
 
 One JSON entry per captured Connect-RPC endpoint. Filename format: `POST_rpc__public__textql_rpc_public_<service>_<Service>__<Method>.json`. Entry schema in `.claude/skills/textql-webapp-probe/references/catalog-schema.md` (method, pathTemplate, host, lastVerified, samples[], notes[], inferredRequestSchema, inferredResponseSchema).
 
+**All entries are anonymized.** UUIDs are placeholders (`00000000-0000-0000-0000-<seq>`), emails are `user-<seq>@example.com`, Slack IDs are `<prefix>REDACTED<seq>`, free-text prose is `"<REDACTED>"`. Before committing a new or updated entry, run `python3 .claude/skills/textql-webapp-probe/scripts/anonymize_catalog.py <file>` — `.git/hooks/pre-commit` runs the same script in `--check` mode and blocks commits with raw PII.
+
 ~90 entries across 19 services. Group summary:
 
 - `auth_PublicAuthService__*` — GetMember, GetMemberInOrgById, GetOrganization, GetOrgOIDCProviders, ListOrganizations, ExchangeIntermediaryToken, ExchangeSession, GetGoogleOAuthUrl, HandleGoogleOAuthCallback, ValidateIntermediaryToken.
