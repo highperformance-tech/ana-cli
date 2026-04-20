@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewFlagSet(t *testing.T) {
+	t.Parallel()
 	fs := NewFlagSet("verb")
 	if fs.Name() != "verb" {
 		t.Errorf("Name=%q want verb", fs.Name())
@@ -29,6 +30,7 @@ func TestNewFlagSet(t *testing.T) {
 }
 
 func TestUsageErrfWrapsErrUsage(t *testing.T) {
+	t.Parallel()
 	err := UsageErrf("verb: %s required", "<id>")
 	if err == nil {
 		t.Fatal("nil error")
@@ -42,6 +44,7 @@ func TestUsageErrfWrapsErrUsage(t *testing.T) {
 }
 
 func TestWriteJSONIndentedAndTrailingNewline(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	if err := WriteJSON(&buf, map[string]any{"a": 1, "b": "two"}); err != nil {
 		t.Fatalf("err=%v", err)
@@ -54,6 +57,7 @@ func TestWriteJSONIndentedAndTrailingNewline(t *testing.T) {
 }
 
 func TestWriteJSONUnencodableValueWraps(t *testing.T) {
+	t.Parallel()
 	// channels are not JSON-encodable.
 	err := WriteJSON(io.Discard, make(chan int))
 	if err == nil {
@@ -65,6 +69,7 @@ func TestWriteJSONUnencodableValueWraps(t *testing.T) {
 }
 
 func TestRemarshalRoundTripsMapToStruct(t *testing.T) {
+	t.Parallel()
 	src := map[string]any{"name": "alpha", "count": 3}
 	type out struct {
 		Name  string `json:"name"`
@@ -80,6 +85,7 @@ func TestRemarshalRoundTripsMapToStruct(t *testing.T) {
 }
 
 func TestRemarshalMarshalErrorPropagates(t *testing.T) {
+	t.Parallel()
 	// channel cannot be marshalled.
 	err := Remarshal(make(chan int), &struct{}{})
 	if err == nil {
@@ -88,6 +94,7 @@ func TestRemarshalMarshalErrorPropagates(t *testing.T) {
 }
 
 func TestRemarshalUnmarshalErrorPropagates(t *testing.T) {
+	t.Parallel()
 	// destination not a pointer triggers an unmarshal error.
 	var dst int
 	err := Remarshal(map[string]any{"x": 1}, dst)
@@ -97,6 +104,7 @@ func TestRemarshalUnmarshalErrorPropagates(t *testing.T) {
 }
 
 func TestRequireStringID(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name    string
 		args    []string
@@ -111,8 +119,8 @@ func TestRequireStringID(t *testing.T) {
 		{"tab-only", []string{"\t"}, true, ""},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			id, err := RequireStringID("verb", tc.args)
 			if tc.wantErr {
 				if err == nil {
@@ -137,6 +145,7 @@ func TestRequireStringID(t *testing.T) {
 }
 
 func TestRequireIntID(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		args       []string
@@ -155,8 +164,8 @@ func TestRequireIntID(t *testing.T) {
 		{"trailing-junk", []string{"12x"}, true, 0, "verb: <id> must be an integer:"},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			id, err := RequireIntID("verb", tc.args)
 			if tc.wantErr {
 				if err == nil {
@@ -181,12 +190,14 @@ func TestRequireIntID(t *testing.T) {
 }
 
 func TestReadTokenNilReader(t *testing.T) {
+	t.Parallel()
 	if _, err := ReadToken(nil, false); err == nil {
 		t.Errorf("want error on nil reader")
 	}
 }
 
 func TestReadTokenLineMode(t *testing.T) {
+	t.Parallel()
 	tok, err := ReadToken(strings.NewReader("  my-token  \n"), false)
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -197,6 +208,7 @@ func TestReadTokenLineMode(t *testing.T) {
 }
 
 func TestReadTokenStdinMode(t *testing.T) {
+	t.Parallel()
 	tok, err := ReadToken(strings.NewReader("line1\nline2\n  \n"), true)
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -207,6 +219,7 @@ func TestReadTokenStdinMode(t *testing.T) {
 }
 
 func TestReadTokenEmptyStream(t *testing.T) {
+	t.Parallel()
 	tok, err := ReadToken(strings.NewReader(""), false)
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -222,6 +235,7 @@ type errReader struct{ err error }
 func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 
 func TestReadTokenStdinReadError(t *testing.T) {
+	t.Parallel()
 	_, err := ReadToken(errReader{err: errors.New("boom")}, true)
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v", err)
@@ -229,13 +243,79 @@ func TestReadTokenStdinReadError(t *testing.T) {
 }
 
 func TestReadTokenLineReadError(t *testing.T) {
+	t.Parallel()
 	_, err := ReadToken(errReader{err: errors.New("boom")}, false)
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v", err)
 	}
 }
 
+func TestReadPasswordNilReader(t *testing.T) {
+	t.Parallel()
+	if _, err := ReadPassword(nil); err == nil {
+		t.Errorf("want error on nil reader")
+	}
+}
+
+// TestReadPasswordPreservesSurroundingWhitespace confirms the opposite of
+// ReadToken's contract: a password may legitimately start/end with spaces or
+// tabs, and those bytes must survive intact.
+func TestReadPasswordPreservesSurroundingWhitespace(t *testing.T) {
+	t.Parallel()
+	got, err := ReadPassword(strings.NewReader(" secret\twith\tabs \n"))
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if want := " secret\twith\tabs "; got != want {
+		t.Errorf("ReadPassword=%q want %q", got, want)
+	}
+}
+
+// TestReadPasswordStripsLF strips the trailing newline but nothing else.
+func TestReadPasswordStripsLF(t *testing.T) {
+	t.Parallel()
+	got, err := ReadPassword(strings.NewReader("hunter2\n"))
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if got != "hunter2" {
+		t.Errorf("ReadPassword=%q want hunter2", got)
+	}
+}
+
+// TestReadPasswordStripsCRLF strips a Windows-style line terminator cleanly.
+func TestReadPasswordStripsCRLF(t *testing.T) {
+	t.Parallel()
+	got, err := ReadPassword(strings.NewReader("hunter2\r\n"))
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if got != "hunter2" {
+		t.Errorf("ReadPassword=%q want hunter2", got)
+	}
+}
+
+func TestReadPasswordEmptyStream(t *testing.T) {
+	t.Parallel()
+	got, err := ReadPassword(strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if got != "" {
+		t.Errorf("ReadPassword=%q want empty", got)
+	}
+}
+
+func TestReadPasswordReadError(t *testing.T) {
+	t.Parallel()
+	_, err := ReadPassword(errReader{err: errors.New("boom")})
+	if err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("err=%v", err)
+	}
+}
+
 func TestNewTableWriterFormats(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	tw := NewTableWriter(&buf)
 	if _, err := tw.Write([]byte("A\tB\nalpha\tbeta\n")); err != nil {
@@ -252,6 +332,7 @@ func TestNewTableWriterFormats(t *testing.T) {
 }
 
 func TestRenderTwoColScalarsThenNested(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	m := map[string]any{
 		"name":    "prod-pg",
@@ -285,6 +366,7 @@ func TestRenderTwoColScalarsThenNested(t *testing.T) {
 }
 
 func TestRenderTwoColEmpty(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	if err := RenderTwoCol(&buf, map[string]any{}); err != nil {
 		t.Fatalf("err=%v", err)
@@ -301,8 +383,91 @@ type failingWriter struct{}
 func (failingWriter) Write(p []byte) (int, error) { return 0, errors.New("boom") }
 
 func TestRenderTwoColFlushError(t *testing.T) {
+	t.Parallel()
 	err := RenderTwoCol(failingWriter{}, map[string]any{"a": 1})
 	if err == nil {
 		t.Fatal("expected flush error")
+	}
+}
+
+func TestFirstLine(t *testing.T) {
+	t.Parallel()
+	if got := FirstLine("one\ntwo"); got != "one" {
+		t.Errorf("got %q", got)
+	}
+	if got := FirstLine("only"); got != "only" {
+		t.Errorf("got %q", got)
+	}
+	if got := FirstLine(""); got != "" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestDashIfEmpty(t *testing.T) {
+	t.Parallel()
+	if got := DashIfEmpty(""); got != "-" {
+		t.Errorf("empty -> %q want -", got)
+	}
+	if got := DashIfEmpty("x"); got != "x" {
+		t.Errorf("x -> %q want x", got)
+	}
+}
+
+func TestFirstNonEmpty(t *testing.T) {
+	t.Parallel()
+	if got := FirstNonEmpty("", "", "c"); got != "c" {
+		t.Errorf("got %q want c", got)
+	}
+	if got := FirstNonEmpty("a", "b"); got != "a" {
+		t.Errorf("got %q want a", got)
+	}
+	if got := FirstNonEmpty("", ""); got != "" {
+		t.Errorf("got %q want empty", got)
+	}
+	if got := FirstNonEmpty(); got != "" {
+		t.Errorf("got %q want empty", got)
+	}
+}
+
+func TestRedactToken(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		token string
+		want  string
+	}{
+		{"empty", "", "(unset)"},
+		// Short tokens (< 4 bytes) must also get the fully-masked form;
+		// emitting the raw value would leak the secret for short, malformed,
+		// or test tokens — defeating the redaction entirely.
+		{"short-one", "a", "********** (last 4: ****)"},
+		{"short-two", "ab", "********** (last 4: ****)"},
+		{"short-three", "abc", "********** (last 4: ****)"},
+		{"boundary-four", "abcd", "********** (last 4: abcd)"},
+		{"typical", "abcdef1234", "********** (last 4: 1234)"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := RedactToken(tc.token)
+			if got != tc.want {
+				t.Errorf("RedactToken(%q)=%q want %q", tc.token, got, tc.want)
+			}
+			// Invariant: a short, non-empty input must never leak into the
+			// "last 4: ..." slot — emitting the raw value would defeat the
+			// whole point of redaction for short/malformed/test tokens.
+			// The fixed prefix `last 4: ` happens to contain letters that
+			// can legitimately overlap with the test token, so restrict
+			// the leakage check to the bytes following that prefix.
+			if tc.token != "" && len(tc.token) < 4 {
+				const marker = "last 4: "
+				if i := strings.Index(got, marker); i >= 0 {
+					tail := got[i+len(marker):]
+					if strings.Contains(tail, tc.token) {
+						t.Errorf("RedactToken(%q)=%q leaked raw token into `last 4` slot", tc.token, got)
+					}
+				}
+			}
+		})
 	}
 }

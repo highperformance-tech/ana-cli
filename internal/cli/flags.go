@@ -36,3 +36,19 @@ func ParseFlags(fs *flag.FlagSet, args []string) error {
 	}
 	return nil
 }
+
+// FlagWasSet reports whether fs saw name as an explicit argument. Partial-
+// update verbs use it to distinguish "user left this alone" (keep server's
+// current value) from "user passed the zero value on purpose". Uses the
+// stdlib-documented `fs.Visit` idiom, which only traverses flags that were
+// actually set; an unknown name is reported as not-set rather than
+// panicking.
+func FlagWasSet(fs *flag.FlagSet, name string) bool {
+	set := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			set = true
+		}
+	})
+	return set
+}

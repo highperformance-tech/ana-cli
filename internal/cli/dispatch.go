@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 )
 
 // Dispatch is the root entry point. It parses global flags, stashes them in
@@ -51,7 +51,7 @@ func RootHelp(w io.Writer, verbs map[string]Command) {
 	for name := range verbs {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	width := 0
 	for _, n := range names {
 		if len(n) > width {
@@ -62,6 +62,6 @@ func RootHelp(w io.Writer, verbs map[string]Command) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Commands:")
 	for _, n := range names {
-		fmt.Fprintf(w, "  %-*s   %s\n", width, n, firstLine(verbs[n].Help()))
+		fmt.Fprintf(w, "  %-*s   %s\n", width, n, FirstLine(verbs[n].Help()))
 	}
 }

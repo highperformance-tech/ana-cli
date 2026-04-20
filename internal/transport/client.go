@@ -108,34 +108,63 @@ type connectErrEnvelope struct {
 	Message string `json:"message"`
 }
 
-// oathkeeperErrEnvelope is the reverse-proxy nested error body shape used by
-// the Oathkeeper gateway fronting some TextQL services.
-type oathkeeperErrEnvelope struct {
-	Error struct {
-		Code    int    `json:"code"`
-		Status  string `json:"status"`
-		Message string `json:"message"`
-	} `json:"error"`
+// oathkeeperInnerErr is the inner body of the Oathkeeper reverse-proxy
+// envelope (the object sitting under the top-level `"error"` key). The
+// envelope itself is probed via errEnvelopeShape.Error, so only the nested
+// shape needs a named type.
+type oathkeeperInnerErr struct {
+	Code    int    `json:"code"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
 }
 
-// parseErrorBody turns an HTTP error response into a *Error, trying the
-// Connect flat shape first and then the Oathkeeper nested shape. When neither
-// decodes, Raw is populated so the caller still has the bytes.
+// errEnvelopeShape is a probe used to dispatch an error body to the correct
+// schema without speculatively unmarshalling both. Connect envelopes carry
+// `"code"` as a JSON string at the top level; Oathkeeper envelopes carry
+// `"error"` as a nested object. Mutually exclusive in practice, and a probe
+// here means an ambiguous body (e.g. one with both keys) takes the Connect
+// branch deterministically instead of whichever happens to unmarshal last.
+// Field values are kept as json.RawMessage so the decoded slices can be reused
+// for the typed decode — no need to re-parse the whole body.
+type errEnvelopeShape struct {
+	Code    json.RawMessage `json:"code"`
+	Message json.RawMessage `json:"message"`
+	Error   json.RawMessage `json:"error"`
+}
+
+// parseErrorBody turns an HTTP error response into a *Error. It dispatches on
+// envelope shape: a top-level JSON-string `"code"` means Connect; a top-level
+// JSON-object `"error"` means the Oathkeeper reverse-proxy wrapper. When
+// neither shape matches, Raw is populated so the caller still has the bytes.
 func parseErrorBody(status int, body []byte) *Error {
 	e := &Error{HTTPStatus: status, Raw: body}
-	var ce connectErrEnvelope
-	if err := json.Unmarshal(body, &ce); err == nil && (ce.Code != "" || ce.Message != "") {
-		e.Code = ce.Code
-		e.Message = ce.Message
+	var shape errEnvelopeShape
+	if err := json.Unmarshal(body, &shape); err != nil {
 		return e
 	}
-	var oe oathkeeperErrEnvelope
-	if err := json.Unmarshal(body, &oe); err == nil && (oe.Error.Status != "" || oe.Error.Message != "" || oe.Error.Code != 0) {
-		e.Code = oe.Error.Status
-		e.Message = oe.Error.Message
-		return e
+	switch {
+	case isJSONString(shape.Code):
+		_ = json.Unmarshal(shape.Code, &e.Code)
+		_ = json.Unmarshal(shape.Message, &e.Message)
+	case isJSONObject(shape.Error):
+		var oe oathkeeperInnerErr
+		_ = json.Unmarshal(shape.Error, &oe)
+		e.Code = oe.Status
+		e.Message = oe.Message
 	}
 	return e
+}
+
+// isJSONString reports whether raw is a JSON string value (quote-wrapped).
+// A zero-length slice (field absent) returns false.
+func isJSONString(raw json.RawMessage) bool {
+	return len(raw) > 0 && raw[0] == '"'
+}
+
+// isJSONObject reports whether raw is a JSON object value. A zero-length
+// slice (field absent) returns false.
+func isJSONObject(raw json.RawMessage) bool {
+	return len(raw) > 0 && raw[0] == '{'
 }
 
 // Unary performs a Connect unary call. req is marshaled as JSON (nil → "{}"),
@@ -230,5 +259,5 @@ func (c *Client) Stream(ctx context.Context, path string, req any) (*StreamReade
 		httpResp.Body.Close()
 		return nil, parseErrorBody(httpResp.StatusCode, body)
 	}
-	return newStreamReader(ctx, httpResp.Body), nil
+	return newStreamReader(httpResp.Body), nil
 }

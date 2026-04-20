@@ -13,7 +13,14 @@ import (
 //
 //	--since <dur|RFC3339>  e.g. 1h, 24h, or 2026-04-18T00:00:00Z; emitted as
 //	                       `{"since": <RFC3339>}` after normalising to UTC
-//	--limit <int>          pass through as `"limit": N` when >0
+//	--limit <int>          pass through as `"limit": N` when >0; must be >=0
+//	                       (negative values are rejected with a usage error,
+//	                       zero means "unspecified" and is omitted from the
+//	                       wire payload)
+//
+// Negative --since durations are rejected: `time.ParseDuration("-1h")` is
+// technically valid, but interpreting it would produce a timestamp in the
+// future rather than surfacing an obvious operator typo.
 //
 // Catalog confirms the response envelope is `{ "entries": [ ... ] }` with
 // snake_case action strings such as `api_key.created`. With --json the
@@ -37,20 +44,36 @@ type tailResp struct {
 	} `json:"entries"`
 }
 
+// tailReq is the ListAuditLogs wire payload. `omitempty` lets callers leave
+// either field zero; the server then treats them as unspecified. Kept as a
+// typed struct rather than `map[string]any` so the JSON keys are checked at
+// build time.
+type tailReq struct {
+	Since string `json:"since,omitempty"`
+	Limit int    `json:"limit,omitempty"`
+}
+
 func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := cli.NewFlagSet("audit tail")
 	var since string
 	var limit int
 	fs.StringVar(&since, "since", "", "lower bound: relative duration ago (e.g. 1h, 24h) or absolute RFC3339 timestamp")
-	fs.IntVar(&limit, "limit", 0, "maximum number of entries to request")
+	fs.IntVar(&limit, "limit", 0, "maximum number of entries to request (must be >= 0; 0 means unspecified)")
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
+	// Reject negative --limit explicitly. The wire payload's `omitempty` would
+	// otherwise silently drop a negative value and behave as "unspecified",
+	// masking the operator's input error. Surface it as a usage error so the
+	// intent is obvious at the CLI surface.
+	if limit < 0 {
+		return cli.UsageErrf("audit tail: --limit must be >= 0 (got %d)", limit)
+	}
 
-	// Build the wire payload. We use a map so we can add fields conditionally
-	// without defining an additive set of struct tags — the request shape is
-	// naturally sparse.
-	body := map[string]any{}
+	// Build the wire payload. `omitempty` on both fields keeps the request
+	// shape naturally sparse: a zero Since string and zero Limit both drop
+	// off the wire.
+	var body tailReq
 	if since != "" {
 		// Accept either a relative duration ("1h", "24h") or an absolute
 		// RFC3339 timestamp ("2026-04-18T00:00:00Z"). Try duration first
@@ -58,9 +81,16 @@ func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		// parser already tolerates the fractional-second form ("…00.123Z"),
 		// so a separate RFC3339Nano fallback would be dead code.
 		if dur, err := time.ParseDuration(since); err == nil {
-			body["since"] = c.deps.Now().Add(-dur).UTC().Format(time.RFC3339)
+			// Reject negative durations. `time.ParseDuration("-1h")` succeeds,
+			// and `Now().Add(-(-1h))` would quietly turn that into a timestamp
+			// in the future — the exact shape of "from the future" bug that
+			// hides operator typos. Surface it as a usage error instead.
+			if dur < 0 {
+				return cli.UsageErrf("audit tail: --since duration must be >= 0 (got %q)", since)
+			}
+			body.Since = c.deps.Now().Add(-dur).UTC().Format(time.RFC3339)
 		} else if ts, tsErr := time.Parse(time.RFC3339, since); tsErr == nil {
-			body["since"] = ts.UTC().Format(time.RFC3339)
+			body.Since = ts.UTC().Format(time.RFC3339)
 		} else {
 			return cli.UsageErrf(
 				"audit tail: invalid --since %q (expected duration like 1h or RFC3339 timestamp)",
@@ -69,7 +99,7 @@ func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		}
 	}
 	if limit > 0 {
-		body["limit"] = limit
+		body.Limit = limit
 	}
 
 	var raw map[string]any
@@ -105,22 +135,11 @@ func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 				target = e.ResourceID
 			}
 		}
-		if target == "" {
-			target = "-"
-		}
-		t := e.CreatedAt
-		if t == "" {
-			t = "-"
-		}
-		actor := e.ActorEmail
-		if actor == "" {
-			actor = "-"
-		}
-		action := e.Action
-		if action == "" {
-			action = "-"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", t, actor, action, target)
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n",
+			cli.DashIfEmpty(e.CreatedAt),
+			cli.DashIfEmpty(e.ActorEmail),
+			cli.DashIfEmpty(e.Action),
+			cli.DashIfEmpty(target))
 	}
 	return tw.Flush()
 }

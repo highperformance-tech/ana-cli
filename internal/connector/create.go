@@ -1,13 +1,10 @@
 package connector
 
 import (
-	"bufio"
 	"context"
-	"errors"
-	"flag"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
@@ -129,42 +126,31 @@ func requiredMissing(pairs map[string]string) []string {
 		}
 	}
 	// Deterministic order for stable test assertions.
-	sort.Strings(missing)
+	slices.Sort(missing)
 	return missing
 }
 
 // resolvePassword resolves the password from either --password-stdin (reads
-// one line from r) or --password. If both are set, --password-stdin wins (it's
-// the more secure channel). Neither set → usage error.
+// one line from r via cli.ReadPassword, preserving every byte except the
+// trailing line terminator) or --password. If both are set, --password-stdin
+// wins (it's the more secure channel). Neither set → usage error. Preserving
+// surrounding whitespace is intentional: a password may legitimately start or
+// end with spaces/tabs, and silently trimming would cause hard-to-diagnose
+// auth failures.
 func resolvePassword(passFlag string, stdinFlag bool, r io.Reader) (string, error) {
 	if stdinFlag {
-		if r == nil {
-			return "", errors.New("--password-stdin requires a readable stdin")
-		}
-		scanner := bufio.NewScanner(r)
-		if scanner.Scan() {
-			return scanner.Text(), nil
-		}
-		if err := scanner.Err(); err != nil {
+		pass, err := cli.ReadPassword(r)
+		if err != nil {
 			return "", fmt.Errorf("read password: %w", err)
 		}
-		// Empty stream is a usage error; the flag explicitly promised a line.
-		return "", cli.UsageErrf("--password-stdin set but stdin was empty")
+		if pass == "" {
+			// Empty stream is a usage error; the flag explicitly promised a line.
+			return "", cli.UsageErrf("--password-stdin set but stdin was empty")
+		}
+		return pass, nil
 	}
 	if passFlag == "" {
 		return "", cli.UsageErrf("--password or --password-stdin is required")
 	}
 	return passFlag, nil
-}
-
-// flagWasSet reports whether fs saw name as an explicit argument. Used by the
-// update command to build a partial config from only the user-supplied flags.
-func flagWasSet(fs *flag.FlagSet, name string) bool {
-	set := false
-	fs.Visit(func(f *flag.Flag) {
-		if f.Name == name {
-			set = true
-		}
-	})
-	return set
 }

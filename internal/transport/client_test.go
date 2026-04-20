@@ -20,6 +20,7 @@ type echoPayload struct {
 }
 
 func TestUnaryHappyPath(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -47,6 +48,7 @@ func TestUnaryHappyPath(t *testing.T) {
 }
 
 func TestUnaryAuthorizationHeader(t *testing.T) {
+	t.Parallel()
 	_, srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("Authorization"); got != "Bearer sekret" {
 			t.Errorf("Authorization = %q", got)
@@ -60,6 +62,7 @@ func TestUnaryAuthorizationHeader(t *testing.T) {
 }
 
 func TestUnaryNoAuthWhenTokenEmpty(t *testing.T) {
+	t.Parallel()
 	_, srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := r.Header["Authorization"]; ok {
 			t.Errorf("unexpected Authorization header")
@@ -73,6 +76,7 @@ func TestUnaryNoAuthWhenTokenEmpty(t *testing.T) {
 }
 
 func TestUnaryTokenError(t *testing.T) {
+	t.Parallel()
 	var called bool
 	_, srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		called = true
@@ -93,6 +97,7 @@ func TestUnaryTokenError(t *testing.T) {
 }
 
 func TestUnaryNilRequestBody(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		body := drainBody(t, r)
 		if string(body) != "{}" {
@@ -106,6 +111,7 @@ func TestUnaryNilRequestBody(t *testing.T) {
 }
 
 func TestUnaryNilResponseIgnoresBody(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		// Return malformed JSON — with resp==nil it should be ignored.
 		w.Write([]byte("not json"))
@@ -116,6 +122,7 @@ func TestUnaryNilResponseIgnoresBody(t *testing.T) {
 }
 
 func TestUnaryConnectErrorBody(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		w.Write([]byte(`{"code":"invalid_argument","message":"bad"}`))
@@ -131,6 +138,7 @@ func TestUnaryConnectErrorBody(t *testing.T) {
 }
 
 func TestUnaryOathkeeperErrorBody(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(502)
 		w.Write([]byte(`{"error":{"code":502,"status":"Bad Gateway","message":"upstream"}}`))
@@ -146,6 +154,7 @@ func TestUnaryOathkeeperErrorBody(t *testing.T) {
 }
 
 func TestUnaryNonJSONErrorBody(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		w.Write([]byte("<html>oops</html>"))
@@ -160,7 +169,68 @@ func TestUnaryNonJSONErrorBody(t *testing.T) {
 	}
 }
 
+// TestUnaryAmbiguousErrorBody covers a body that carries both a Connect
+// `"code"` string AND an Oathkeeper-shaped `"error"` object. The shape
+// dispatch pins Connect first so classification is deterministic.
+func TestUnaryAmbiguousErrorBody(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		w.Write([]byte(`{"code":"invalid_argument","message":"bad","error":{"status":"Bad Gateway","message":"upstream"}}`))
+	})
+	err := c.Unary(context.Background(), "/", nil, nil)
+	var te *Error
+	if !errors.As(err, &te) {
+		t.Fatalf("want *Error, got %T %v", err, err)
+	}
+	if te.Code != "invalid_argument" || te.Message != "bad" {
+		t.Fatalf("ambiguous body: want Connect classification, got %+v", te)
+	}
+}
+
+// TestUnaryUnknownJSONErrorBody covers a valid JSON body that matches neither
+// Connect nor Oathkeeper shapes. Code/Message stay empty so callers can still
+// rely on Raw and the HTTP status for context.
+func TestUnaryUnknownJSONErrorBody(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(503)
+		w.Write([]byte(`{"detail":"service unavailable"}`))
+	})
+	err := c.Unary(context.Background(), "/", nil, nil)
+	var te *Error
+	if !errors.As(err, &te) {
+		t.Fatalf("want *Error, got %T %v", err, err)
+	}
+	if te.HTTPStatus != 503 || te.Code != "" || te.Message != "" {
+		t.Fatalf("got %+v", te)
+	}
+	if string(te.Raw) != `{"detail":"service unavailable"}` {
+		t.Fatalf("raw = %q", string(te.Raw))
+	}
+}
+
+// TestUnaryNonStringConnectCode covers a body whose `"code"` is NOT a JSON
+// string (e.g. an integer). The shape probe rejects it as a Connect envelope,
+// so we fall through to the neither-matches path rather than mis-classifying.
+func TestUnaryNonStringConnectCode(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		w.Write([]byte(`{"code":42,"message":"numeric-code"}`))
+	})
+	err := c.Unary(context.Background(), "/", nil, nil)
+	var te *Error
+	if !errors.As(err, &te) {
+		t.Fatalf("want *Error, got %T %v", err, err)
+	}
+	if te.Code != "" || te.Message != "" {
+		t.Fatalf("non-string code must not classify: %+v", te)
+	}
+}
+
 func TestUnaryContextCancel(t *testing.T) {
+	t.Parallel()
 	block := make(chan struct{})
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		<-block
@@ -182,6 +252,7 @@ func TestUnaryContextCancel(t *testing.T) {
 }
 
 func TestUnaryMalformedResponse(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("not json"))
 	})
@@ -193,6 +264,7 @@ func TestUnaryMalformedResponse(t *testing.T) {
 }
 
 func TestUnaryUserAgent(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("User-Agent"); got != "ana/0.0.1" {
 			t.Errorf("User-Agent = %q", got)
@@ -223,6 +295,7 @@ func (r *recordingRT) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
 	rt := &recordingRT{}
 	httpClient := &http.Client{Transport: rt}
 	c := New("https://example.invalid", nil, WithHTTPClient(httpClient))
@@ -239,6 +312,7 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestWithHTTPClientNilIgnored(t *testing.T) {
+	t.Parallel()
 	// A nil http.Client must not replace the default (guarded in WithHTTPClient).
 	c := New("http://example.invalid", nil, WithHTTPClient(nil))
 	if c.httpClient != http.DefaultClient {
@@ -247,6 +321,7 @@ func TestWithHTTPClientNilIgnored(t *testing.T) {
 }
 
 func TestUnaryURLBuildNoDoubleSlash(t *testing.T) {
+	t.Parallel()
 	rt := &recordingRT{}
 	c := New("https://example.invalid/", nil, WithHTTPClient(&http.Client{Transport: rt}))
 	if err := c.Unary(context.Background(), "/rpc/Svc/Method", nil, nil); err != nil {
@@ -258,6 +333,7 @@ func TestUnaryURLBuildNoDoubleSlash(t *testing.T) {
 }
 
 func TestUnaryURLBuildNoLeadingOrTrailingSlash(t *testing.T) {
+	t.Parallel()
 	rt := &recordingRT{}
 	c := New("https://example.invalid/api", nil, WithHTTPClient(&http.Client{Transport: rt}))
 	if err := c.Unary(context.Background(), "/rpc", nil, nil); err != nil {
@@ -269,6 +345,7 @@ func TestUnaryURLBuildNoLeadingOrTrailingSlash(t *testing.T) {
 }
 
 func TestUnaryMalformedBaseURL(t *testing.T) {
+	t.Parallel()
 	c := New("http://\x7f/bad", nil) // control byte → NewRequest rejects
 	err := c.Unary(context.Background(), "/x", nil, nil)
 	if err == nil || !strings.Contains(err.Error(), "build request") {
@@ -282,6 +359,7 @@ type unserializable struct {
 }
 
 func TestUnaryMarshalError(t *testing.T) {
+	t.Parallel()
 	c := New("http://example.invalid", nil)
 	err := c.Unary(context.Background(), "/", unserializable{Ch: make(chan int)}, nil)
 	if err == nil || !strings.Contains(err.Error(), "marshal request") {
@@ -303,6 +381,7 @@ func (readErrRT) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestUnaryReadBodyError(t *testing.T) {
+	t.Parallel()
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: readErrRT{}}))
 	err := c.Unary(context.Background(), "/", nil, nil)
 	if err == nil || !strings.Contains(err.Error(), "read response") {
@@ -317,6 +396,7 @@ type doErrRT struct{ err error }
 func (d doErrRT) RoundTrip(*http.Request) (*http.Response, error) { return nil, d.err }
 
 func TestUnaryTransportError(t *testing.T) {
+	t.Parallel()
 	want := errors.New("dial fail")
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: doErrRT{err: want}}))
 	err := c.Unary(context.Background(), "/", nil, nil)
@@ -326,6 +406,7 @@ func TestUnaryTransportError(t *testing.T) {
 }
 
 func TestStreamTransportErrorCtxCancel(t *testing.T) {
+	t.Parallel()
 	// Transport returns error AND the ctx is cancelled → ctx err surfaces.
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -337,6 +418,7 @@ func TestStreamTransportErrorCtxCancel(t *testing.T) {
 }
 
 func TestStreamTransportErrorNonCtx(t *testing.T) {
+	t.Parallel()
 	want := errors.New("dial fail")
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: doErrRT{err: want}}))
 	_, err := c.Stream(context.Background(), "/", nil)
@@ -353,6 +435,7 @@ func (c *Client) withTokenFn(fn func(context.Context) (string, error)) *Client {
 
 // Verify Unary error when request marshalling/build fails due to path.
 func TestUnaryNewRequestError(t *testing.T) {
+	t.Parallel()
 	c := New("http://example.invalid", nil)
 	err := c.Unary(context.Background(), "http://[::1%zone]/bad", nil, nil)
 	if err == nil {
@@ -362,6 +445,7 @@ func TestUnaryNewRequestError(t *testing.T) {
 
 // sanity: captured catalog-style payloads round-trip through Unary.
 func TestUnaryCatalogShape(t *testing.T) {
+	t.Parallel()
 	type theme struct {
 		Bg string `json:"bg"`
 	}
@@ -388,6 +472,7 @@ func TestUnaryCatalogShape(t *testing.T) {
 
 // Confirm the httptest-based tokenFn error path drops the server call entirely.
 func TestUnaryTokenErrorNoServerCall(t *testing.T) {
+	t.Parallel()
 	var hit bool
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		hit = true

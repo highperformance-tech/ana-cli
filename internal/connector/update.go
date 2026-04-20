@@ -58,18 +58,18 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return err
 	}
 
-	if flagWasSet(fs, "type") && *typ != "postgres" {
+	if cli.FlagWasSet(fs, "type") && *typ != "postgres" {
 		return cli.UsageErrf("connector update: --type must be \"postgres\" (got %q)", *typ)
 	}
 
 	// Track which dialect-level flags the user explicitly set; those override
 	// the pre-fetched baseline below.
-	dialectTouched := flagWasSet(fs, "host") || flagWasSet(fs, "port") ||
-		flagWasSet(fs, "user") || flagWasSet(fs, "database") ||
-		flagWasSet(fs, "ssl") || flagWasSet(fs, "password") ||
-		flagWasSet(fs, "password-stdin")
+	dialectTouched := cli.FlagWasSet(fs, "host") || cli.FlagWasSet(fs, "port") ||
+		cli.FlagWasSet(fs, "user") || cli.FlagWasSet(fs, "database") ||
+		cli.FlagWasSet(fs, "ssl") || cli.FlagWasSet(fs, "password") ||
+		cli.FlagWasSet(fs, "password-stdin")
 
-	if !flagWasSet(fs, "name") && !flagWasSet(fs, "type") && !dialectTouched {
+	if !cli.FlagWasSet(fs, "name") && !cli.FlagWasSet(fs, "type") && !dialectTouched {
 		return cli.UsageErrf("connector update: at least one field flag is required")
 	}
 
@@ -89,31 +89,31 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		Name:          curr.Connector.Name,
 	}
 	pg := curr.Connector.PostgresMetadata
-	if flagWasSet(fs, "type") {
+	if cli.FlagWasSet(fs, "type") {
 		cfg.ConnectorType = "POSTGRES"
 	}
-	if flagWasSet(fs, "name") {
+	if cli.FlagWasSet(fs, "name") {
 		cfg.Name = *name
 	}
-	if flagWasSet(fs, "host") {
+	if cli.FlagWasSet(fs, "host") {
 		pg.Host = *host
 	}
-	if flagWasSet(fs, "port") {
+	if cli.FlagWasSet(fs, "port") {
 		pg.Port = *port
 	}
-	if flagWasSet(fs, "user") {
+	if cli.FlagWasSet(fs, "user") {
 		pg.User = *user
 	}
-	if flagWasSet(fs, "database") {
+	if cli.FlagWasSet(fs, "database") {
 		pg.Database = *database
 	}
-	if flagWasSet(fs, "ssl") {
+	if cli.FlagWasSet(fs, "ssl") {
 		pg.SSLMode = *ssl
 	}
 	// Password isn't returned by GetConnector (server-side secret). If the
 	// user didn't touch --password{,-stdin}, leave pg.Password empty and the
 	// server keeps the existing secret. Otherwise resolve and overlay.
-	if flagWasSet(fs, "password") || flagWasSet(fs, "password-stdin") {
+	if cli.FlagWasSet(fs, "password") || cli.FlagWasSet(fs, "password-stdin") {
 		resolved, err := resolvePassword(*pass, *passStdin, stdio.Stdin)
 		if err != nil {
 			return fmt.Errorf("connector update: %w", err)

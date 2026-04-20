@@ -7,4 +7,5 @@ The `ana ontology` verb tree: `list`, `get`. Readonly surface. Dispatch-only aro
 - `ontology.go` — `New`, `Deps`, service path prefix (`OntologyService`).
 - `list.go` — `GetOntologies` / `GetOntologiesSummary`.
 - `get.go` — `GetOntologyById`.
-- `ontology_test.go` — fake `Unary` covers each subcommand.
+- `ontology_test.go` — shared `fakeDeps` + `TestNew*`/`TestHelp*`.
+- `list_test.go` / `get_test.go` — one per source file.

@@ -67,11 +67,7 @@ func (c *keysListCmd) Run(ctx context.Context, args []string, stdio cli.IO) erro
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME\tLAST USED")
 	for _, k := range typed.APIKeys {
-		last := k.LastUsedAt
-		if last == "" {
-			last = "-"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", k.ID, k.Name, last)
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", k.ID, k.Name, cli.DashIfEmpty(k.LastUsedAt))
 	}
 	return tw.Flush()
 }
@@ -126,9 +122,16 @@ func (c *keysCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) er
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/CreateApiKey", req, &resp); err != nil {
 		return fmt.Errorf("auth keys create: %w", translateErr(err))
 	}
-	fmt.Fprintln(stdio.Stderr, "# store this token; it will not be shown again")
-	fmt.Fprintln(stdio.Stdout, resp.APIKeyHash)
+	emitPlaintextToken(stdio, resp.APIKeyHash)
 	return nil
+}
+
+// emitPlaintextToken prints the one-shot plaintext token to stdout with a
+// stderr reminder. Shared by `keys create` and `keys rotate` since both
+// endpoints return the plaintext exactly once.
+func emitPlaintextToken(stdio cli.IO, token string) {
+	fmt.Fprintln(stdio.Stderr, "# store this token; it will not be shown again")
+	fmt.Fprintln(stdio.Stdout, token)
 }
 
 // ---- rotate ----
@@ -166,8 +169,7 @@ func (c *keysRotateCmd) Run(ctx context.Context, args []string, stdio cli.IO) er
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/RotateApiKey", req, &resp); err != nil {
 		return fmt.Errorf("auth keys rotate: %w", translateErr(err))
 	}
-	fmt.Fprintln(stdio.Stderr, "# store this token; it will not be shown again")
-	fmt.Fprintln(stdio.Stdout, resp.APIKeyHash)
+	emitPlaintextToken(stdio, resp.APIKeyHash)
 	return nil
 }
 

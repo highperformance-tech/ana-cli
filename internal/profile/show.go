@@ -67,20 +67,6 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fmt.Fprintf(tw, "active\t%t\n", name == cfg.Active)
 	fmt.Fprintf(tw, "endpoint\t%s\n", p.Endpoint)
 	fmt.Fprintf(tw, "orgName\t%s\n", p.OrgName)
-	fmt.Fprintf(tw, "token\t%s\n", redactToken(p.Token))
+	fmt.Fprintf(tw, "token\t%s\n", cli.RedactToken(p.Token))
 	return tw.Flush()
-}
-
-// redactToken returns a user-facing display for a token. Empty tokens print
-// "(unset)" so operators can see the slot needs an `ana auth login`; any
-// other value shows a fixed mask plus the last four characters to make it
-// possible to disambiguate two tokens at a glance without leaking them.
-func redactToken(tok string) string {
-	if tok == "" {
-		return "(unset)"
-	}
-	if len(tok) < 4 {
-		return "********** (last 4: " + tok + ")"
-	}
-	return "********** (last 4: " + tok[len(tok)-4:] + ")"
 }

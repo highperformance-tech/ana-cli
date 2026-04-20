@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -65,40 +66,37 @@ func (c *whoamiCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return fmt.Errorf("auth whoami: %w", ErrNotLoggedIn)
 	}
 
-	// Fan out the two independent RPCs. Each goroutine writes into its own
-	// destination, so no mutex is needed on the payload maps; errors land on
-	// a buffered channel so neither send blocks even if we only ever read one.
+	// The first RPC to fail cancels its sibling so the loser is interrupted at
+	// its next ctx check instead of burning its full request budget.
+	fanCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	var (
 		memberRaw map[string]any
 		orgRaw    map[string]any
+		memberErr error
+		orgErr    error
 		wg        sync.WaitGroup
 	)
-	errCh := make(chan error, 2)
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		if e := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember", struct{}{}, &memberRaw); e != nil {
-			errCh <- translateErr(e)
-			return
+		if e := c.deps.Unary(fanCtx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetMember", struct{}{}, &memberRaw); e != nil {
+			memberErr = translateErr(e)
+			cancel()
 		}
-		errCh <- nil
 	}()
 	go func() {
 		defer wg.Done()
-		if e := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization", struct{}{}, &orgRaw); e != nil {
-			errCh <- translateErr(e)
-			return
+		if e := c.deps.Unary(fanCtx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization", struct{}{}, &orgRaw); e != nil {
+			orgErr = translateErr(e)
+			cancel()
 		}
-		errCh <- nil
 	}()
 	wg.Wait()
-	close(errCh)
-	// Return the first non-nil error we observe. If both failed, either is an
-	// acceptable signal — the user sees "auth whoami: <message>" regardless.
-	for e := range errCh {
-		if e != nil {
-			return fmt.Errorf("auth whoami: %w", e)
-		}
+	// errors.Join(nil, nil) returns nil; a single-error case wraps in a
+	// joinError whose .Error() is just the inner message. Is/As traverse through.
+	if err := errors.Join(memberErr, orgErr); err != nil {
+		return fmt.Errorf("auth whoami: %w", err)
 	}
 
 	if cli.GlobalFrom(ctx).JSON {

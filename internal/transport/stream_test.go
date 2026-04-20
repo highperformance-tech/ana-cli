@@ -18,6 +18,7 @@ type streamEvent struct {
 }
 
 func TestStreamHappyPath(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		bw := bufio.NewWriter(w)
 		for i := 1; i <= 3; i++ {
@@ -30,14 +31,15 @@ func TestStreamHappyPath(t *testing.T) {
 		}
 		bw.Flush()
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
 	for i := 1; i <= 3; i++ {
 		var ev streamEvent
-		ok, err := sr.Next(&ev)
+		ok, err := sr.Next(ctx, &ev)
 		if err != nil || !ok {
 			t.Fatalf("Next(%d) = (%v,%v)", i, ok, err)
 		}
@@ -45,35 +47,37 @@ func TestStreamHappyPath(t *testing.T) {
 			t.Fatalf("N = %d, want %d", ev.N, i)
 		}
 	}
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if err != nil || ok {
 		t.Fatalf("terminal Next = (%v, %v), want (false, nil)", ok, err)
 	}
 	// Subsequent calls after done keep returning (false, nil).
-	ok, err = sr.Next(&streamEvent{})
+	ok, err = sr.Next(ctx, &streamEvent{})
 	if err != nil || ok {
 		t.Fatalf("post-done Next = (%v, %v)", ok, err)
 	}
 }
 
 func TestStreamTrailerError(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		bw := bufio.NewWriter(w)
 		writeFrame(bw, 0, mustJSON(t, streamEvent{N: 1}))
 		writeFrame(bw, trailerFlag, []byte(`{"code":"aborted","message":"nope"}`))
 		bw.Flush()
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
 	var ev streamEvent
-	ok, err := sr.Next(&ev)
+	ok, err := sr.Next(ctx, &ev)
 	if err != nil || !ok {
 		t.Fatalf("first Next = (%v,%v)", ok, err)
 	}
-	ok, err = sr.Next(&ev)
+	ok, err = sr.Next(ctx, &ev)
 	if ok || err == nil {
 		t.Fatalf("want error, got (%v,%v)", ok, err)
 	}
@@ -87,18 +91,20 @@ func TestStreamTrailerError(t *testing.T) {
 }
 
 func TestStreamTrailerMalformedBody(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		bw := bufio.NewWriter(w)
 		// Trailer with payload that isn't JSON.
 		writeFrame(bw, trailerFlag, []byte("not-json"))
 		bw.Flush()
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil {
 		t.Fatalf("want err, got (%v,%v)", ok, err)
 	}
@@ -112,34 +118,38 @@ func TestStreamTrailerMalformedBody(t *testing.T) {
 }
 
 func TestStreamTrailerEmptyEnvelope(t *testing.T) {
+	t.Parallel()
 	// Trailer with a JSON body that parses to an empty envelope → clean end.
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		bw := bufio.NewWriter(w)
 		writeFrame(bw, trailerFlag, []byte(`{}`))
 		bw.Flush()
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err != nil {
 		t.Fatalf("want (false,nil), got (%v,%v)", ok, err)
 	}
 }
 
 func TestStreamTruncatedHeader(t *testing.T) {
+	t.Parallel()
 	// Write only 2 header bytes then hang up.
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte{0x00, 0x00})
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil {
 		t.Fatalf("want err, got (%v,%v)", ok, err)
 	}
@@ -149,6 +159,7 @@ func TestStreamTruncatedHeader(t *testing.T) {
 }
 
 func TestStreamTruncatedPayload(t *testing.T) {
+	t.Parallel()
 	// Declare a 100-byte payload but send only 10.
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		header := make([]byte, 5)
@@ -156,12 +167,13 @@ func TestStreamTruncatedPayload(t *testing.T) {
 		w.Write(header)
 		w.Write(make([]byte, 10))
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil {
 		t.Fatalf("want err")
 	}
@@ -171,18 +183,20 @@ func TestStreamTruncatedPayload(t *testing.T) {
 }
 
 func TestStreamNonJSONDataFrame(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		bw := bufio.NewWriter(w)
 		writeFrame(bw, 0, []byte("not-json"))
 		bw.Flush()
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
 	var ev streamEvent
-	ok, err := sr.Next(&ev)
+	ok, err := sr.Next(ctx, &ev)
 	if ok || err == nil {
 		t.Fatalf("want decode err")
 	}
@@ -192,6 +206,7 @@ func TestStreamNonJSONDataFrame(t *testing.T) {
 }
 
 func TestStreamNextWithNilOut(t *testing.T) {
+	t.Parallel()
 	// Nil out parameter skips JSON decoding — useful when a caller just wants
 	// frame counts.
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
@@ -200,22 +215,24 @@ func TestStreamNextWithNilOut(t *testing.T) {
 		writeFrame(bw, trailerFlag, nil)
 		bw.Flush()
 	})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
-	ok, err := sr.Next(nil)
+	ok, err := sr.Next(ctx, nil)
 	if !ok || err != nil {
 		t.Fatalf("want true/nil, got (%v,%v)", ok, err)
 	}
-	ok, err = sr.Next(nil)
+	ok, err = sr.Next(ctx, nil)
 	if ok || err != nil {
 		t.Fatalf("want false/nil, got (%v,%v)", ok, err)
 	}
 }
 
 func TestStreamNonSuccessOnOpen(t *testing.T) {
+	t.Parallel()
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		w.Write([]byte(`{"code":"internal","message":"broken"}`))
@@ -271,6 +288,7 @@ func (c ctxRT) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestStreamContextCancelDuringRead(t *testing.T) {
+	t.Parallel()
 	bb := newBlockingBody()
 	rt := ctxRT{body: bb}
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: rt}))
@@ -281,7 +299,7 @@ func TestStreamContextCancelDuringRead(t *testing.T) {
 	}
 	// Cancel first so Next's pre-check trips.
 	cancel()
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("want ctx canceled, got (%v,%v)", ok, err)
 	}
@@ -315,6 +333,7 @@ func (r *readBlockerBody) Close() error {
 }
 
 func TestStreamCtxErrDuringHeaderRead(t *testing.T) {
+	t.Parallel()
 	// Read errors mid-header; ctx is cancelled → ctx err takes precedence.
 	body := newReadBlockerBody()
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: ctxRT{body: body}}))
@@ -326,7 +345,7 @@ func TestStreamCtxErrDuringHeaderRead(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		_, err := sr.Next(&streamEvent{})
+		_, err := sr.Next(ctx, &streamEvent{})
 		done <- err
 	}()
 	time.Sleep(10 * time.Millisecond)
@@ -350,12 +369,14 @@ func (genericReadErrBody) Read(p []byte) (int, error) { return 0, errors.New("ne
 func (genericReadErrBody) Close() error               { return nil }
 
 func TestStreamGenericReadError(t *testing.T) {
+	t.Parallel()
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: ctxRT{body: genericReadErrBody{}}}))
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil {
 		t.Fatalf("want err")
 	}
@@ -386,12 +407,14 @@ func (b *partialHeaderThenErrBody) Read(p []byte) (int, error) {
 func (b *partialHeaderThenErrBody) Close() error { return nil }
 
 func TestStreamPayloadReadError(t *testing.T) {
+	t.Parallel()
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: ctxRT{body: &partialHeaderThenErrBody{}}}))
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil {
 		t.Fatalf("want err")
 	}
@@ -423,6 +446,7 @@ func (b *payloadCtxErrBody) Read(p []byte) (int, error) {
 func (b *payloadCtxErrBody) Close() error { return nil }
 
 func TestStreamPayloadReadCtxErr(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	body := &payloadCtxErrBody{cancel: cancel}
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: ctxRT{body: body}}))
@@ -430,7 +454,7 @@ func TestStreamPayloadReadCtxErr(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("want ctx canceled, got (%v,%v)", ok, err)
 	}
@@ -446,19 +470,21 @@ func (b *headerCtxErrBody) Read(p []byte) (int, error) {
 func (b *headerCtxErrBody) Close() error { return nil }
 
 func TestStreamHeaderReadCtxErr(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	c := New("http://example.invalid", nil, WithHTTPClient(&http.Client{Transport: ctxRT{body: &headerCtxErrBody{cancel: cancel}}}))
 	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("want ctx canceled, got (%v,%v)", ok, err)
 	}
 }
 
 func TestStreamBuildRequestError(t *testing.T) {
+	t.Parallel()
 	// Unserializable body → buildRequest returns a marshal error which Stream
 	// should propagate directly.
 	c := New("http://example.invalid", nil)
@@ -475,6 +501,7 @@ func TestStreamBuildRequestError(t *testing.T) {
 // User-Agent (via WithUserAgent) and Authorization (via tokenFn returning a
 // non-empty token). Three gaps closed in one server round-trip.
 func TestStreamWithBody(t *testing.T) {
+	t.Parallel()
 	tokenFn := func(context.Context) (string, error) { return "tok-123", nil }
 	srv, _ := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("User-Agent"); got != "ana/x" {
@@ -500,6 +527,7 @@ func TestStreamWithBody(t *testing.T) {
 
 // TestStreamTokenFnError covers the tokenFn-returned-error branch.
 func TestStreamTokenFnError(t *testing.T) {
+	t.Parallel()
 	c := New("http://example.invalid", func(context.Context) (string, error) {
 		return "", errors.New("token-boom")
 	})
@@ -512,6 +540,7 @@ func TestStreamTokenFnError(t *testing.T) {
 // TestStreamBuildRequestInvalidURL covers http.NewRequestWithContext failure
 // (control-char in URL is rejected before the transport is touched).
 func TestStreamBuildRequestInvalidURL(t *testing.T) {
+	t.Parallel()
 	c := New("http://example.invalid\x7f", nil)
 	_, err := c.Stream(context.Background(), "/", nil)
 	if err == nil || !strings.Contains(err.Error(), "build request") {
@@ -520,18 +549,57 @@ func TestStreamBuildRequestInvalidURL(t *testing.T) {
 }
 
 func TestStreamEOFBeforeAnyFrame(t *testing.T) {
+	t.Parallel()
 	// Server writes nothing and hangs up cleanly.
 	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {})
-	sr, err := c.Stream(context.Background(), "/", nil)
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
 	if err != nil {
 		t.Fatalf("Stream: %v", err)
 	}
 	defer sr.Close()
-	ok, err := sr.Next(&streamEvent{})
+	ok, err := sr.Next(ctx, &streamEvent{})
 	if ok || err == nil {
 		t.Fatalf("want err, got (%v,%v)", ok, err)
 	}
 	if !strings.Contains(err.Error(), "unexpected EOF before frame header") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+// TestStreamFrameTooLarge covers the server-controlled-length guard. A header
+// declaring a payload larger than maxFrameBytes must short-circuit with a
+// *Error before the reader allocates anything, otherwise a hostile/buggy
+// server could drive us into an OOM by setting length to ~4 GiB.
+func TestStreamFrameTooLarge(t *testing.T) {
+	t.Parallel()
+	// Write a header declaring maxFrameBytes+1 bytes. No payload follows —
+	// the guard must trip before any io.ReadFull is attempted.
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		header := make([]byte, 5)
+		binary.BigEndian.PutUint32(header[1:], uint32(maxFrameBytes+1))
+		w.Write(header)
+	})
+	ctx := context.Background()
+	sr, err := c.Stream(ctx, "/", nil)
+	if err != nil {
+		t.Fatalf("Stream: %v", err)
+	}
+	defer sr.Close()
+	ok, err := sr.Next(ctx, &streamEvent{})
+	if ok || err == nil {
+		t.Fatalf("want err, got (%v,%v)", ok, err)
+	}
+	var te *Error
+	if !errors.As(err, &te) {
+		t.Fatalf("want *Error, got %T %v", err, err)
+	}
+	if !strings.Contains(te.Message, "frame too large") {
+		t.Fatalf("Message = %q, want contains \"frame too large\"", te.Message)
+	}
+	// Subsequent calls stay quiet — guard flipped done=true.
+	ok, err = sr.Next(ctx, &streamEvent{})
+	if ok || err != nil {
+		t.Fatalf("post-guard Next = (%v, %v), want (false, nil)", ok, err)
 	}
 }

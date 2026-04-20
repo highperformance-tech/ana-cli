@@ -93,7 +93,7 @@ func (c *historyCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 		kind, content := cell.kindAndContent()
 		// Truncate to 100 chars; matches the send renderer's cap so eyeballing
 		// both streams yields aligned column widths.
-		line := firstLine(content)
+		line := cli.FirstLine(content)
 		fmt.Fprintf(stdio.Stdout, "[%s] %s %s: %s\n",
 			cell.Timestamp, cell.Lifecycle, kind, truncate(line, 100))
 	}

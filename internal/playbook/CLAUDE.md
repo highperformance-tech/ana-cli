@@ -9,4 +9,5 @@ The `ana playbook` verb tree: `list`, `get`, `reports`, `lineage`. Readonly surf
 - `get.go` — `GetPlaybook`.
 - `reports.go` — `GetPlaybookReports` + `GetChatReportsSummary`.
 - `lineage.go` — `GetPlaybookLineage`.
-- `playbook_test.go` — fake `Unary` covers each subcommand.
+- `playbook_test.go` — shared `fakeDeps` + `TestNew*`/`TestHelp*`.
+- `list_test.go` / `get_test.go` / `reports_test.go` / `lineage_test.go` — one per source file.

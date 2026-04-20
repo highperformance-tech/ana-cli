@@ -22,20 +22,16 @@ type Global struct {
 // write it, preventing accidental collisions with other packages.
 type globalKey struct{}
 
-// WithGlobal returns a child context carrying g. A nil parent falls back to
-// context.Background so callers can chain freely.
+// WithGlobal returns a child context carrying g. Per stdlib convention ctx
+// must be non-nil; a nil parent panics (mirroring context.WithValue).
 func WithGlobal(ctx context.Context, g Global) context.Context {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	return context.WithValue(ctx, globalKey{}, g)
 }
 
-// GlobalFrom extracts the Global from ctx, or a zero value if absent.
+// GlobalFrom extracts the Global from ctx, or a zero value if absent. Per
+// stdlib convention ctx must be non-nil; a nil ctx panics (mirroring
+// context.Value semantics).
 func GlobalFrom(ctx context.Context) Global {
-	if ctx == nil {
-		return Global{}
-	}
 	g, _ := ctx.Value(globalKey{}).(Global)
 	return g
 }

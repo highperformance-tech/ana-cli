@@ -1,7 +1,6 @@
 package profile
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 	"github.com/highperformance-tech/ana-cli/internal/config"
+	"github.com/highperformance-tech/ana-cli/internal/testcli"
 )
 
 // --- helpers ---
@@ -28,23 +27,6 @@ func newDeps(cfgPath string) Deps {
 		SaveCfg:    func(c config.Config) error { return config.Save(cfgPath, c) },
 		ConfigPath: func() (string, error) { return cfgPath, nil },
 	}
-}
-
-// newIO builds a cli.IO with in-memory streams. stdin is optional; when nil
-// an empty reader is used.
-func newIO(stdin io.Reader) (cli.IO, *bytes.Buffer, *bytes.Buffer) {
-	if stdin == nil {
-		stdin = strings.NewReader("")
-	}
-	var out, errb bytes.Buffer
-	stdio := cli.IO{
-		Stdin:  stdin,
-		Stdout: &out,
-		Stderr: &errb,
-		Env:    func(string) string { return "" },
-		Now:    time.Now,
-	}
-	return stdio, &out, &errb
 }
 
 // seed writes a starter config with two profiles so list/show have something
@@ -72,6 +54,7 @@ func tmpCfg(t *testing.T) string {
 // --- New / Group ---
 
 func TestNew_ReturnsGroupWithExpectedChildren(t *testing.T) {
+	t.Parallel()
 	g := New(Deps{})
 	for _, name := range []string{"list", "add", "use", "remove", "show"} {
 		if _, ok := g.Children[name]; !ok {
@@ -90,6 +73,7 @@ func TestNew_ReturnsGroupWithExpectedChildren(t *testing.T) {
 // --- list ---
 
 func TestList_Help(t *testing.T) {
+	t.Parallel()
 	c := &listCmd{}
 	if !strings.Contains(c.Help(), "list") {
 		t.Fatalf("help: %q", c.Help())
@@ -97,9 +81,10 @@ func TestList_Help(t *testing.T) {
 }
 
 func TestList_Human(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&listCmd{deps: newDeps(cfgPath)}).Run(context.Background(), nil, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -121,9 +106,10 @@ func TestList_Human(t *testing.T) {
 }
 
 func TestList_JSON(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	ctx := cli.WithGlobal(context.Background(), cli.Global{JSON: true})
 	err := (&listCmd{deps: newDeps(cfgPath)}).Run(ctx, nil, stdio)
 	if err != nil {
@@ -158,7 +144,8 @@ func TestList_JSON(t *testing.T) {
 }
 
 func TestList_BadFlag(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&listCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -166,11 +153,12 @@ func TestList_BadFlag(t *testing.T) {
 }
 
 func TestList_LoadError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&listCmd{deps: newDeps(cfgPath)}).Run(context.Background(), nil, stdio)
 	if err == nil {
 		t.Fatal("expected error on malformed config")
@@ -180,14 +168,16 @@ func TestList_LoadError(t *testing.T) {
 // --- add ---
 
 func TestAdd_Help(t *testing.T) {
+	t.Parallel()
 	if !strings.Contains((&addCmd{}).Help(), "add") {
 		t.Fatal("help missing")
 	}
 }
 
 func TestAdd_CreatesProfile(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
-	stdio, out, _ := newIO(strings.NewReader("secret-token\n"))
+	stdio, out, _ := testcli.NewIO(strings.NewReader("secret-token\n"))
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
 		[]string{"--endpoint", "https://custom", "--org", "Acme", "newprof"}, stdio)
 	if err != nil {
@@ -219,8 +209,9 @@ func TestAdd_CreatesProfile(t *testing.T) {
 // --token-stdin despite them being passed on the command line. This test
 // guards the shape that bit us in the field.
 func TestAdd_RegressionPositionalBeforeFlags(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
-	stdio, _, _ := newIO(strings.NewReader("secret\n"))
+	stdio, _, _ := testcli.NewIO(strings.NewReader("secret\n"))
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
 		[]string{"newprof", "--endpoint", "https://custom", "--org", "Acme"}, stdio)
 	if err != nil {
@@ -246,8 +237,9 @@ func TestAdd_RegressionPositionalBeforeFlags(t *testing.T) {
 }
 
 func TestAdd_DefaultEndpoint(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
-	stdio, _, _ := newIO(strings.NewReader("tok\n"))
+	stdio, _, _ := testcli.NewIO(strings.NewReader("tok\n"))
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"p"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -259,8 +251,9 @@ func TestAdd_DefaultEndpoint(t *testing.T) {
 }
 
 func TestAdd_TokenStdin_FullStream(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
-	stdio, _, _ := newIO(strings.NewReader("line1\nline2\n"))
+	stdio, _, _ := testcli.NewIO(strings.NewReader("line1\nline2\n"))
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
 		[]string{"--token-stdin", "p"}, stdio)
 	if err != nil {
@@ -273,9 +266,10 @@ func TestAdd_TokenStdin_FullStream(t *testing.T) {
 }
 
 func TestAdd_OverwritesExisting(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, _, _ := newIO(strings.NewReader("new-token\n"))
+	stdio, _, _ := testcli.NewIO(strings.NewReader("new-token\n"))
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
 		[]string{"--endpoint", "https://rewritten", "default"}, stdio)
 	if err != nil {
@@ -295,7 +289,8 @@ func TestAdd_OverwritesExisting(t *testing.T) {
 }
 
 func TestAdd_MissingName(t *testing.T) {
-	stdio, _, _ := newIO(strings.NewReader("t\n"))
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(strings.NewReader("t\n"))
 	err := (&addCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), nil, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -303,7 +298,8 @@ func TestAdd_MissingName(t *testing.T) {
 }
 
 func TestAdd_EmptyName(t *testing.T) {
-	stdio, _, _ := newIO(strings.NewReader("t\n"))
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(strings.NewReader("t\n"))
 	err := (&addCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{""}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -311,7 +307,8 @@ func TestAdd_EmptyName(t *testing.T) {
 }
 
 func TestAdd_BadFlag(t *testing.T) {
-	stdio, _, _ := newIO(strings.NewReader("t\n"))
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(strings.NewReader("t\n"))
 	err := (&addCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope", "p"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -319,8 +316,9 @@ func TestAdd_BadFlag(t *testing.T) {
 }
 
 func TestAdd_NilStdinError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	stdio.Stdin = nil
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"p"}, stdio)
 	if err == nil {
@@ -329,11 +327,12 @@ func TestAdd_NilStdinError(t *testing.T) {
 }
 
 func TestAdd_LoadError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, _, _ := newIO(strings.NewReader("t\n"))
+	stdio, _, _ := testcli.NewIO(strings.NewReader("t\n"))
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"p"}, stdio)
 	if err == nil {
 		t.Fatal("expected load error")
@@ -341,6 +340,7 @@ func TestAdd_LoadError(t *testing.T) {
 }
 
 func TestAdd_SaveError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	// Inject a failing SaveCfg directly. badDirCfg would normally trigger the
 	// same branch, but a pure injection keeps the test robust across
@@ -350,7 +350,7 @@ func TestAdd_SaveError(t *testing.T) {
 		SaveCfg:    func(config.Config) error { return errors.New("boom") },
 		ConfigPath: func() (string, error) { return cfgPath, nil },
 	}
-	stdio, _, _ := newIO(strings.NewReader("t\n"))
+	stdio, _, _ := testcli.NewIO(strings.NewReader("t\n"))
 	err := (&addCmd{deps: d}).Run(context.Background(), []string{"p"}, stdio)
 	if err == nil {
 		t.Fatal("expected save error")
@@ -358,10 +358,11 @@ func TestAdd_SaveError(t *testing.T) {
 }
 
 func TestAdd_PathError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	d := newDeps(cfgPath)
 	d.ConfigPath = func() (string, error) { return "", errors.New("boom") }
-	stdio, out, _ := newIO(strings.NewReader("t\n"))
+	stdio, out, _ := testcli.NewIO(strings.NewReader("t\n"))
 	err := (&addCmd{deps: d}).Run(context.Background(), []string{"p"}, stdio)
 	if err == nil {
 		t.Fatal("expected path error")
@@ -374,7 +375,8 @@ func TestAdd_PathError(t *testing.T) {
 
 // TestAdd_TokenStdin_ReadError exercises the io.ReadAll error path.
 func TestAdd_TokenStdin_ReadError(t *testing.T) {
-	stdio, _, _ := newIO(&errReader{})
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(&errReader{})
 	err := (&addCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(),
 		[]string{"--token-stdin", "p"}, stdio)
 	if err == nil {
@@ -384,7 +386,8 @@ func TestAdd_TokenStdin_ReadError(t *testing.T) {
 
 // TestAdd_LineScanner_ReadError exercises the Scanner error path (line mode).
 func TestAdd_LineScanner_ReadError(t *testing.T) {
-	stdio, _, _ := newIO(&errReader{})
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(&errReader{})
 	err := (&addCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"p"}, stdio)
 	if err == nil {
 		t.Fatal("expected scanner error")
@@ -401,8 +404,9 @@ func (errReader) Read([]byte) (int, error) { return 0, io.ErrClosedPipe }
 // no error and an empty token is persisted (the add command accepts it —
 // login is the one that rejects empty; add lets you pre-create slots).
 func TestAdd_EmptyStdin(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
-	stdio, _, _ := newIO(strings.NewReader(""))
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"p"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -416,15 +420,17 @@ func TestAdd_EmptyStdin(t *testing.T) {
 // --- use ---
 
 func TestUse_Help(t *testing.T) {
+	t.Parallel()
 	if !strings.Contains((&useCmd{}).Help(), "use") {
 		t.Fatal("help missing")
 	}
 }
 
 func TestUse_Switches(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&useCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"other"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -439,9 +445,10 @@ func TestUse_Switches(t *testing.T) {
 }
 
 func TestUse_Unknown(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&useCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"ghost"}, stdio)
 	if !errors.Is(err, config.ErrUnknownProfile) {
 		t.Fatalf("err = %v", err)
@@ -449,7 +456,8 @@ func TestUse_Unknown(t *testing.T) {
 }
 
 func TestUse_MissingArg(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&useCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), nil, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -457,7 +465,8 @@ func TestUse_MissingArg(t *testing.T) {
 }
 
 func TestUse_EmptyArg(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&useCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{""}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -465,7 +474,8 @@ func TestUse_EmptyArg(t *testing.T) {
 }
 
 func TestUse_BadFlag(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&useCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -473,11 +483,12 @@ func TestUse_BadFlag(t *testing.T) {
 }
 
 func TestUse_LoadError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&useCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"x"}, stdio)
 	if err == nil {
 		t.Fatal("expected load error")
@@ -485,6 +496,7 @@ func TestUse_LoadError(t *testing.T) {
 }
 
 func TestUse_SaveError(t *testing.T) {
+	t.Parallel()
 	// Seed a good file at a path, then flip the save target to a bad one
 	// while keeping load working.
 	cfgPath := tmpCfg(t)
@@ -494,7 +506,7 @@ func TestUse_SaveError(t *testing.T) {
 		SaveCfg:    func(config.Config) error { return errors.New("boom") },
 		ConfigPath: func() (string, error) { return cfgPath, nil },
 	}
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&useCmd{deps: d}).Run(context.Background(), []string{"other"}, stdio)
 	if err == nil {
 		t.Fatal("expected save error")
@@ -504,15 +516,17 @@ func TestUse_SaveError(t *testing.T) {
 // --- remove ---
 
 func TestRemove_Help(t *testing.T) {
+	t.Parallel()
 	if !strings.Contains((&removeCmd{}).Help(), "remove") {
 		t.Fatal("help missing")
 	}
 }
 
 func TestRemove_SwitchesActive(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"default"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -530,6 +544,7 @@ func TestRemove_SwitchesActive(t *testing.T) {
 }
 
 func TestRemove_NoneRemaining(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	// Single-profile config.
 	c := config.Config{
@@ -539,7 +554,7 @@ func TestRemove_NoneRemaining(t *testing.T) {
 	if err := config.Save(cfgPath, c); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"only"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -550,9 +565,10 @@ func TestRemove_NoneRemaining(t *testing.T) {
 }
 
 func TestRemove_NotFound(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"ghost"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "not found") {
 		t.Fatalf("err = %v", err)
@@ -560,7 +576,8 @@ func TestRemove_NotFound(t *testing.T) {
 }
 
 func TestRemove_MissingArg(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), nil, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -568,7 +585,8 @@ func TestRemove_MissingArg(t *testing.T) {
 }
 
 func TestRemove_EmptyArg(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{""}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -576,7 +594,8 @@ func TestRemove_EmptyArg(t *testing.T) {
 }
 
 func TestRemove_BadFlag(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -584,11 +603,12 @@ func TestRemove_BadFlag(t *testing.T) {
 }
 
 func TestRemove_LoadError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"x"}, stdio)
 	if err == nil {
 		t.Fatal("expected load error")
@@ -596,6 +616,7 @@ func TestRemove_LoadError(t *testing.T) {
 }
 
 func TestRemove_SaveError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
 	d := Deps{
@@ -603,7 +624,7 @@ func TestRemove_SaveError(t *testing.T) {
 		SaveCfg:    func(config.Config) error { return errors.New("boom") },
 		ConfigPath: func() (string, error) { return cfgPath, nil },
 	}
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&removeCmd{deps: d}).Run(context.Background(), []string{"other"}, stdio)
 	if err == nil {
 		t.Fatal("expected save error")
@@ -613,15 +634,17 @@ func TestRemove_SaveError(t *testing.T) {
 // --- show ---
 
 func TestShow_Help(t *testing.T) {
+	t.Parallel()
 	if !strings.Contains((&showCmd{}).Help(), "show") {
 		t.Fatal("help missing")
 	}
 }
 
 func TestShow_Active_Human(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), nil, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -642,9 +665,10 @@ func TestShow_Active_Human(t *testing.T) {
 }
 
 func TestShow_Named_JSON(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	ctx := cli.WithGlobal(context.Background(), cli.Global{JSON: true})
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(ctx, []string{"other"}, stdio)
 	if err != nil {
@@ -667,9 +691,10 @@ func TestShow_Named_JSON(t *testing.T) {
 }
 
 func TestShow_UnsetToken(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"other"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -680,8 +705,10 @@ func TestShow_UnsetToken(t *testing.T) {
 }
 
 func TestShow_ShortToken(t *testing.T) {
-	// Covers the len(tok) < 4 branch in redactToken — we never expect this
-	// from a real API key but the safety net should still print something.
+	t.Parallel()
+	// Covers the len(tok) < 4 branch in cli.RedactToken — we never expect
+	// this from a real API key, but the safety net must still fully mask
+	// the value rather than leak it through the "last 4:" slot.
 	cfgPath := tmpCfg(t)
 	c := config.Config{
 		Profiles: map[string]config.Profile{"p": {Endpoint: "https://x", Token: "ab"}},
@@ -690,20 +717,25 @@ func TestShow_ShortToken(t *testing.T) {
 	if err := config.Save(cfgPath, c); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), nil, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if !strings.Contains(out.String(), "last 4: ab") {
-		t.Fatalf("stdout: %q", out.String())
+	if !strings.Contains(out.String(), "last 4: ****") {
+		t.Fatalf("short token should render fully masked, got: %q", out.String())
+	}
+	// The raw short token must never appear anywhere in the echoed output.
+	if strings.Contains(out.String(), "last 4: ab") || strings.Contains(out.String(), "(ab)") {
+		t.Fatalf("short token leaked into stdout: %q", out.String())
 	}
 }
 
 func TestShow_UnknownProfile(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"ghost"}, stdio)
 	if !errors.Is(err, config.ErrUnknownProfile) {
 		t.Fatalf("err = %v", err)
@@ -713,12 +745,13 @@ func TestShow_UnknownProfile(t *testing.T) {
 // TestShow_NoActiveNoArg covers the "no name, no active" path: show should
 // report unknown-profile rather than panic on an empty lookup.
 func TestShow_NoActiveNoArg(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	// Empty config: no profiles, no active.
 	if err := config.Save(cfgPath, config.Config{}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), nil, stdio)
 	if !errors.Is(err, config.ErrUnknownProfile) {
 		t.Fatalf("err = %v", err)
@@ -726,9 +759,10 @@ func TestShow_NoActiveNoArg(t *testing.T) {
 }
 
 func TestShow_EmptyArgFallsBackToActive(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
-	stdio, out, _ := newIO(nil)
+	stdio, out, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{""}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -739,7 +773,8 @@ func TestShow_EmptyArgFallsBackToActive(t *testing.T) {
 }
 
 func TestShow_BadFlag(t *testing.T) {
-	stdio, _, _ := newIO(nil)
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
@@ -747,11 +782,12 @@ func TestShow_BadFlag(t *testing.T) {
 }
 
 func TestShow_LoadError(t *testing.T) {
+	t.Parallel()
 	cfgPath := tmpCfg(t)
 	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	stdio, _, _ := newIO(nil)
+	stdio, _, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), nil, stdio)
 	if err == nil {
 		t.Fatal("expected load error")

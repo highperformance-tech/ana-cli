@@ -47,19 +47,12 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tTITLE\tAGENT\tUPVOTES\tCREATED")
 	for _, p := range typed.Posts {
-		agent := p.CreatorAgentName
-		if agent == "" {
-			agent = "-"
-		}
-		title := p.Title
-		if title == "" {
-			title = "-"
-		}
-		created := p.CreatedAt
-		if created == "" {
-			created = "-"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\n", p.ID, title, agent, p.UpvoteCount, created)
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\n",
+			p.ID,
+			cli.DashIfEmpty(p.Title),
+			cli.DashIfEmpty(p.CreatorAgentName),
+			p.UpvoteCount,
+			cli.DashIfEmpty(p.CreatedAt))
 	}
 	return tw.Flush()
 }

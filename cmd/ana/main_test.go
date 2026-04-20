@@ -26,6 +26,7 @@ var uuidRe = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 // TestNewUUID_Shape verifies the canonical v4 layout: 36 chars, 8-4-4-4-12,
 // a literal '4' at byte 14 (version), and one of 8/9/a/b at byte 19 (variant).
 func TestNewUUID_Shape(t *testing.T) {
+	t.Parallel()
 	for i := 0; i < 64; i++ {
 		u := newUUID()
 		if len(u) != 36 {
@@ -49,6 +50,7 @@ func TestNewUUID_Shape(t *testing.T) {
 // TestNewUUID_Unique catches a trivial regression where the generator returns a
 // constant. 64 iterations is overkill for collision avoidance but cheap.
 func TestNewUUID_Unique(t *testing.T) {
+	t.Parallel()
 	seen := make(map[string]struct{}, 64)
 	for i := 0; i < 64; i++ {
 		u := newUUID()
@@ -63,6 +65,7 @@ func TestNewUUID_Unique(t *testing.T) {
 // and auth.Config. Trivial, but guards against future drift where a new field
 // lands in one side and not the other.
 func TestProfileToAuthConfig(t *testing.T) {
+	t.Parallel()
 	p := config.Profile{Endpoint: "https://example.com", Token: "abc", OrgName: "Acme"}
 	ac := profileToAuthConfig(p)
 	if ac.Endpoint != p.Endpoint || ac.Token != p.Token {
@@ -74,6 +77,7 @@ func TestProfileToAuthConfig(t *testing.T) {
 // server that yields a single data frame + clean trailer, and verifies the
 // returned value satisfies chat.StreamSession and delivers the frame.
 func TestStreamAdapter_ReturnsSession(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/connect+json")
 		w.WriteHeader(200)
@@ -112,6 +116,7 @@ func TestStreamAdapter_ReturnsSession(t *testing.T) {
 // adapter: a 500 response with a Connect error envelope should surface as a
 // transport error, and the session should be nil.
 func TestStreamAdapter_PropagatesError(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		w.Write([]byte(`{"code":"internal","message":"boom"}`))
@@ -132,6 +137,7 @@ func TestStreamAdapter_PropagatesError(t *testing.T) {
 // config file in t.TempDir(), exercising LoadCfg, SaveCfg, and ConfigPath in
 // one test. This is the most compact way to cover the three closures.
 func TestAuthDeps_LoadSave_RoundTrip(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
 	// Seed the "default" profile so LoadCfg has something to read. Also
@@ -186,6 +192,7 @@ func TestAuthDeps_LoadSave_RoundTrip(t *testing.T) {
 // hands buildVerbs an empty profileName (shouldn't happen in practice, but
 // authDeps defends against it), SaveCfg must still write into "default".
 func TestAuthDeps_SaveCfg_DefaultsToNamedSlot(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
 	env := func(string) string { return "" }
@@ -206,6 +213,7 @@ func TestAuthDeps_SaveCfg_DefaultsToNamedSlot(t *testing.T) {
 // TestAuthDeps_SaveCfg_LoadError verifies a malformed existing file surfaces
 // as an error from SaveCfg rather than silently clobbering the user's data.
 func TestAuthDeps_SaveCfg_LoadError(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
@@ -221,6 +229,7 @@ func TestAuthDeps_SaveCfg_LoadError(t *testing.T) {
 // TestAuthDeps_LoadCfg_LoadError mirrors the SaveCfg variant — a malformed
 // file must surface through LoadCfg rather than silently masking the problem.
 func TestAuthDeps_LoadCfg_LoadError(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(cfgPath, []byte("{not json"), 0o600); err != nil {
@@ -237,6 +246,7 @@ func TestAuthDeps_LoadCfg_LoadError(t *testing.T) {
 // SaveCfg/ConfigPath: with XDG_CONFIG_HOME set, both should resolve a path
 // under that directory rather than erroring.
 func TestAuthDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	env := func(k string) string {
 		if k == "XDG_CONFIG_HOME" {
@@ -273,6 +283,7 @@ func TestAuthDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
 // promised by docs/features.md. Regression guard: a drop would be silent
 // otherwise — main.go has no other assertion about verb naming.
 func TestBuildVerbs_Shape(t *testing.T) {
+	t.Parallel()
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
 	verbs := buildVerbs(client, func(string) string { return "" }, "", "default")
 	want := []string{"auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit", "version"}
@@ -292,6 +303,7 @@ func TestBuildVerbs_Shape(t *testing.T) {
 // speaks config.Config directly so the assertions are simpler (no projection
 // in the middle).
 func TestProfileDeps_LoadSave_RoundTrip(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
 	seed := config.Config{
@@ -337,6 +349,7 @@ func TestProfileDeps_LoadSave_RoundTrip(t *testing.T) {
 // of all three closures: with XDG_CONFIG_HOME set they must resolve into
 // that directory rather than erroring.
 func TestProfileDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	env := func(k string) string {
 		if k == "XDG_CONFIG_HOME" {
@@ -373,6 +386,7 @@ func TestProfileDeps_EmptyPath_FallsBackToEnv(t *testing.T) {
 // cfgPath nor any env var set, all three closures must surface the
 // config.DefaultPath error rather than silently writing to nowhere.
 func TestProfileDeps_EmptyPath_NoEnv(t *testing.T) {
+	t.Parallel()
 	deps := profileDeps(func(string) string { return "" }, "")
 	if _, err := deps.LoadCfg(); err == nil {
 		t.Fatal("LoadCfg: expected error with no HOME/XDG set")
@@ -389,6 +403,7 @@ func TestProfileDeps_EmptyPath_NoEnv(t *testing.T) {
 // (that's covered by TestStreamAdapter_*), just assert the deps struct is
 // populated.
 func TestChatDeps_Fields(t *testing.T) {
+	t.Parallel()
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
 	d := chatDeps(client)
 	if d.Unary == nil || d.Stream == nil || d.UUIDFn == nil {
@@ -403,6 +418,7 @@ func TestChatDeps_Fields(t *testing.T) {
 // module-level version/commit/date vars should appear in the output, and Run
 // should return nil (exit 0).
 func TestVersionCmd_PrintsBanner(t *testing.T) {
+	t.Parallel()
 	var out bytes.Buffer
 	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
 	if err := (versionCmd{}).Run(context.Background(), nil, stdio); err != nil {
@@ -415,6 +431,7 @@ func TestVersionCmd_PrintsBanner(t *testing.T) {
 
 // TestVersionCmd_Help covers the --help short-circuit.
 func TestVersionCmd_Help(t *testing.T) {
+	t.Parallel()
 	var out bytes.Buffer
 	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
 	err := (versionCmd{}).Run(context.Background(), []string{"--help"}, stdio)
@@ -430,6 +447,7 @@ func TestVersionCmd_Help(t *testing.T) {
 // flag at the top level must route through the `version` verb and print the
 // banner on stdout with exit code 0.
 func TestRun_VersionFlag(t *testing.T) {
+	t.Parallel()
 	var out, errb bytes.Buffer
 	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: func(string) string { return "" }, Now: time.Now}
 	err := run([]string{"--version"}, stdio, func(string) string { return "" })
@@ -444,6 +462,7 @@ func TestRun_VersionFlag(t *testing.T) {
 // TestRun_NoArgs_PrintsHelp verifies the top-level behavior: no args prints
 // root help to stdout and returns ErrHelp (exit code 0 via cli.ExitCode).
 func TestRun_NoArgs_PrintsHelp(t *testing.T) {
+	t.Parallel()
 	var out, errb bytes.Buffer
 	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: func(string) string { return "" }, Now: time.Now}
 	err := run(nil, stdio, func(string) string { return "" })
@@ -461,6 +480,7 @@ func TestRun_NoArgs_PrintsHelp(t *testing.T) {
 // landed on stdout. This exercises ParseGlobal -> transport.New -> verb
 // dispatch all the way through.
 func TestRun_EndToEnd_ConnectorList(t *testing.T) {
+	t.Parallel()
 	// Connector list returns {"connectors": [...]}. We capture the request
 	// path so the test also verifies we built the right URL.
 	var gotPath string
@@ -494,6 +514,7 @@ func TestRun_EndToEnd_ConnectorList(t *testing.T) {
 // --profile pointing at a slot that doesn't exist (and no env fallback)
 // must print the canonical error to stderr and exit 1 via ErrUsage.
 func TestRun_UnknownProfile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "ana", "config.json")
 	seed := config.Config{

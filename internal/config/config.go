@@ -13,7 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 )
 
 // DefaultEndpoint is used by Resolve when no endpoint is configured.
@@ -138,8 +138,8 @@ func Save(path string, cfg Config) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("config: mkdir %s: %w", dir, err)
 	}
-	// Config holds only strings + a map of strings; json.MarshalIndent cannot
-	// fail for these types.
+	// MarshalIndent cannot fail: Config is strings + map[string]Profile with
+	// string-only fields.
 	data, _ := json.MarshalIndent(cfg, "", "  ")
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
@@ -198,7 +198,7 @@ func (c *Config) Remove(name string) bool {
 	for k := range c.Profiles {
 		names = append(names, k)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	c.Active = names[0]
 	return true
 }
@@ -265,7 +265,7 @@ func pickProfileName(env func(string) string, loaded Config, profileName string)
 		for k := range loaded.Profiles {
 			names = append(names, k)
 		}
-		sort.Strings(names)
+		slices.Sort(names)
 		return names[0]
 	}
 	return "default"

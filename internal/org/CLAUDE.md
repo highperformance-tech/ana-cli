@@ -10,4 +10,5 @@ The `ana org` verb tree: `list`, `show`, and the nested `members`/`roles`/`permi
 - `members.go` — `ListOrganizationMembers` (requires an explicit `orgId` in the request payload — see commit `233eb82`).
 - `roles.go` — `RBACService.ListRoles` scoped to the active org.
 - `permissions.go` — `RBACService.ListPermissions` (readonly catalog).
-- `org_test.go` — fake `Unary` records path + payload; asserts wire-level field names and orgId plumbing.
+- `org_test.go` — shared `fakeDeps` + `TestNew*`/`TestHelp*`.
+- `list_test.go` / `show_test.go` / `members_test.go` / `roles_test.go` / `permissions_test.go` — one per source file; each records path + payload and asserts wire-level field names and orgId plumbing.

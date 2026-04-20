@@ -1,9 +1,10 @@
 package org
 
 import (
+	"cmp"
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -19,17 +20,20 @@ func (c *listCmd) Help() string {
 		"Usage: ana org list"
 }
 
+// organizationEntry is the per-org projection used to render the list table.
+type organizationEntry struct {
+	OrgID              string `json:"orgId"`
+	OrganizationName   string `json:"organizationName"`
+	DefaultConnectorID *int64 `json:"defaultConnectorId,omitempty"`
+}
+
 // listOrganizationsResp narrows the response to the render columns. The catalog
 // has many additional fields (theme, toolRestrictions, ...) which the decoder
 // silently drops. DefaultConnectorID is *int64 so an absent field is
 // distinguishable from a literal 0 — the catalog shows orgs omit the key
 // entirely when no default exists.
 type listOrganizationsResp struct {
-	Organizations []struct {
-		OrgID              string `json:"orgId"`
-		OrganizationName   string `json:"organizationName"`
-		DefaultConnectorID *int64 `json:"defaultConnectorId,omitempty"`
-	} `json:"organizations"`
+	Organizations []organizationEntry `json:"organizations"`
 }
 
 // Run issues ListOrganizations with an empty body and either prints a table
@@ -54,8 +58,8 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	}
 	// Case-insensitive sort so "acme" and "Acme Inc" order intuitively instead
 	// of splitting on ASCII case boundaries.
-	sort.SliceStable(typed.Organizations, func(i, j int) bool {
-		return strings.ToLower(typed.Organizations[i].OrganizationName) < strings.ToLower(typed.Organizations[j].OrganizationName)
+	slices.SortStableFunc(typed.Organizations, func(a, b organizationEntry) int {
+		return cmp.Compare(strings.ToLower(a.OrganizationName), strings.ToLower(b.OrganizationName))
 	})
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "NAME\tORG ID\tDEFAULT CONNECTOR")

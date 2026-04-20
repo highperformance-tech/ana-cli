@@ -70,6 +70,7 @@ func TestDefaultIO(t *testing.T) {
 }
 
 func TestGroupRunEmptyArgs(t *testing.T) {
+	t.Parallel()
 	child := &fakeCmd{help: "do child"}
 	g := &Group{Summary: "a group", Children: map[string]Command{"c": child}}
 	stdio, out, errb := testIO()
@@ -86,9 +87,10 @@ func TestGroupRunEmptyArgs(t *testing.T) {
 }
 
 func TestGroupRunHelpTokens(t *testing.T) {
+	t.Parallel()
 	for _, tok := range []string{"-h", "--help", "help"} {
-		tok := tok
 		t.Run(tok, func(t *testing.T) {
+			t.Parallel()
 			g := &Group{Summary: "S", Children: map[string]Command{"c": &fakeCmd{help: "do c"}}}
 			stdio, out, errb := testIO()
 			err := g.Run(context.Background(), []string{tok}, stdio)
@@ -106,6 +108,7 @@ func TestGroupRunHelpTokens(t *testing.T) {
 }
 
 func TestGroupRunUnknownChild(t *testing.T) {
+	t.Parallel()
 	g := &Group{Children: map[string]Command{"c": &fakeCmd{help: "c help"}}}
 	stdio, out, errb := testIO()
 	err := g.Run(context.Background(), []string{"nope"}, stdio)
@@ -121,6 +124,7 @@ func TestGroupRunUnknownChild(t *testing.T) {
 }
 
 func TestGroupRunKnownChildDelegates(t *testing.T) {
+	t.Parallel()
 	child := &fakeCmd{help: "c"}
 	g := &Group{Children: map[string]Command{"c": child}}
 	stdio, _, _ := testIO()
@@ -137,6 +141,7 @@ func TestGroupRunKnownChildDelegates(t *testing.T) {
 }
 
 func TestGroupRunChildReturnsError(t *testing.T) {
+	t.Parallel()
 	want := errors.New("boom")
 	child := &fakeCmd{err: want}
 	g := &Group{Children: map[string]Command{"c": child}}
@@ -148,6 +153,7 @@ func TestGroupRunChildReturnsError(t *testing.T) {
 }
 
 func TestGroupHelpSortedWithSummary(t *testing.T) {
+	t.Parallel()
 	g := &Group{
 		Summary: "the summary",
 		Children: map[string]Command{
@@ -171,6 +177,7 @@ func TestGroupHelpSortedWithSummary(t *testing.T) {
 }
 
 func TestGroupHelpNoSummary(t *testing.T) {
+	t.Parallel()
 	g := &Group{Children: map[string]Command{"c": &fakeCmd{help: "c"}}}
 	h := g.Help()
 	if strings.HasPrefix(h, "\n") {
@@ -182,6 +189,7 @@ func TestGroupHelpNoSummary(t *testing.T) {
 }
 
 func TestParseGlobalAllFlagsEqualsForm(t *testing.T) {
+	t.Parallel()
 	args := []string{"--json", "--endpoint=https://x", "--token-file=/tmp/t", "--profile=prod", "--verbose", "verb", "a"}
 	g, rest, err := ParseGlobal(args)
 	if err != nil {
@@ -199,6 +207,7 @@ func TestParseGlobalAllFlagsEqualsForm(t *testing.T) {
 }
 
 func TestParseGlobalAllFlagsSpaceForm(t *testing.T) {
+	t.Parallel()
 	args := []string{"--endpoint", "https://y", "--token-file", "/p", "-v", "verb"}
 	g, rest, err := ParseGlobal(args)
 	if err != nil {
@@ -213,6 +222,7 @@ func TestParseGlobalAllFlagsSpaceForm(t *testing.T) {
 }
 
 func TestParseGlobalStopsAtPositional(t *testing.T) {
+	t.Parallel()
 	g, rest, err := ParseGlobal([]string{"--json", "chat", "send"})
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -226,6 +236,7 @@ func TestParseGlobalStopsAtPositional(t *testing.T) {
 }
 
 func TestParseGlobalDoubleDash(t *testing.T) {
+	t.Parallel()
 	g, rest, err := ParseGlobal([]string{"--json", "--", "--looks-like-flag", "x"})
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -239,6 +250,7 @@ func TestParseGlobalDoubleDash(t *testing.T) {
 }
 
 func TestParseGlobalUnknownFlag(t *testing.T) {
+	t.Parallel()
 	_, _, err := ParseGlobal([]string{"--nope"})
 	if err == nil {
 		t.Fatalf("want error")
@@ -249,6 +261,7 @@ func TestParseGlobalUnknownFlag(t *testing.T) {
 }
 
 func TestDispatchHappyPath(t *testing.T) {
+	t.Parallel()
 	child := &fakeCmd{help: "child"}
 	verbs := map[string]Command{"run": child}
 	stdio, _, _ := testIO()
@@ -268,6 +281,7 @@ func TestDispatchHappyPath(t *testing.T) {
 }
 
 func TestDispatchNoVerb(t *testing.T) {
+	t.Parallel()
 	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
 	stdio, out, _ := testIO()
 	err := Dispatch(context.Background(), verbs, nil, stdio)
@@ -280,9 +294,10 @@ func TestDispatchNoVerb(t *testing.T) {
 }
 
 func TestDispatchHelp(t *testing.T) {
+	t.Parallel()
 	for _, tok := range []string{"help", "-h", "--help"} {
-		tok := tok
 		t.Run(tok, func(t *testing.T) {
+			t.Parallel()
 			verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
 			stdio, out, _ := testIO()
 			args := []string{tok}
@@ -302,6 +317,7 @@ func TestDispatchHelp(t *testing.T) {
 }
 
 func TestDispatchHelpAfterGlobalFlag(t *testing.T) {
+	t.Parallel()
 	// Globals parse successfully, then the remainder starts with "help".
 	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
 	stdio, out, _ := testIO()
@@ -315,6 +331,7 @@ func TestDispatchHelpAfterGlobalFlag(t *testing.T) {
 }
 
 func TestDispatchUnknownVerb(t *testing.T) {
+	t.Parallel()
 	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
 	stdio, _, errb := testIO()
 	err := Dispatch(context.Background(), verbs, []string{"zzz"}, stdio)
@@ -327,6 +344,7 @@ func TestDispatchUnknownVerb(t *testing.T) {
 }
 
 func TestDispatchBadGlobalFlag(t *testing.T) {
+	t.Parallel()
 	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
 	stdio, _, errb := testIO()
 	err := Dispatch(context.Background(), verbs, []string{"--no-such-flag"}, stdio)
@@ -339,6 +357,7 @@ func TestDispatchBadGlobalFlag(t *testing.T) {
 }
 
 func TestDispatchPropagatesChildError(t *testing.T) {
+	t.Parallel()
 	want := errors.New("inner")
 	child := &fakeCmd{err: want}
 	verbs := map[string]Command{"run": child}
@@ -350,6 +369,7 @@ func TestDispatchPropagatesChildError(t *testing.T) {
 }
 
 func TestDispatchStoresGlobalInContext(t *testing.T) {
+	t.Parallel()
 	child := &fakeCmd{help: "c"}
 	verbs := map[string]Command{"run": child}
 	stdio, _, _ := testIO()
@@ -366,6 +386,7 @@ func TestDispatchStoresGlobalInContext(t *testing.T) {
 }
 
 func TestRootHelpWritesSortedList(t *testing.T) {
+	t.Parallel()
 	verbs := map[string]Command{
 		"zebra": &fakeCmd{help: "zebra\nmore"},
 		"ant":   &fakeCmd{help: "ant cmd"},
@@ -387,22 +408,40 @@ func TestRootHelpWritesSortedList(t *testing.T) {
 }
 
 func TestWithGlobalAndFrom(t *testing.T) {
-	// nil context: WithGlobal should still succeed. The nil argument is
-	// intentional — this test covers the documented defensive fallback.
-	//lint:ignore SA1012 intentional: covers nil-context fallback
-	ctx := WithGlobal(nil, Global{JSON: true})
+	t.Parallel()
+	// Round-trip a Global through a non-nil parent ctx.
+	ctx := WithGlobal(context.Background(), Global{JSON: true})
 	if g := GlobalFrom(ctx); !g.JSON {
 		t.Errorf("GlobalFrom returned %+v", g)
-	}
-	// nil context on GlobalFrom returns zero value.
-	//lint:ignore SA1012 intentional: covers nil-context fallback
-	if g := GlobalFrom(nil); g != (Global{}) {
-		t.Errorf("GlobalFrom(nil)=%+v want zero", g)
 	}
 	// Empty context returns zero value.
 	if g := GlobalFrom(context.Background()); g != (Global{}) {
 		t.Errorf("GlobalFrom(bg)=%+v want zero", g)
 	}
+}
+
+func TestWithGlobalNilCtxPanics(t *testing.T) {
+	t.Parallel()
+	// Matches context.WithValue's stdlib contract: nil parent ctx panics.
+	defer func() {
+		if recover() == nil {
+			t.Errorf("WithGlobal(nil,…) should panic")
+		}
+	}()
+	//lint:ignore SA1012 intentional: asserting stdlib-style nil-ctx panic
+	_ = WithGlobal(nil, Global{})
+}
+
+func TestGlobalFromNilCtxPanics(t *testing.T) {
+	t.Parallel()
+	// Matches context.Value's stdlib contract: nil ctx panics.
+	defer func() {
+		if recover() == nil {
+			t.Errorf("GlobalFrom(nil) should panic")
+		}
+	}()
+	//lint:ignore SA1012 intentional: asserting stdlib-style nil-ctx panic
+	_ = GlobalFrom(nil)
 }
 
 // stubAuthErr implements authError for ExitCode tests.
@@ -412,6 +451,7 @@ func (s stubAuthErr) Error() string     { return "auth" }
 func (s stubAuthErr) IsAuthError() bool { return s.auth }
 
 func TestExitCode(t *testing.T) {
+	t.Parallel()
 	if got := ExitCode(nil); got != 0 {
 		t.Errorf("nil=%d want 0", got)
 	}

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 )
@@ -83,7 +83,7 @@ func (g *Group) Help() string {
 	for name := range g.Children {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	width := 0
 	for _, n := range names {
 		if len(n) > width {
@@ -91,7 +91,7 @@ func (g *Group) Help() string {
 		}
 	}
 	for _, n := range names {
-		first := firstLine(g.Children[n].Help())
+		first := FirstLine(g.Children[n].Help())
 		fmt.Fprintf(&b, "  %-*s   %s\n", width, n, first)
 	}
 	// Trim trailing newline so callers can Fprintln without doubling blanks.
@@ -103,8 +103,10 @@ func isHelpArg(s string) bool {
 	return s == "-h" || s == "--help" || s == "help"
 }
 
-// firstLine returns the first line of s (without the newline).
-func firstLine(s string) string {
+// FirstLine returns the first line of s (without the newline). Exported so
+// verb packages that render streaming/multi-line payloads one-row-per-frame
+// can reuse the same definition the help renderer uses.
+func FirstLine(s string) string {
 	if i := strings.IndexByte(s, '\n'); i >= 0 {
 		return s[:i]
 	}

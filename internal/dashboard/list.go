@@ -53,13 +53,7 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	tw := cli.NewTableWriter(stdio.Stdout)
 	fmt.Fprintln(tw, "ID\tNAME\tFOLDER")
 	for _, d := range typed.Dashboards {
-		folder := d.FolderName
-		if folder == "" {
-			folder = d.FolderID
-		}
-		if folder == "" {
-			folder = "-"
-		}
+		folder := cli.DashIfEmpty(cli.FirstNonEmpty(d.FolderName, d.FolderID))
 		fmt.Fprintf(tw, "%s\t%s\t%s\n", d.ID, d.Name, folder)
 	}
 	return tw.Flush()
