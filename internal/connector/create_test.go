@@ -205,6 +205,57 @@ func TestCreateMissingFlags(t *testing.T) {
 	}
 }
 
+func TestCreateEmptyString(t *testing.T) {
+	t.Parallel()
+	for _, flag := range []string{"name", "host", "user", "database"} {
+		t.Run(flag, func(t *testing.T) {
+			t.Parallel()
+			cmd := &createCmd{deps: (&fakeDeps{}).deps()}
+			args := append(requiredFlags(), "--"+flag, "")
+			stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+			err := cmd.Run(context.Background(), args, stdio)
+			if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "--"+flag) {
+				t.Errorf("err=%v", err)
+			}
+		})
+	}
+}
+
+func TestCreateBadPort(t *testing.T) {
+	t.Parallel()
+	for _, port := range []string{"0", "-1", "70000"} {
+		t.Run(port, func(t *testing.T) {
+			t.Parallel()
+			cmd := &createCmd{deps: (&fakeDeps{}).deps()}
+			args := []string{
+				"--type", "postgres", "--name", "n", "--host", "h",
+				"--port", port, "--user", "u", "--database", "d", "--password", "p",
+			}
+			stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+			err := cmd.Run(context.Background(), args, stdio)
+			if !errors.Is(err, cli.ErrUsage) {
+				t.Errorf("err=%v", err)
+			}
+		})
+	}
+}
+
+func TestCreateRenderWriteErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"connectorId": 99.0, "name": "pg1", "connectorType": "POSTGRES"}
+			return nil
+		},
+	}
+	cmd := &createCmd{deps: f.deps()}
+	err := cmd.Run(context.Background(), requiredFlags(), testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("err=%v want boom", err)
+	}
+}
+
 func TestCreateBadFlag(t *testing.T) {
 	t.Parallel()
 	cmd := &createCmd{deps: (&fakeDeps{}).deps()}

@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -42,16 +43,18 @@ func (c *renameCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 		return cli.UsageErrf("chat rename: <title> positional argument required")
 	}
 	title := rest[1]
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/UpdateChat",
 		renameReq{ChatID: id, Summary: title}, &raw); err != nil {
 		return fmt.Errorf("chat rename: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
+	var typed struct{}
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, _ *struct{}) error {
+		_, err := fmt.Fprintln(w, "ok")
+		return err
+	}); err != nil {
+		return fmt.Errorf("chat rename: %w", err)
 	}
-	fmt.Fprintln(stdio.Stdout, "ok")
 	return nil
 }
 
@@ -104,15 +107,17 @@ func (c *deleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/DeleteChat", chatIDReq{ChatID: id}, &raw); err != nil {
 		return fmt.Errorf("chat delete: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
+	var typed struct{}
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, _ *struct{}) error {
+		_, err := fmt.Fprintf(w, "deleted %s\n", id)
+		return err
+	}); err != nil {
+		return fmt.Errorf("chat delete: %w", err)
 	}
-	fmt.Fprintf(stdio.Stdout, "deleted %s\n", id)
 	return nil
 }
 
@@ -141,19 +146,17 @@ func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/DuplicateChat", chatIDReq{ChatID: id}, &raw); err != nil {
 		return fmt.Errorf("chat duplicate: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed duplicateResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("chat duplicate: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *duplicateResp) error {
+		_, err := fmt.Fprintln(w, t.Chat.ID)
+		return err
+	}); err != nil {
+		return fmt.Errorf("chat duplicate: %w", err)
 	}
-	fmt.Fprintln(stdio.Stdout, typed.Chat.ID)
 	return nil
 }
 
@@ -168,14 +171,16 @@ func simpleAck(ctx context.Context, args []string, stdio cli.IO, deps Deps, verb
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := deps.Unary(ctx, chatServicePath+suffix, chatIDReq{ChatID: id}, &raw); err != nil {
 		return fmt.Errorf("%s: %w", verb, err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
+	var typed struct{}
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, _ *struct{}) error {
+		_, err := fmt.Fprintln(w, "ok")
+		return err
+	}); err != nil {
+		return fmt.Errorf("%s: %w", verb, err)
 	}
-	fmt.Fprintln(stdio.Stdout, "ok")
 	return nil
 }

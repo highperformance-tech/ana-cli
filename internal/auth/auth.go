@@ -27,7 +27,7 @@ var ErrNotLoggedIn = errors.New("not logged in")
 // needs endpoint + token, and this local shape keeps the contract narrow.
 type Config struct {
 	Endpoint string
-	Token    string
+	Token    cli.Token
 }
 
 // Deps is the injected boundary. A real wiring layer adapts transport.Client

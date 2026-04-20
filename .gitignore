@@ -28,3 +28,7 @@ e2e-manual-revert-*.md
 
 # Claude Code personal overrides
 CLAUDE.local.md
+.claude/scheduled_tasks.lock
+
+# CodeGraph — local-only semantic index
+.codegraph/

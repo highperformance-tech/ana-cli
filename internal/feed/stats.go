@@ -3,6 +3,7 @@ package feed
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
@@ -39,24 +40,23 @@ func (c *statsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := c.deps.Unary(ctx, feedServicePath+"/GetFeedStats", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("feed stats: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed statsResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("feed stats: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *statsResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintf(tw, "messagesToday\t%d\n", t.MessagesToday)
+		fmt.Fprintf(tw, "messagesAllTime\t%d\n", t.MessagesAllTime)
+		fmt.Fprintf(tw, "activeAgents\t%d\n", t.ActiveAgents)
+		fmt.Fprintf(tw, "dashboardsCreated\t%d\n", t.DashboardsCreated)
+		fmt.Fprintf(tw, "threadsCreated\t%d\n", t.ThreadsCreated)
+		fmt.Fprintf(tw, "playbooksCreated\t%d\n", t.PlaybooksCreated)
+		fmt.Fprintf(tw, "connectorsConfigured\t%d\n", t.ConnectorsConfigured)
+		fmt.Fprintf(tw, "connectorNames\t%s\n", joinOrDash(t.ConnectorNames))
+		fmt.Fprintf(tw, "activeAgentNames\t%s\n", joinOrDash(t.ActiveAgentNames))
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("feed stats: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintf(tw, "messagesToday\t%d\n", typed.MessagesToday)
-	fmt.Fprintf(tw, "messagesAllTime\t%d\n", typed.MessagesAllTime)
-	fmt.Fprintf(tw, "activeAgents\t%d\n", typed.ActiveAgents)
-	fmt.Fprintf(tw, "dashboardsCreated\t%d\n", typed.DashboardsCreated)
-	fmt.Fprintf(tw, "threadsCreated\t%d\n", typed.ThreadsCreated)
-	fmt.Fprintf(tw, "playbooksCreated\t%d\n", typed.PlaybooksCreated)
-	fmt.Fprintf(tw, "connectorsConfigured\t%d\n", typed.ConnectorsConfigured)
-	fmt.Fprintf(tw, "connectorNames\t%s\n", joinOrDash(typed.ConnectorNames))
-	fmt.Fprintf(tw, "activeAgentNames\t%s\n", joinOrDash(typed.ActiveAgentNames))
-	return tw.Flush()
+	return nil
 }
 
 // joinOrDash renders a comma-joined list or "-" when empty so the column

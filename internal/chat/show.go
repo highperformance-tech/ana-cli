@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -44,28 +45,22 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/GetChat", showReq{ChatID: id}, &raw); err != nil {
 		return fmt.Errorf("chat show: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed showResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("chat show: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *showResp) error {
+		// A missing `chat` envelope falls through to --json so the user sees
+		// the response shape rather than a block of empty fields.
+		if t.Chat.ID == "" {
+			return cli.WriteJSON(w, raw)
+		}
+		_, err := fmt.Fprintf(w, "id: %s\ntitle: %s\nmodel: %s\nupdated: %s\nsource: %s\nmethodology: %s\n",
+			t.Chat.ID, t.Chat.Summary, t.Chat.Model, t.Chat.UpdatedAt, t.Chat.Source, t.Chat.Methodology)
+		return err
+	}); err != nil {
+		return fmt.Errorf("chat show: %w", err)
 	}
-	// A missing `chat` envelope falls through to --json so the user sees the
-	// response shape rather than a block of empty fields.
-	if typed.Chat.ID == "" {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
-	fmt.Fprintf(stdio.Stdout, "id: %s\n", typed.Chat.ID)
-	fmt.Fprintf(stdio.Stdout, "title: %s\n", typed.Chat.Summary)
-	fmt.Fprintf(stdio.Stdout, "model: %s\n", typed.Chat.Model)
-	fmt.Fprintf(stdio.Stdout, "updated: %s\n", typed.Chat.UpdatedAt)
-	fmt.Fprintf(stdio.Stdout, "source: %s\n", typed.Chat.Source)
-	fmt.Fprintf(stdio.Stdout, "methodology: %s\n", typed.Chat.Methodology)
 	return nil
 }

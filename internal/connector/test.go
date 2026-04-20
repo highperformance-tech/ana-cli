@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -50,22 +51,20 @@ func (c *testCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/TestConnector", testReq{ConnectorID: id}, &raw); err != nil {
 		return fmt.Errorf("connector test: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed testResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("connector test: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *testResp) error {
+		if t.Error != "" {
+			_, err := fmt.Fprintf(w, "FAIL: %s\n", t.Error)
+			return err
+		}
+		_, err := fmt.Fprintln(w, "OK")
+		return err
+	}); err != nil {
+		return fmt.Errorf("connector test: %w", err)
 	}
-	if typed.Error != "" {
-		fmt.Fprintf(stdio.Stdout, "FAIL: %s\n", typed.Error)
-		return nil
-	}
-	fmt.Fprintln(stdio.Stdout, "OK")
 	return nil
 }

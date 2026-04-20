@@ -101,6 +101,24 @@ func TestExamplesUnaryErr(t *testing.T) {
 	}
 }
 
+func TestExamplesWriteErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"examples": []any{
+				map[string]any{"label": "E", "message": "m", "category": "c"},
+			}}
+			return nil
+		},
+	}
+	cmd := &examplesCmd{deps: f.deps()}
+	err := cmd.Run(context.Background(), []string{"1"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "connector examples") {
+		t.Errorf("err=%v", err)
+	}
+}
+
 func TestExamplesRemarshalErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{

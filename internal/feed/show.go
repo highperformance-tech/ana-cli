@@ -3,6 +3,7 @@ package feed
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -37,22 +38,21 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := c.deps.Unary(ctx, feedServicePath+"/GetFeed", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("feed show: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed showResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("feed show: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *showResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tTITLE\tAGENT\tUPVOTES\tCREATED")
+		for _, p := range t.Posts {
+			fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\n",
+				p.ID,
+				cli.DashIfEmpty(p.Title),
+				cli.DashIfEmpty(p.CreatorAgentName),
+				p.UpvoteCount,
+				cli.DashIfEmpty(p.CreatedAt))
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("feed show: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tTITLE\tAGENT\tUPVOTES\tCREATED")
-	for _, p := range typed.Posts {
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\n",
-			p.ID,
-			cli.DashIfEmpty(p.Title),
-			cli.DashIfEmpty(p.CreatorAgentName),
-			p.UpvoteCount,
-			cli.DashIfEmpty(p.CreatedAt))
-	}
-	return tw.Flush()
+	return nil
 }

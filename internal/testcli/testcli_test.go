@@ -2,6 +2,8 @@ package testcli
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -100,6 +102,70 @@ func TestNewIOEnvReturnsEmpty(t *testing.T) {
 	}
 	if got := ioc.Env(""); got != "" {
 		t.Errorf("Env(\"\") = %q, want empty string", got)
+	}
+}
+
+func TestRecordUnaryRecordsAndDelegates(t *testing.T) {
+	t.Parallel()
+	var path string
+	var raw []byte
+	var got struct {
+		ctx  context.Context
+		path string
+	}
+	inner := func(ctx context.Context, p string, req, resp any) error {
+		got.ctx = ctx
+		got.path = p
+		m := resp.(*map[string]any)
+		*m = map[string]any{"ok": true}
+		return nil
+	}
+	u := RecordUnary(&path, &raw, inner)
+	req := map[string]any{"a": 1}
+	var resp map[string]any
+	if err := u(context.Background(), "/Svc/Method", req, &resp); err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if path != "/Svc/Method" {
+		t.Errorf("path=%q", path)
+	}
+	if string(raw) != `{"a":1}` {
+		t.Errorf("raw=%q", raw)
+	}
+	if got.path != "/Svc/Method" {
+		t.Errorf("inner path=%q", got.path)
+	}
+	if got.ctx == nil || resp["ok"] != true {
+		t.Errorf("delegate did not run or mutate resp: resp=%v", resp)
+	}
+}
+
+func TestRecordUnaryNilPointersAndInner(t *testing.T) {
+	t.Parallel()
+	u := RecordUnary(nil, nil, nil)
+	if err := u(context.Background(), "/p", struct{}{}, nil); err != nil {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestRecordUnaryMarshalFailureLeavesRawAlone(t *testing.T) {
+	t.Parallel()
+	// json.Marshal fails on channels; RecordUnary must keep raw at its prior
+	// value (nil here) and still call through to inner so assertions on other
+	// side-effects are not skipped by a malformed request.
+	var raw []byte
+	called := false
+	inner := func(context.Context, string, any, any) error { called = true; return errors.New("x") }
+	u := RecordUnary(nil, &raw, inner)
+	err := u(context.Background(), "/p", make(chan int), nil)
+	if err == nil || err.Error() != "x" {
+		t.Errorf("err=%v", err)
+	}
+	if raw != nil {
+		t.Errorf("raw should be nil, got %q", raw)
+	}
+	if !called {
+		t.Errorf("inner not called on marshal failure")
 	}
 }
 

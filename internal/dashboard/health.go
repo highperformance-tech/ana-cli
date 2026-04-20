@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
@@ -54,33 +55,31 @@ func (c *healthCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/CheckDashboardHealth", healthReq{DashboardIDs: []string{id}}, &raw); err != nil {
 		return fmt.Errorf("dashboard health: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed healthResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("dashboard health: decode response: %w", err)
-	}
-	if len(typed.Dashboards) == 0 {
-		return fmt.Errorf("dashboard health: no dashboard entry for %s: %w", id, cli.ErrUsage)
-	}
-	d := typed.Dashboards[0]
-	label := healthLabel(d.Status)
-	if d.Message != "" {
-		fmt.Fprintf(stdio.Stdout, "%s %s: %s\n", d.DashboardID, label, d.Message)
-	} else {
-		fmt.Fprintf(stdio.Stdout, "%s %s\n", d.DashboardID, label)
-	}
-	if d.StreamlitURL != "" {
-		fmt.Fprintf(stdio.Stdout, "streamlitUrl: %s\n", d.StreamlitURL)
-	}
-	if d.EmbedURL != "" {
-		fmt.Fprintf(stdio.Stdout, "embedUrl: %s\n", d.EmbedURL)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *healthResp) error {
+		if len(t.Dashboards) == 0 {
+			return fmt.Errorf("no dashboard entry for %s: %w", id, cli.ErrUsage)
+		}
+		d := t.Dashboards[0]
+		label := healthLabel(d.Status)
+		if d.Message != "" {
+			fmt.Fprintf(w, "%s %s: %s\n", d.DashboardID, label, d.Message)
+		} else {
+			fmt.Fprintf(w, "%s %s\n", d.DashboardID, label)
+		}
+		if d.StreamlitURL != "" {
+			fmt.Fprintf(w, "streamlitUrl: %s\n", d.StreamlitURL)
+		}
+		if d.EmbedURL != "" {
+			fmt.Fprintf(w, "embedUrl: %s\n", d.EmbedURL)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("dashboard health: %w", err)
 	}
 	return nil
 }

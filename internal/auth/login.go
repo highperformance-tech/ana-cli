@@ -51,7 +51,7 @@ func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	global := cli.GlobalFrom(ctx)
 	endpoint := pickEndpoint(global.Endpoint, loaded.Endpoint)
 
-	cfg := Config{Endpoint: endpoint, Token: token}
+	cfg := Config{Endpoint: endpoint, Token: cli.Token(token)}
 	if err := c.deps.SaveCfg(cfg); err != nil {
 		return fmt.Errorf("auth login: save config: %w", err)
 	}

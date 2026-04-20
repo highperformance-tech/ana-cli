@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -49,28 +50,26 @@ func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListServiceAccounts", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("auth service-accounts list: %w", translateErr(err))
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed listServiceAccountsResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("auth service-accounts list: decode response: %w", err)
-	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tNAME\tDESCRIPTION")
-	for _, sa := range typed.ServiceAccounts {
-		desc := sa.Description
-		if desc == "" {
-			desc = sa.Email
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listServiceAccountsResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tNAME\tDESCRIPTION")
+		for _, sa := range t.ServiceAccounts {
+			desc := sa.Description
+			if desc == "" {
+				desc = sa.Email
+			}
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", sa.MemberID, sa.DisplayName, desc)
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", sa.MemberID, sa.DisplayName, desc)
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("auth service-accounts list: %w", err)
 	}
-	return tw.Flush()
+	return nil
 }
 
 // ---- create ----
@@ -107,8 +106,11 @@ func (c *saCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) erro
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
+	if err := cli.RequireFlags(fs, "auth service-accounts create", "name"); err != nil {
+		return err
+	}
 	if *name == "" {
-		return cli.UsageErrf("auth service-accounts create: --name is required")
+		return cli.UsageErrf("auth service-accounts create: --name must not be empty")
 	}
 	req := createServiceAccountReq{Name: *name, Description: *desc}
 	var resp createServiceAccountResp

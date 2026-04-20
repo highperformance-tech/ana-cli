@@ -14,6 +14,8 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+
+	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
 // DefaultEndpoint is used by Resolve when no endpoint is configured.
@@ -29,9 +31,9 @@ var ErrUnknownProfile = errors.New("config: unknown profile")
 // captured at login time; it is purely informational and never affects
 // resolution.
 type Profile struct {
-	Endpoint string `json:"endpoint"`
-	Token    string `json:"token"`
-	OrgName  string `json:"orgName,omitempty"`
+	Endpoint string    `json:"endpoint"`
+	Token    cli.Token `json:"token"`
+	OrgName  string    `json:"orgName,omitempty"`
 }
 
 // Config is the persisted CLI configuration. Profiles maps profile name to
@@ -63,8 +65,8 @@ func DefaultPath(env func(string) string) (string, error) {
 // decode into a separate type so we can distinguish "this is an old file"
 // from "this is a new file with no profiles yet" without guessing.
 type legacyConfig struct {
-	Endpoint string `json:"endpoint"`
-	Token    string `json:"token"`
+	Endpoint string    `json:"endpoint"`
+	Token    cli.Token `json:"token"`
 }
 
 // Load reads a config file from path. A missing file yields a zero-value
@@ -240,7 +242,7 @@ func Resolve(env func(string) string, loaded Config, profileName string) (Profil
 		p.Endpoint = envEndpoint
 	}
 	if envToken != "" {
-		p.Token = envToken
+		p.Token = cli.Token(envToken)
 	}
 	if p.Endpoint == "" {
 		p.Endpoint = DefaultEndpoint

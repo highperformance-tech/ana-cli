@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"io"
 	"slices"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
@@ -51,25 +52,23 @@ func (c *foldersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/ListDashboardFolders", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("dashboard folders list: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed foldersResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("dashboard folders list: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *foldersResp) error {
+		slices.SortFunc(t.Folders, func(a, b folderEntry) int {
+			return cmp.Compare(a.Name, b.Name)
+		})
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tNAME")
+		for _, f := range t.Folders {
+			fmt.Fprintf(tw, "%s\t%s\n", f.ID, f.Name)
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("dashboard folders list: %w", err)
 	}
-	slices.SortFunc(typed.Folders, func(a, b folderEntry) int {
-		return cmp.Compare(a.Name, b.Name)
-	})
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tNAME")
-	for _, f := range typed.Folders {
-		fmt.Fprintf(tw, "%s\t%s\n", f.ID, f.Name)
-	}
-	return tw.Flush()
+	return nil
 }

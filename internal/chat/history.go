@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -77,25 +78,25 @@ func (c *historyCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/GetChatHistory", historyReq{ChatID: id}, &raw); err != nil {
 		return fmt.Errorf("chat history: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed historyResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("chat history: decode response: %w", err)
-	}
-	for _, cell := range typed.Cells {
-		kind, content := cell.kindAndContent()
-		// Truncate to 100 chars; matches the send renderer's cap so eyeballing
-		// both streams yields aligned column widths.
-		line := cli.FirstLine(content)
-		fmt.Fprintf(stdio.Stdout, "[%s] %s %s: %s\n",
-			cell.Timestamp, cell.Lifecycle, kind, truncate(line, 100))
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *historyResp) error {
+		for _, cell := range t.Cells {
+			kind, content := cell.kindAndContent()
+			// Truncate to 100 chars; matches the send renderer's cap so
+			// eyeballing both streams yields aligned column widths.
+			line := cli.FirstLine(content)
+			if _, err := fmt.Fprintf(w, "[%s] %s %s: %s\n",
+				cell.Timestamp, cell.Lifecycle, kind, truncate(line, 100)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("chat history: %w", err)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package playbook
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -47,17 +48,16 @@ func (c *reportsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 	if err := c.deps.Unary(ctx, playbookServicePath+"/GetPlaybookReports", reportsReq{PlaybookID: id}, &raw); err != nil {
 		return fmt.Errorf("playbook reports: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed reportsResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("playbook reports: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *reportsResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "RUN_ID\tSUBJECT\tRAN_AT")
+		for _, r := range t.Reports {
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", r.ID, cli.DashIfEmpty(r.Subject), cli.DashIfEmpty(r.CreatedAt))
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("playbook reports: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "RUN_ID\tSUBJECT\tRAN_AT")
-	for _, r := range typed.Reports {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", r.ID, cli.DashIfEmpty(r.Subject), cli.DashIfEmpty(r.CreatedAt))
-	}
-	return tw.Flush()
+	return nil
 }

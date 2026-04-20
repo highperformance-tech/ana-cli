@@ -3,6 +3,7 @@ package org
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -48,17 +49,16 @@ func (c *rolesListCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListRoles", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("org roles list: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed listRolesResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("org roles list: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listRolesResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tNAME")
+		for _, r := range t.Roles {
+			fmt.Fprintf(tw, "%s\t%s\n", r.ID, r.Name)
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("org roles list: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tNAME")
-	for _, r := range typed.Roles {
-		fmt.Fprintf(tw, "%s\t%s\n", r.ID, r.Name)
-	}
-	return tw.Flush()
+	return nil
 }

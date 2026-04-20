@@ -1,8 +1,10 @@
 package playbook
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -57,30 +59,29 @@ func (c *lineageCmd) Run(ctx context.Context, args []string, stdio cli.IO) error
 	if err := c.deps.Unary(ctx, playbookServicePath+"/GetPlaybookLineage", lineageReq{PlaybookID: id}, &raw); err != nil {
 		return fmt.Errorf("playbook lineage: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed lineageResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("playbook lineage: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *lineageResp) error {
+		edges := t.Edges
+		if len(edges) == 0 {
+			edges = t.Lineage
+		}
+		if len(edges) == 0 {
+			edges = t.Nodes
+		}
+		if len(edges) == 0 {
+			fmt.Fprintln(w, "(no lineage edges)")
+			return nil
+		}
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "FROM\tTO\tTYPE")
+		for _, e := range edges {
+			from := cli.DashIfEmpty(cmp.Or(e.From, e.Source))
+			to := cli.DashIfEmpty(cmp.Or(e.To, e.Target))
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", from, to, cli.DashIfEmpty(e.Type))
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("playbook lineage: %w", err)
 	}
-	edges := typed.Edges
-	if len(edges) == 0 {
-		edges = typed.Lineage
-	}
-	if len(edges) == 0 {
-		edges = typed.Nodes
-	}
-	if len(edges) == 0 {
-		fmt.Fprintln(stdio.Stdout, "(no lineage edges)")
-		return nil
-	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "FROM\tTO\tTYPE")
-	for _, e := range edges {
-		from := cli.DashIfEmpty(cli.FirstNonEmpty(e.From, e.Source))
-		to := cli.DashIfEmpty(cli.FirstNonEmpty(e.To, e.Target))
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", from, to, cli.DashIfEmpty(e.Type))
-	}
-	return tw.Flush()
+	return nil
 }

@@ -7,8 +7,6 @@ package chat
 
 import (
 	"context"
-	"strconv"
-	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -65,30 +63,6 @@ func New(deps Deps) *cli.Group {
 			"share":      &shareCmd{deps: deps},
 		},
 	}
-}
-
-// parseConnectorIDs parses a "1,2,3" comma-separated string into []int.
-// Whitespace around entries is tolerated; an empty input or any non-integer
-// entry is a usage error. Returned slice is guaranteed non-empty on success.
-func parseConnectorIDs(raw string) ([]int, error) {
-	trim := strings.TrimSpace(raw)
-	if trim == "" {
-		return nil, cli.UsageErrf("--connector: at least one id required")
-	}
-	parts := strings.Split(trim, ",")
-	out := make([]int, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			return nil, cli.UsageErrf("--connector: empty id in list")
-		}
-		n, err := strconv.Atoi(p)
-		if err != nil {
-			return nil, cli.UsageErrf("--connector: %q is not an integer", p)
-		}
-		out = append(out, n)
-	}
-	return out, nil
 }
 
 // truncate shortens s to at most n runes. Used by the send renderer to keep

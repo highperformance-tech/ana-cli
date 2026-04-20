@@ -60,7 +60,7 @@ func seedConfig(dir, endpoint, token string) (string, error) {
 	cfgPath := fmt.Sprintf("%s/ana/config.json", dir)
 	cfg := config.Config{
 		Profiles: map[string]config.Profile{
-			"default": {Endpoint: endpoint, Token: token, OrgName: "e2e"},
+			"default": {Endpoint: endpoint, Token: cli.Token(token), OrgName: "e2e"},
 		},
 		Active: "default",
 	}

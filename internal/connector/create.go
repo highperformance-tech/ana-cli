@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"slices"
-	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -54,7 +52,8 @@ type createResp struct {
 
 func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := cli.NewFlagSet("connector create")
-	typ := fs.String("type", "", "connector type (postgres — required)")
+	var typ string
+	fs.Var(cli.EnumFlag(&typ, []string{"postgres"}), "type", "connector type (postgres — required)")
 	name := fs.String("name", "", "connector name (required)")
 	host := fs.String("host", "", "database host (required)")
 	port := fs.Int("port", 0, "database port (required)")
@@ -66,20 +65,22 @@ func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	if *typ != "postgres" {
-		return cli.UsageErrf("connector create: --type must be \"postgres\" (got %q)", *typ)
+	if err := cli.RequireFlags(fs, "connector create", "type", "name", "host", "port", "user", "database"); err != nil {
+		return err
 	}
-	missing := requiredMissing(map[string]string{
-		"--name":     *name,
-		"--host":     *host,
-		"--user":     *user,
-		"--database": *database,
-	})
-	if *port == 0 {
-		missing = append(missing, "--port")
+	// RequireFlags only checks that the flag was set, not its value. Guard
+	// against explicit empties (`--name ""`) and out-of-range ports so we
+	// fail fast with a local usage error rather than surfacing a server-side
+	// error. Deterministic order so tests can assert which flag triggered.
+	for _, p := range []struct {
+		name, val string
+	}{{"name", *name}, {"host", *host}, {"user", *user}, {"database", *database}} {
+		if p.val == "" {
+			return cli.UsageErrf("connector create: --%s must not be empty", p.name)
+		}
 	}
-	if len(missing) > 0 {
-		return cli.UsageErrf("connector create: missing required flags: %s", strings.Join(missing, ", "))
+	if *port <= 0 || *port > 65535 {
+		return cli.UsageErrf("connector create: --port must be in 1..65535 (got %d)", *port)
 	}
 	resolvedPass, err := resolvePassword(*pass, *passStdin, stdio.Stdin)
 	if err != nil {
@@ -98,36 +99,19 @@ func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 			SSLMode:  *ssl,
 		},
 	}}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/CreateConnector", req, &raw); err != nil {
 		return fmt.Errorf("connector create: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed createResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("connector create: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *createResp) error {
+		_, err := fmt.Fprintf(w, "connectorId: %d\nname: %s\nconnectorType: %s\n",
+			t.ConnectorID, t.Name, t.ConnectorType)
+		return err
+	}); err != nil {
+		return fmt.Errorf("connector create: %w", err)
 	}
-	fmt.Fprintf(stdio.Stdout, "connectorId: %d\nname: %s\nconnectorType: %s\n",
-		typed.ConnectorID, typed.Name, typed.ConnectorType)
 	return nil
-}
-
-// requiredMissing collects names of string flags whose values are blank. Used
-// so we can report every missing flag in one usage error rather than one at a
-// time.
-func requiredMissing(pairs map[string]string) []string {
-	var missing []string
-	for name, val := range pairs {
-		if val == "" {
-			missing = append(missing, name)
-		}
-	}
-	// Deterministic order for stable test assertions.
-	slices.Sort(missing)
-	return missing
 }
 
 // resolvePassword resolves the password from either --password-stdin (reads

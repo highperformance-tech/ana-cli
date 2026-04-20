@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/testcli"
 )
 
 // --- shared fakes ----------------------------------------------------------
@@ -31,16 +32,7 @@ type fakeDeps struct {
 // the zero-cost recording wrapper so tests observe every path.
 func (f *fakeDeps) deps() Deps {
 	return Deps{
-		Unary: func(ctx context.Context, path string, req, resp any) error {
-			f.lastPath = path
-			if b, err := json.Marshal(req); err == nil {
-				f.lastRaw = b
-			}
-			if f.unaryFn != nil {
-				return f.unaryFn(ctx, path, req, resp)
-			}
-			return nil
-		},
+		Unary: testcli.RecordUnary(&f.lastPath, &f.lastRaw, f.unaryFn),
 		Stream: func(ctx context.Context, path string, req any) (StreamSession, error) {
 			f.streamPth = path
 			if b, err := json.Marshal(req); err == nil {
@@ -130,28 +122,6 @@ func TestHelpAllCommands(t *testing.T) {
 }
 
 // --- helpers (chat.go) ----------------------------------------------------
-
-func TestParseConnectorIDs(t *testing.T) {
-	t.Parallel()
-	if ids, err := parseConnectorIDs("1"); err != nil || len(ids) != 1 || ids[0] != 1 {
-		t.Errorf("single: ids=%v err=%v", ids, err)
-	}
-	if ids, err := parseConnectorIDs(" 1, 2 ,3"); err != nil || len(ids) != 3 {
-		t.Errorf("multi: ids=%v err=%v", ids, err)
-	}
-	if _, err := parseConnectorIDs(""); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("empty should be usage: %v", err)
-	}
-	if _, err := parseConnectorIDs("   "); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("whitespace-only should be usage: %v", err)
-	}
-	if _, err := parseConnectorIDs("1,,2"); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("empty entry should be usage: %v", err)
-	}
-	if _, err := parseConnectorIDs("a,b"); !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("non-int should be usage: %v", err)
-	}
-}
 
 func TestTruncate(t *testing.T) {
 	t.Parallel()

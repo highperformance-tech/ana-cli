@@ -5,6 +5,8 @@ package testcli
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"strings"
@@ -35,6 +37,33 @@ func FailingIO() cli.IO {
 		Stderr: &bytes.Buffer{},
 		Env:    func(string) string { return "" },
 		Now:    func() time.Time { return time.Unix(0, 0) },
+	}
+}
+
+// RecordUnary returns a Unary-shaped closure that records each invocation's
+// path and marshaled request into the supplied pointers, then delegates to
+// inner when non-nil. Collapses the duplicated "capture path + request bytes,
+// then maybe call the test-supplied handler" wiring every verb package's
+// fakeDeps wrote by hand. A marshaling failure is silently ignored so tests
+// exercising malformed requests still reach inner's assertions.
+func RecordUnary(
+	lastPath *string,
+	lastRawReq *[]byte,
+	inner func(ctx context.Context, path string, req, resp any) error,
+) func(ctx context.Context, path string, req, resp any) error {
+	return func(ctx context.Context, path string, req, resp any) error {
+		if lastPath != nil {
+			*lastPath = path
+		}
+		if lastRawReq != nil {
+			if b, err := json.Marshal(req); err == nil {
+				*lastRawReq = b
+			}
+		}
+		if inner != nil {
+			return inner(ctx, path, req, resp)
+		}
+		return nil
 	}
 }
 

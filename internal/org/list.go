@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"io"
 	"slices"
 	"strconv"
 	"strings"
@@ -49,26 +50,23 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/ListOrganizations", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("org list: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed listOrganizationsResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("org list: decode response: %w", err)
-	}
-	// Case-insensitive sort so "acme" and "Acme Inc" order intuitively instead
-	// of splitting on ASCII case boundaries.
-	slices.SortStableFunc(typed.Organizations, func(a, b organizationEntry) int {
-		return cmp.Compare(strings.ToLower(a.OrganizationName), strings.ToLower(b.OrganizationName))
-	})
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "NAME\tORG ID\tDEFAULT CONNECTOR")
-	for _, o := range typed.Organizations {
-		var conn string
-		if o.DefaultConnectorID != nil {
-			conn = strconv.FormatInt(*o.DefaultConnectorID, 10)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listOrganizationsResp) error {
+		slices.SortStableFunc(t.Organizations, func(a, b organizationEntry) int {
+			return cmp.Compare(strings.ToLower(a.OrganizationName), strings.ToLower(b.OrganizationName))
+		})
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "NAME\tORG ID\tDEFAULT CONNECTOR")
+		for _, o := range t.Organizations {
+			var conn string
+			if o.DefaultConnectorID != nil {
+				conn = strconv.FormatInt(*o.DefaultConnectorID, 10)
+			}
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", o.OrganizationName, o.OrgID, conn)
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", o.OrganizationName, o.OrgID, conn)
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("org list: %w", err)
 	}
-	return tw.Flush()
+	return nil
 }

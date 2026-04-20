@@ -54,6 +54,27 @@ func Remarshal(src, dst any) error {
 	return json.Unmarshal(b, dst)
 }
 
+// RenderOutput picks the JSON-vs-table branch every `--json` verb repeats. On
+// jsonFlag the raw map is dumped via WriteJSON; otherwise raw is Remarshal'd
+// into typed and handed to render. The remarshal error is wrapped with
+// "decode response" so verbs preserve their historical error string under a
+// `verb: %w` wrap at the call site.
+func RenderOutput[T any](
+	w io.Writer,
+	raw map[string]any,
+	jsonFlag bool,
+	typed *T,
+	render func(w io.Writer, typed *T) error,
+) error {
+	if jsonFlag {
+		return WriteJSON(w, raw)
+	}
+	if err := Remarshal(raw, typed); err != nil {
+		return fmt.Errorf("decode response: %w", err)
+	}
+	return render(w, typed)
+}
+
 // RequireStringID extracts a non-empty positional <id> from args[0]. An
 // empty or whitespace-only first arg (or a missing arg entirely) is rejected
 // with a usage error. The strictest pre-refactor variant (dashboard's
@@ -148,18 +169,6 @@ func DashIfEmpty(s string) string {
 		return "-"
 	}
 	return s
-}
-
-// FirstNonEmpty returns the first non-empty string from the arguments. Used
-// to collapse "prefer X, else Y, else fallback" chains (e.g. folderName →
-// folderId → "-") into a single call.
-func FirstNonEmpty(ss ...string) string {
-	for _, s := range ss {
-		if s != "" {
-			return s
-		}
-	}
-	return ""
 }
 
 // RedactToken returns a user-facing display for a bearer token or API key.

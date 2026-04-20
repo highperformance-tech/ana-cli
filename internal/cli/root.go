@@ -15,7 +15,6 @@ type Global struct {
 	Endpoint  string
 	TokenFile string
 	Profile   string
-	Verbose   bool
 }
 
 // globalKey is the unexported context key for Global so only this package can
@@ -48,8 +47,6 @@ func ParseGlobal(args []string) (Global, []string, error) {
 	fs.StringVar(&g.Endpoint, "endpoint", "", "override API endpoint URL")
 	fs.StringVar(&g.TokenFile, "token-file", "", "path to bearer-token file")
 	fs.StringVar(&g.Profile, "profile", "", "config profile to use")
-	fs.BoolVar(&g.Verbose, "verbose", false, "verbose logging")
-	fs.BoolVar(&g.Verbose, "v", false, "verbose logging (shorthand)")
 	if err := fs.Parse(args); err != nil {
 		return Global{}, nil, fmt.Errorf("parse global flags: %w", err)
 	}

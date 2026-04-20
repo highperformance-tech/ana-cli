@@ -3,6 +3,7 @@ package org
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -38,18 +39,15 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("org show: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed getOrganizationResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("org show: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *getOrganizationResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintf(tw, "organizationName\t%s\n", t.Organization.OrganizationName)
+		fmt.Fprintf(tw, "orgId\t%s\n", t.Organization.OrgID)
+		fmt.Fprintf(tw, "createdAt\t%s\n", t.Organization.CreatedAt)
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("org show: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	// Two-column key/value list. Keys mirror the wire-level camelCase so users
-	// searching docs land on the same identifier.
-	fmt.Fprintf(tw, "organizationName\t%s\n", typed.Organization.OrganizationName)
-	fmt.Fprintf(tw, "orgId\t%s\n", typed.Organization.OrgID)
-	fmt.Fprintf(tw, "createdAt\t%s\n", typed.Organization.CreatedAt)
-	return tw.Flush()
+	return nil
 }

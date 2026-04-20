@@ -160,6 +160,17 @@ func TestSACreateMissingName(t *testing.T) {
 	}
 }
 
+func TestSACreateEmptyName(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &saCreateCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"--name", ""}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "empty") {
+		t.Errorf("err=%v", err)
+	}
+}
+
 func TestSACreateUnaryErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
