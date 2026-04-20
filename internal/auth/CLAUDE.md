@@ -1,6 +1,6 @@
 # internal/auth
 
-The `ana auth` verb tree: `login`, `logout`, `whoami`, plus nested `keys` and `service-accounts` groups. Pure dispatch logic around an injected `Deps` struct (Unary RPC + config load/save closures) so the package never imports `internal/transport` or `internal/config` directly. Declares its own narrow `Config` (endpoint + token) to keep the contract narrow.
+The `ana auth` verb tree: `login`, `logout`, `whoami`, plus nested `keys` and `service-accounts` groups. Pure dispatch logic around an injected `Deps` struct (Unary RPC + config load/save closures) so the package never imports `internal/transport` or `internal/config` directly. Declares its own narrow `Config` (endpoint + `cli.Token`) to keep the contract narrow; the token field uses the redacting string type so accidental `%v`/`%s` formatting never leaks a bearer token.
 
 ## Files
 

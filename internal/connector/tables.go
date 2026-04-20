@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -39,22 +40,20 @@ func (c *tablesCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/ListConnectorTables", tablesReq{ConnectorID: id}, &raw); err != nil {
 		return fmt.Errorf("connector tables: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed tablesResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("connector tables: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *tablesResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "SCHEMA\tNAME")
+		for _, row := range t.Tables {
+			fmt.Fprintf(tw, "%s\t%s\n", row.TableSchema, row.TableName)
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("connector tables: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "SCHEMA\tNAME")
-	for _, t := range typed.Tables {
-		fmt.Fprintf(tw, "%s\t%s\n", t.TableSchema, t.TableName)
-	}
-	return tw.Flush()
+	return nil
 }

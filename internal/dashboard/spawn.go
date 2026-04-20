@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -25,6 +26,12 @@ type spawnReq struct {
 	DashboardID string `json:"dashboardId"`
 }
 
+// spawnResp captures the only field we print by default; absence triggers
+// raw JSON fallback from the render closure.
+type spawnResp struct {
+	RefreshedAt string `json:"refreshedAt"`
+}
+
 // Run resolves the id, POSTs SpawnDashboard, and prints either the raw
 // response (--json) or the refreshedAt field. If refreshedAt is absent we
 // fall back to raw JSON so we never lose information.
@@ -37,17 +44,19 @@ func (c *spawnCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/SpawnDashboard", spawnReq{DashboardID: id}, &raw); err != nil {
 		return fmt.Errorf("dashboard spawn: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
+	var typed spawnResp
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *spawnResp) error {
+		if t.RefreshedAt == "" {
+			return cli.WriteJSON(w, raw)
+		}
+		_, err := fmt.Fprintf(w, "spawned %s (refreshedAt=%s)\n", id, t.RefreshedAt)
+		return err
+	}); err != nil {
+		return fmt.Errorf("dashboard spawn: %w", err)
 	}
-	if ts, ok := raw["refreshedAt"].(string); ok {
-		fmt.Fprintf(stdio.Stdout, "spawned %s (refreshedAt=%s)\n", id, ts)
-		return nil
-	}
-	return cli.WriteJSON(stdio.Stdout, raw)
+	return nil
 }

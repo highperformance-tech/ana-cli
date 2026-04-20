@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -47,21 +48,21 @@ func (c *examplesCmd) Run(ctx context.Context, args []string, stdio cli.IO) erro
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	req := examplesReq{ConnectorContexts: []examplesContext{{ConnectorID: id}}}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/GetExampleQueries", req, &raw); err != nil {
 		return fmt.Errorf("connector examples: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed examplesResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("connector examples: decode response: %w", err)
-	}
-	for _, ex := range typed.Examples {
-		fmt.Fprintf(stdio.Stdout, "- [%s] %s: %s\n", ex.Category, ex.Label, ex.Message)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *examplesResp) error {
+		for _, ex := range t.Examples {
+			if _, err := fmt.Fprintf(w, "- [%s] %s: %s\n", ex.Category, ex.Label, ex.Message); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("connector examples: %w", err)
 	}
 	return nil
 }

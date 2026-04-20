@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -22,6 +23,12 @@ type getReq struct {
 	ConnectorID int `json:"connectorId"`
 }
 
+// getResp keeps Connector as a free-form map so the renderer can dispatch to
+// RenderTwoCol without having to enumerate every server-added field.
+type getResp struct {
+	Connector map[string]any `json:"connector"`
+}
+
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := cli.NewFlagSet("connector get")
 	if err := cli.ParseFlags(fs, args); err != nil {
@@ -34,19 +41,20 @@ func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/GetConnector", getReq{ConnectorID: id}, &raw); err != nil {
 		return fmt.Errorf("connector get: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
+	var typed getResp
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *getResp) error {
+		if t.Connector == nil {
+			// Fall back to raw dump rather than render an empty table; still
+			// use cli.WriteJSON so callers can diagnose unexpected shapes.
+			return cli.WriteJSON(w, raw)
+		}
+		return cli.RenderTwoCol(w, t.Connector)
+	}); err != nil {
+		return fmt.Errorf("connector get: %w", err)
 	}
-	conn, _ := raw["connector"].(map[string]any)
-	if conn == nil {
-		// Fall back to raw dump rather than render an empty table; still use
-		// cli.WriteJSON so callers can diagnose unexpected shapes.
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
-	return cli.RenderTwoCol(stdio.Stdout, conn)
+	return nil
 }

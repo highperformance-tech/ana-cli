@@ -2,11 +2,11 @@ package playbook
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
+	"github.com/highperformance-tech/ana-cli/internal/testcli"
 )
 
 // --- fakes and helpers ---
@@ -24,19 +24,14 @@ type fakeDeps struct {
 // deps returns a Deps whose Unary funnels through the fake so tests can
 // assert on recorded inputs after the command runs.
 func (f *fakeDeps) deps() Deps {
-	return Deps{
-		Unary: func(ctx context.Context, path string, req, resp any) error {
-			f.lastPath = path
+	return Deps{Unary: testcli.RecordUnary(&f.lastPath, &f.lastRawReq,
+		func(ctx context.Context, path string, req, resp any) error {
 			f.lastReq = req
-			if b, err := json.Marshal(req); err == nil {
-				f.lastRawReq = b
-			}
 			if f.unaryFn != nil {
 				return f.unaryFn(ctx, path, req, resp)
 			}
 			return nil
-		},
-	}
+		})}
 }
 
 // --- New / Group surface ---

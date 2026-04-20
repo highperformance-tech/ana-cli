@@ -61,7 +61,6 @@ Global flags:
 | `--token-file <path>` | Path to a bearer-token file |
 | `--profile <name>` | Select a config profile |
 | `--json` | Emit JSON output |
-| `--verbose`, `-v` | Verbose logging |
 | `--version`, `-V` | Print version info |
 
 ### Getting started

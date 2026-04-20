@@ -3,6 +3,7 @@ package ontology
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -38,17 +39,16 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := c.deps.Unary(ctx, ontologyServicePath+"/GetOntologies", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("ontology list: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed listResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("ontology list: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tNAME")
+		for _, o := range t.Ontologies {
+			fmt.Fprintf(tw, "%d\t%s\n", o.ID, o.Name)
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("ontology list: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tNAME")
-	for _, o := range typed.Ontologies {
-		fmt.Fprintf(tw, "%d\t%s\n", o.ID, o.Name)
-	}
-	return tw.Flush()
+	return nil
 }

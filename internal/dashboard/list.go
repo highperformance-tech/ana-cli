@@ -1,8 +1,10 @@
 package dashboard
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -38,23 +40,21 @@ func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/ListDashboards", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("dashboard list: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed listResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("dashboard list: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tNAME\tFOLDER")
+		for _, d := range t.Dashboards {
+			folder := cli.DashIfEmpty(cmp.Or(d.FolderName, d.FolderID))
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", d.ID, d.Name, folder)
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("dashboard list: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tNAME\tFOLDER")
-	for _, d := range typed.Dashboards {
-		folder := cli.DashIfEmpty(cli.FirstNonEmpty(d.FolderName, d.FolderID))
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", d.ID, d.Name, folder)
-	}
-	return tw.Flush()
+	return nil
 }

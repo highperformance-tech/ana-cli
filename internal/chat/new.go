@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -67,14 +68,14 @@ type newResp struct {
 
 func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := cli.NewFlagSet("chat new")
-	connectorsFlag := fs.String("connector", "", "connector id(s), comma-separated (required)")
+	var ids []int
+	fs.Var(cli.IntListFlag(&ids, ","), "connector", "connector id(s), comma-separated (required)")
 	title := fs.String("title", "", "optional chat summary/title")
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	ids, err := parseConnectorIDs(*connectorsFlag)
-	if err != nil {
-		return fmt.Errorf("chat new: %w", err)
+	if err := cli.RequireFlags(fs, "chat new", "connector"); err != nil {
+		return err
 	}
 	req := newReq{
 		Paradigm: paradigm{
@@ -93,18 +94,16 @@ func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		Methodology: "METHODOLOGY_ADAPTIVE",
 		Summary:     *title,
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/CreateChat", req, &raw); err != nil {
 		return fmt.Errorf("chat new: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed newResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("chat new: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *newResp) error {
+		_, err := fmt.Fprintln(w, t.Chat.ID)
+		return err
+	}); err != nil {
+		return fmt.Errorf("chat new: %w", err)
 	}
-	fmt.Fprintln(stdio.Stdout, typed.Chat.ID)
 	return nil
 }

@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -45,7 +46,6 @@ func (c *shareCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	req := shareReq{
 		PrimitiveID:   id,
@@ -55,17 +55,16 @@ func (c *shareCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := c.deps.Unary(ctx, sharingServicePath+"/CreateShare", req, &raw); err != nil {
 		return fmt.Errorf("chat share: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed shareResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("chat share: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *shareResp) error {
+		if t.URL != "" {
+			_, err := fmt.Fprintln(w, t.URL)
+			return err
+		}
+		_, err := fmt.Fprintln(w, t.Share.ShareToken)
+		return err
+	}); err != nil {
+		return fmt.Errorf("chat share: %w", err)
 	}
-	if typed.URL != "" {
-		fmt.Fprintln(stdio.Stdout, typed.URL)
-		return nil
-	}
-	fmt.Fprintln(stdio.Stdout, typed.Share.ShareToken)
 	return nil
 }

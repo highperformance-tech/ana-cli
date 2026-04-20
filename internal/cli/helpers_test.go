@@ -103,6 +103,76 @@ func TestRemarshalUnmarshalErrorPropagates(t *testing.T) {
 	}
 }
 
+func TestRenderOutputJSONPath(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	type typed struct {
+		Name string `json:"name"`
+	}
+	var out typed
+	err := RenderOutput(&buf, map[string]any{"name": "x"}, true, &out, func(io.Writer, *typed) error {
+		t.Fatal("render should not be called when jsonFlag is true")
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if !strings.Contains(buf.String(), `"name": "x"`) {
+		t.Errorf("JSON path output=%q", buf.String())
+	}
+}
+
+func TestRenderOutputTablePath(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	type typed struct {
+		Name string `json:"name"`
+	}
+	var out typed
+	err := RenderOutput(&buf, map[string]any{"name": "x"}, false, &out, func(w io.Writer, t *typed) error {
+		_, err := io.WriteString(w, "NAME="+t.Name)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if buf.String() != "NAME=x" {
+		t.Errorf("table path output=%q", buf.String())
+	}
+}
+
+func TestRenderOutputRemarshalError(t *testing.T) {
+	t.Parallel()
+	// String where struct expected — Remarshal returns unmarshal error.
+	type typed struct {
+		N int `json:"n"`
+	}
+	var out typed
+	err := RenderOutput(io.Discard, map[string]any{"n": "not-an-int"}, false, &out, func(io.Writer, *typed) error {
+		t.Fatal("render should not be called on remarshal error")
+		return nil
+	})
+	if err == nil {
+		t.Fatal("want remarshal error")
+	}
+	if !strings.Contains(err.Error(), "decode response") {
+		t.Errorf("err=%q want wrapped 'decode response'", err.Error())
+	}
+}
+
+func TestRenderOutputRenderErrorPropagates(t *testing.T) {
+	t.Parallel()
+	type typed struct{}
+	var out typed
+	sentinel := errors.New("render boom")
+	err := RenderOutput(io.Discard, map[string]any{}, false, &out, func(io.Writer, *typed) error {
+		return sentinel
+	})
+	if !errors.Is(err, sentinel) {
+		t.Errorf("err=%v want %v", err, sentinel)
+	}
+}
+
 func TestRequireStringID(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -410,22 +480,6 @@ func TestDashIfEmpty(t *testing.T) {
 	}
 	if got := DashIfEmpty("x"); got != "x" {
 		t.Errorf("x -> %q want x", got)
-	}
-}
-
-func TestFirstNonEmpty(t *testing.T) {
-	t.Parallel()
-	if got := FirstNonEmpty("", "", "c"); got != "c" {
-		t.Errorf("got %q want c", got)
-	}
-	if got := FirstNonEmpty("a", "b"); got != "a" {
-		t.Errorf("got %q want a", got)
-	}
-	if got := FirstNonEmpty("", ""); got != "" {
-		t.Errorf("got %q want empty", got)
-	}
-	if got := FirstNonEmpty(); got != "" {
-		t.Errorf("got %q want empty", got)
 	}
 }
 

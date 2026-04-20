@@ -3,6 +3,7 @@ package org
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -60,17 +61,16 @@ func (c *membersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) e
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.settings.SettingsService/ListOrganizationMembers", req, &raw); err != nil {
 		return fmt.Errorf("org members list: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed listOrganizationMembersResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("org members list: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listOrganizationMembersResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tEMAIL\tROLE")
+		for _, m := range t.Members {
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", m.MemberID, m.EmailAddress, cli.DashIfEmpty(m.Role))
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("org members list: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tEMAIL\tROLE")
-	for _, m := range typed.Members {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", m.MemberID, m.EmailAddress, cli.DashIfEmpty(m.Role))
-	}
-	return tw.Flush()
+	return nil
 }

@@ -115,3 +115,19 @@ func TestGetBadFlag(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 }
+
+func TestGetWriteErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"dashboard": map[string]any{"id": "x", "name": "n"}}
+			return nil
+		},
+	}
+	cmd := &getCmd{deps: f.deps()}
+	err := cmd.Run(context.Background(), []string{"x"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "dashboard get") {
+		t.Errorf("err=%v", err)
+	}
+}

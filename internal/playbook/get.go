@@ -3,6 +3,7 @@ package playbook
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -57,32 +58,27 @@ func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err := c.deps.Unary(ctx, playbookServicePath+"/GetPlaybook", getReq{PlaybookID: id}, &raw); err != nil {
 		return fmt.Errorf("playbook get: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed getResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("playbook get: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *getResp) error {
+		if t.Playbook.ID == "" {
+			return cli.WriteJSON(w, raw)
+		}
+		p := t.Playbook
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintf(tw, "id\t%s\n", p.ID)
+		fmt.Fprintf(tw, "name\t%s\n", p.Name)
+		fmt.Fprintf(tw, "status\t%s\n", p.Status)
+		fmt.Fprintf(tw, "triggerType\t%s\n", p.TriggerType)
+		fmt.Fprintf(tw, "cronString\t%s\n", p.CronString)
+		fmt.Fprintf(tw, "paradigmType\t%s\n", p.ParadigmType)
+		fmt.Fprintf(tw, "reportOutputStyle\t%s\n", p.ReportOutputStyle)
+		fmt.Fprintf(tw, "owner\t%s\n", p.Owner.MemberEmail)
+		fmt.Fprintf(tw, "latestChatId\t%s\n", p.LatestChatID)
+		fmt.Fprintf(tw, "createdAt\t%s\n", p.CreatedAt)
+		fmt.Fprintf(tw, "updatedAt\t%s\n", p.UpdatedAt)
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("playbook get: %w", err)
 	}
-	// A missing `playbook` envelope falls through to --json so the user sees
-	// the response shape rather than a block of empty fields.
-	if typed.Playbook.ID == "" {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
-	p := typed.Playbook
-	tw := cli.NewTableWriter(stdio.Stdout)
-	// Two-column key/value list. Keys mirror the wire-level camelCase so users
-	// searching docs land on the same identifier.
-	fmt.Fprintf(tw, "id\t%s\n", p.ID)
-	fmt.Fprintf(tw, "name\t%s\n", p.Name)
-	fmt.Fprintf(tw, "status\t%s\n", p.Status)
-	fmt.Fprintf(tw, "triggerType\t%s\n", p.TriggerType)
-	fmt.Fprintf(tw, "cronString\t%s\n", p.CronString)
-	fmt.Fprintf(tw, "paradigmType\t%s\n", p.ParadigmType)
-	fmt.Fprintf(tw, "reportOutputStyle\t%s\n", p.ReportOutputStyle)
-	fmt.Fprintf(tw, "owner\t%s\n", p.Owner.MemberEmail)
-	fmt.Fprintf(tw, "latestChatId\t%s\n", p.LatestChatID)
-	fmt.Fprintf(tw, "createdAt\t%s\n", p.CreatedAt)
-	fmt.Fprintf(tw, "updatedAt\t%s\n", p.UpdatedAt)
-	return tw.Flush()
+	return nil
 }

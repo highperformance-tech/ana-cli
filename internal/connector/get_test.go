@@ -120,6 +120,22 @@ func TestGetUnaryErr(t *testing.T) {
 	}
 }
 
+func TestGetWriteErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"connector": map[string]any{"id": 1.0, "name": "x"}}
+			return nil
+		},
+	}
+	cmd := &getCmd{deps: f.deps()}
+	err := cmd.Run(context.Background(), []string{"1"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "connector get") {
+		t.Errorf("err=%v", err)
+	}
+}
+
 func TestGetBadFlag(t *testing.T) {
 	t.Parallel()
 	cmd := &getCmd{deps: (&fakeDeps{}).deps()}

@@ -104,3 +104,19 @@ func TestSpawnBadFlag(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 }
+
+func TestSpawnWriteErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"refreshedAt": "t"}
+			return nil
+		},
+	}
+	cmd := &spawnCmd{deps: f.deps()}
+	err := cmd.Run(context.Background(), []string{"d1"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "dashboard spawn") {
+		t.Errorf("err=%v", err)
+	}
+}

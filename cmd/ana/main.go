@@ -105,7 +105,7 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 
 	token := resolved.Token
 	tokenFn := func(ctx context.Context) (string, error) {
-		return token, nil
+		return token.Value(), nil
 	}
 	client := transport.New(resolved.Endpoint, tokenFn)
 

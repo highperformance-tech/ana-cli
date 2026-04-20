@@ -129,8 +129,8 @@ func TestTailRejectsNegativeSince(t *testing.T) {
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
 	}
-	if !strings.Contains(err.Error(), "--since") {
-		t.Errorf("err=%q should mention --since", err.Error())
+	if !strings.Contains(err.Error(), "since") {
+		t.Errorf("err=%q should mention since", err.Error())
 	}
 	if f.lastRawReq != nil {
 		t.Errorf("Unary should not be called on invalid --since: raw=%s", f.lastRawReq)

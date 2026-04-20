@@ -1,6 +1,6 @@
 # internal/config
 
-Reads and writes the ana CLI config file at `$XDG_CONFIG_HOME/ana/config.json` (falling back to `~/.config/ana/config.json`). The on-disk shape holds one or more named profiles, each carrying an endpoint + token pair; a single `active` pointer selects the default. API keys are org-scoped, so users targeting multiple TextQL orgs keep one profile per org.
+Reads and writes the ana CLI config file at `$XDG_CONFIG_HOME/ana/config.json` (falling back to `~/.config/ana/config.json`). The on-disk shape holds one or more named profiles, each carrying an endpoint + `cli.Token` pair (the redacting string type — see `internal/cli/token.go`); a single `active` pointer selects the default. API keys are org-scoped, so users targeting multiple TextQL orgs keep one profile per org.
 
 ## Files
 

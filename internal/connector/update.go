@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -123,16 +124,18 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	cfg.Postgres = &pg
 
 	req := updateReq{ConnectorID: id, Config: cfg}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/UpdateConnector", req, &raw); err != nil {
 		return fmt.Errorf("connector update: %w", err)
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
+	var typed getResp
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *getResp) error {
+		if t.Connector == nil {
+			return cli.WriteJSON(w, raw)
+		}
+		return cli.RenderTwoCol(w, t.Connector)
+	}); err != nil {
+		return fmt.Errorf("connector update: %w", err)
 	}
-	if conn, ok := raw["connector"].(map[string]any); ok {
-		return cli.RenderTwoCol(stdio.Stdout, conn)
-	}
-	return cli.WriteJSON(stdio.Stdout, raw)
+	return nil
 }

@@ -55,9 +55,9 @@ type tailReq struct {
 
 func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := cli.NewFlagSet("audit tail")
-	var since string
+	var since time.Time
 	var limit int
-	fs.StringVar(&since, "since", "", "lower bound: relative duration ago (e.g. 1h, 24h) or absolute RFC3339 timestamp")
+	fs.Var(cli.SinceFlag(&since, c.deps.Now), "since", "lower bound: relative duration ago (e.g. 1h, 24h) or absolute RFC3339 timestamp")
 	fs.IntVar(&limit, "limit", 0, "maximum number of entries to request (must be >= 0; 0 means unspecified)")
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
@@ -74,29 +74,8 @@ func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	// shape naturally sparse: a zero Since string and zero Limit both drop
 	// off the wire.
 	var body tailReq
-	if since != "" {
-		// Accept either a relative duration ("1h", "24h") or an absolute
-		// RFC3339 timestamp ("2026-04-18T00:00:00Z"). Try duration first
-		// because it is the more common shape. Note: Go's time.RFC3339
-		// parser already tolerates the fractional-second form ("…00.123Z"),
-		// so a separate RFC3339Nano fallback would be dead code.
-		if dur, err := time.ParseDuration(since); err == nil {
-			// Reject negative durations. `time.ParseDuration("-1h")` succeeds,
-			// and `Now().Add(-(-1h))` would quietly turn that into a timestamp
-			// in the future — the exact shape of "from the future" bug that
-			// hides operator typos. Surface it as a usage error instead.
-			if dur < 0 {
-				return cli.UsageErrf("audit tail: --since duration must be >= 0 (got %q)", since)
-			}
-			body.Since = c.deps.Now().Add(-dur).UTC().Format(time.RFC3339)
-		} else if ts, tsErr := time.Parse(time.RFC3339, since); tsErr == nil {
-			body.Since = ts.UTC().Format(time.RFC3339)
-		} else {
-			return cli.UsageErrf(
-				"audit tail: invalid --since %q (expected duration like 1h or RFC3339 timestamp)",
-				since,
-			)
-		}
+	if !since.IsZero() {
+		body.Since = since.UTC().Format(time.RFC3339)
 	}
 	if limit > 0 {
 		body.Limit = limit

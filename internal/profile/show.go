@@ -67,6 +67,6 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fmt.Fprintf(tw, "active\t%t\n", name == cfg.Active)
 	fmt.Fprintf(tw, "endpoint\t%s\n", p.Endpoint)
 	fmt.Fprintf(tw, "orgName\t%s\n", p.OrgName)
-	fmt.Fprintf(tw, "token\t%s\n", cli.RedactToken(p.Token))
+	fmt.Fprintf(tw, "token\t%s\n", p.Token)
 	return tw.Flush()
 }

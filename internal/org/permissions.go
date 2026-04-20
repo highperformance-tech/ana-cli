@@ -3,6 +3,7 @@ package org
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -49,20 +50,19 @@ func (c *permissionsListCmd) Run(ctx context.Context, args []string, stdio cli.I
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListPermissions", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("org permissions list: %w", err)
 	}
-	if cli.GlobalFrom(ctx).JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
 	var typed listPermissionsResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("org permissions list: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listPermissionsResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tNAME")
+		for _, p := range t.Permissions {
+			name := permissionName(p.Resource, p.Action)
+			fmt.Fprintf(tw, "%s\t%s\n", p.ID, name)
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("org permissions list: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tNAME")
-	for _, p := range typed.Permissions {
-		name := permissionName(p.Resource, p.Action)
-		fmt.Fprintf(tw, "%s\t%s\n", p.ID, name)
-	}
-	return tw.Flush()
+	return nil
 }
 
 // permissionName joins resource and action into a single NAME column value.

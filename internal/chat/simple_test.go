@@ -396,3 +396,32 @@ func TestDuplicateJSON(t *testing.T) {
 		t.Errorf("stdout=%q", out.String())
 	}
 }
+
+// --- write-failure paths --------------------------------------------------
+
+func TestRenameWriteErr(t *testing.T) {
+	t.Parallel()
+	cmd := &renameCmd{deps: (&fakeDeps{}).deps()}
+	err := cmd.Run(context.Background(), []string{"x", "t"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "chat rename") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestDeleteWriteErr(t *testing.T) {
+	t.Parallel()
+	cmd := &deleteCmd{deps: (&fakeDeps{}).deps()}
+	err := cmd.Run(context.Background(), []string{"x"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "chat delete") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestBookmarkWriteErr(t *testing.T) {
+	t.Parallel()
+	cmd := &bookmarkCmd{deps: (&fakeDeps{}).deps()}
+	err := cmd.Run(context.Background(), []string{"x"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "chat bookmark") {
+		t.Errorf("err=%v", err)
+	}
+}

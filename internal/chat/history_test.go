@@ -106,6 +106,25 @@ func TestHistoryUnaryErr(t *testing.T) {
 	}
 }
 
+func TestHistoryWriteErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"cells": []any{
+				map[string]any{"id": "c1", "timestamp": "t", "lifecycle": "L",
+					"mdCell": map[string]any{"content": "hi"}},
+			}}
+			return nil
+		},
+	}
+	cmd := &historyCmd{deps: f.deps()}
+	err := cmd.Run(context.Background(), []string{"x"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "chat history") {
+		t.Errorf("err=%v", err)
+	}
+}
+
 func TestHistoryRemarshalErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{

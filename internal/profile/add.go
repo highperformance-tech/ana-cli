@@ -49,7 +49,7 @@ func (c *addCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	}
 	cfg.Upsert(name, config.Profile{
 		Endpoint: ep,
-		Token:    token,
+		Token:    cli.Token(token),
 		OrgName:  *org,
 	})
 	if err := c.deps.SaveCfg(cfg); err != nil {

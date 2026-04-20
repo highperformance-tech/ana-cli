@@ -313,6 +313,27 @@ func TestUpdateJSONBypass(t *testing.T) {
 	}
 }
 
+func TestUpdateWriteErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				out := resp.(*getConnectorResp)
+				out.Connector.ConnectorType = "POSTGRES"
+				return nil
+			}
+			out := resp.(*map[string]any)
+			*out = map[string]any{"connector": map[string]any{"id": 1.0}}
+			return nil
+		},
+	}
+	cmd := &updateCmd{deps: f.deps()}
+	err := cmd.Run(context.Background(), []string{"--name", "n", "1"}, testcli.FailingIO())
+	if err == nil || !strings.Contains(err.Error(), "connector update") {
+		t.Errorf("err=%v", err)
+	}
+}
+
 func TestUpdateNoConnectorKey(t *testing.T) {
 	t.Parallel()
 	// Response without "connector" — falls back to raw JSON dump.

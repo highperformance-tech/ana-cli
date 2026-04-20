@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -51,25 +52,22 @@ func (c *keysListCmd) Run(ctx context.Context, args []string, stdio cli.IO) erro
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	global := cli.GlobalFrom(ctx)
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListApiKeys", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("auth keys list: %w", translateErr(err))
 	}
-	if global.JSON {
-		return cli.WriteJSON(stdio.Stdout, raw)
-	}
-	// Narrow the map back into our typed shape for table rendering.
 	var typed listApiKeysResp
-	if err := cli.Remarshal(raw, &typed); err != nil {
-		return fmt.Errorf("auth keys list: decode response: %w", err)
+	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *listApiKeysResp) error {
+		tw := cli.NewTableWriter(w)
+		fmt.Fprintln(tw, "ID\tNAME\tLAST USED")
+		for _, k := range t.APIKeys {
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", k.ID, k.Name, cli.DashIfEmpty(k.LastUsedAt))
+		}
+		return tw.Flush()
+	}); err != nil {
+		return fmt.Errorf("auth keys list: %w", err)
 	}
-	tw := cli.NewTableWriter(stdio.Stdout)
-	fmt.Fprintln(tw, "ID\tNAME\tLAST USED")
-	for _, k := range typed.APIKeys {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", k.ID, k.Name, cli.DashIfEmpty(k.LastUsedAt))
-	}
-	return tw.Flush()
+	return nil
 }
 
 // ---- create ----
@@ -113,8 +111,8 @@ func (c *keysCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) er
 	if err := cli.ParseFlags(fs, args); err != nil {
 		return err
 	}
-	if *name == "" {
-		return cli.UsageErrf("auth keys create: --name is required")
+	if err := cli.RequireFlags(fs, "auth keys create", "name"); err != nil {
+		return err
 	}
 
 	req := createApiKeyReq{Name: *name, ServiceAccountID: *sa}
@@ -129,6 +127,12 @@ func (c *keysCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) er
 // emitPlaintextToken prints the one-shot plaintext token to stdout with a
 // stderr reminder. Shared by `keys create` and `keys rotate` since both
 // endpoints return the plaintext exactly once.
+//
+// This is the single authorized plaintext emit path for a newly minted API
+// key: the server returns it once, we print it once, and it is never stored
+// anywhere the CLI owns. Stored bearer tokens go through the redacting
+// cli.Token type instead — callers outside this function should never echo a
+// raw token string.
 func emitPlaintextToken(stdio cli.IO, token string) {
 	fmt.Fprintln(stdio.Stderr, "# store this token; it will not be shown again")
 	fmt.Fprintln(stdio.Stdout, token)
