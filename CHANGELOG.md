@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/highperformance-tech/ana-cli/compare/v0.2.0...v0.2.1) (2026-04-20)
+
+
+### Bug Fixes
+
+* **cli:** render leaf Help on --help/-h ([#18](https://github.com/highperformance-tech/ana-cli/issues/18)) ([de9e7d6](https://github.com/highperformance-tech/ana-cli/commit/de9e7d6fa88d9bc78a474a80e061f3d447bf3552))
+
 ## [0.2.0](https://github.com/highperformance-tech/ana-cli/compare/v0.1.0...v0.2.0) (2026-04-19)
 
 
