@@ -444,6 +444,113 @@ func TestGlobalFromNilCtxPanics(t *testing.T) {
 	_ = GlobalFrom(nil)
 }
 
+func TestDispatchLeafHelp(t *testing.T) {
+	t.Parallel()
+	child := &fakeCmd{help: "run  Do the run thing.\nUsage: ana run"}
+	verbs := map[string]Command{"run": child}
+	stdio, out, _ := testIO()
+	err := Dispatch(context.Background(), verbs, []string{"run", "--help"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	if child.ran {
+		t.Errorf("child should not run when --help short-circuits")
+	}
+	if !strings.Contains(out.String(), "Do the run thing.") {
+		t.Errorf("stdout missing leaf help: %q", out.String())
+	}
+}
+
+func TestDispatchLeafShortHelp(t *testing.T) {
+	t.Parallel()
+	child := &fakeCmd{help: "run leaf help"}
+	verbs := map[string]Command{"run": child}
+	stdio, out, _ := testIO()
+	err := Dispatch(context.Background(), verbs, []string{"run", "-h"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	if child.ran {
+		t.Errorf("child should not run")
+	}
+	if !strings.Contains(out.String(), "run leaf help") {
+		t.Errorf("stdout missing leaf help: %q", out.String())
+	}
+}
+
+func TestGroupRunLeafHelpNested(t *testing.T) {
+	t.Parallel()
+	leaf := &fakeCmd{help: "leaf help"}
+	g := &Group{Children: map[string]Command{"run": leaf}}
+	stdio, out, _ := testIO()
+	err := g.Run(context.Background(), []string{"run", "--help"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	if leaf.ran {
+		t.Errorf("leaf should not run")
+	}
+	if !strings.Contains(out.String(), "leaf help") {
+		t.Errorf("stdout missing leaf help: %q", out.String())
+	}
+}
+
+func TestDispatchLeafHelpMidArgs(t *testing.T) {
+	t.Parallel()
+	child := &fakeCmd{help: "run leaf help"}
+	verbs := map[string]Command{"run": child}
+	stdio, out, _ := testIO()
+	err := Dispatch(context.Background(), verbs, []string{"run", "id", "--help"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	if child.ran {
+		t.Errorf("child should not run")
+	}
+	if !strings.Contains(out.String(), "run leaf help") {
+		t.Errorf("stdout missing leaf help: %q", out.String())
+	}
+}
+
+func TestDispatchLeafHelpWithGlobal(t *testing.T) {
+	t.Parallel()
+	child := &fakeCmd{help: "run leaf help"}
+	verbs := map[string]Command{"run": child}
+	stdio, out, _ := testIO()
+	err := Dispatch(context.Background(), verbs, []string{"--json", "run", "--help"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	if child.ran {
+		t.Errorf("child should not run")
+	}
+	if !strings.Contains(out.String(), "run leaf help") {
+		t.Errorf("stdout missing leaf help: %q", out.String())
+	}
+}
+
+func TestDispatchLeafPositionalHelpDoesNotShortCircuit(t *testing.T) {
+	t.Parallel()
+	// Bare "help" is a legitimate positional (e.g. a message body). Only
+	// --help/-h should trigger the leaf help path.
+	child := &fakeCmd{help: "run leaf help"}
+	verbs := map[string]Command{"run": child}
+	stdio, out, _ := testIO()
+	err := Dispatch(context.Background(), verbs, []string{"run", "help"}, stdio)
+	if err != nil {
+		t.Fatalf("err=%v want nil", err)
+	}
+	if !child.ran {
+		t.Fatalf("child should run with positional \"help\"")
+	}
+	if got := child.gotArgs; len(got) != 1 || got[0] != "help" {
+		t.Errorf("gotArgs=%v want [help]", got)
+	}
+	if out.Len() != 0 {
+		t.Errorf("stdout should be empty: %q", out.String())
+	}
+}
+
 // stubAuthErr implements authError for ExitCode tests.
 type stubAuthErr struct{ auth bool }
 

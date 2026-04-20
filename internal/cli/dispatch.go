@@ -41,7 +41,7 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 		RootHelp(stdio.Stderr, verbs)
 		return fmt.Errorf("unknown command %q: %w", name, ErrUsage)
 	}
-	return verb.Run(ctx, rest[1:], stdio)
+	return dispatchChild(ctx, verb, rest[1:], stdio)
 }
 
 // RootHelp writes a sorted listing of the top-level verbs to w, each followed

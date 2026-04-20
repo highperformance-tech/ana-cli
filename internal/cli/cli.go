@@ -67,7 +67,33 @@ func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 		fmt.Fprintln(stdio.Stderr, g.Help())
 		return fmt.Errorf("unknown subcommand %q: %w", name, ErrUsage)
 	}
-	return child.Run(ctx, args[1:], stdio)
+	return dispatchChild(ctx, child, args[1:], stdio)
+}
+
+// dispatchChild calls cmd.Run unless cmd is a leaf (non-Group) and args
+// contains a help flag (`--help`/`-h`), in which case it renders cmd.Help()
+// and returns ErrHelp. For Groups we defer to Group.Run so the flag reaches
+// the deepest resolved leaf instead of short-circuiting at an ancestor.
+//
+// Only the `--help`/`-h` flag forms short-circuit here. The bare word `help`
+// is deliberately left alone so a leaf can receive it as a positional
+// argument (e.g. `ana chat send <id> help` sends the literal message "help");
+// Group.Run keeps its own `args[0] == "help"` check to handle `ana <group>
+// help`.
+//
+// Positional passthrough caveat: `ana verb -- --help` will still short-circuit
+// here because the scan is positional and ignores `--`. No current leaf takes a
+// positional value that could legitimately be `--help`, so this is acceptable.
+func dispatchChild(ctx context.Context, cmd Command, args []string, stdio IO) error {
+	if _, isGroup := cmd.(*Group); !isGroup {
+		for _, a := range args {
+			if a == "-h" || a == "--help" {
+				fmt.Fprintln(stdio.Stdout, cmd.Help())
+				return ErrHelp
+			}
+		}
+	}
+	return cmd.Run(ctx, args, stdio)
 }
 
 // Help renders the group's summary (if set) followed by a sorted, two-column
