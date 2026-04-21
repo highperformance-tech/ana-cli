@@ -16,4 +16,5 @@ Live-smoke tests that drive real `app.textql.com` RPCs through the same verb pac
 | `connector_snowflake_test.go` | Snowflake create leaves (password/keypair/oauth-sso/oauth-individual), per-mode env-gated. |
 | `dashboard_test.go` | Dashboard list/get/folders read leaves (default + `--json`); `health`/`spawn` env-gated on `ANA_E2E_DASHBOARD_ID`. |
 | `playbook_test.go` | Playbook list/get/reports/lineage read leaves (default + `--json`); id discovered via `list --json`. |
+| `ontology_test.go` | Ontology list/get read leaves (default + `--json`); id is integer on the wire. |
 | `org_test.go` | Org list/show + nested members/roles/permissions. |
