@@ -228,9 +228,8 @@ func StripGlobals(args []string) (Global, []string, error) {
 		}
 		if spec.takesValue {
 			if hasEquals {
-				if err := fs.Set(name, value); err != nil {
-					return Global{}, nil, fmt.Errorf("parse global flags: invalid value %q for -%s: %w", value, name, err)
-				}
+				// String-valued flags: stdlib stringValue.Set never errors.
+				_ = fs.Set(name, value)
 				i++
 				continue
 			}
@@ -239,9 +238,7 @@ func StripGlobals(args []string) (Global, []string, error) {
 			if i+1 >= len(args) {
 				return Global{}, nil, fmt.Errorf("parse global flags: flag needs an argument: -%s", name)
 			}
-			if err := fs.Set(name, args[i+1]); err != nil {
-				return Global{}, nil, fmt.Errorf("parse global flags: invalid value %q for -%s: %w", args[i+1], name, err)
-			}
+			_ = fs.Set(name, args[i+1])
 			i += 2
 			continue
 		}

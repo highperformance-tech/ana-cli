@@ -404,6 +404,32 @@ func TestStripGlobalsMissingValue(t *testing.T) {
 	}
 }
 
+// Bool-valued globals accept an explicit `--name=value`. A non-bool-parseable
+// value should surface as a usage error rather than being silently coerced.
+func TestStripGlobalsBoolEqualsInvalid(t *testing.T) {
+	t.Parallel()
+	_, _, err := StripGlobals([]string{"--json=notbool", "org", "show"})
+	if err == nil {
+		t.Fatalf("want error for invalid bool value")
+	}
+	if !strings.Contains(err.Error(), "invalid value") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+// Bool-valued globals accept `--name=false` to explicitly disable (stdlib
+// semantics). Confirms the hasEquals branch propagates the literal value.
+func TestStripGlobalsBoolEqualsFalse(t *testing.T) {
+	t.Parallel()
+	g, _, err := StripGlobals([]string{"--json=false", "org", "show"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if g.JSON {
+		t.Errorf("JSON=true, want false for --json=false")
+	}
+}
+
 func TestStripGlobalsAllFourFlags(t *testing.T) {
 	t.Parallel()
 	args := []string{
@@ -557,6 +583,22 @@ func TestDispatchBadGlobalFlag(t *testing.T) {
 	}
 	if errb.Len() == 0 {
 		t.Errorf("stderr should describe error")
+	}
+}
+
+// StripGlobals-level failures (missing value, invalid bool) must surface to
+// stderr and map to ErrUsage — distinct from leaf-level flag errors which
+// TestDispatchBadGlobalFlag covers via the pass-through path.
+func TestDispatchStripGlobalsError(t *testing.T) {
+	t.Parallel()
+	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
+	stdio, _, errb := testIO()
+	err := Dispatch(context.Background(), verbs, []string{"--endpoint"}, stdio)
+	if !errors.Is(err, ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
+	}
+	if !strings.Contains(errb.String(), "flag needs an argument") {
+		t.Errorf("stderr missing global-parse msg: %q", errb.String())
 	}
 }
 
