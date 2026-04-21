@@ -39,9 +39,15 @@ make build
 
 ### Windows SmartScreen
 
-The Windows binary is unsigned. On first run SmartScreen may block it with
-"Windows protected your PC". Click **More info → Run anyway**. To avoid the
-prompt altogether, unblock the executable before running:
+Official release binaries are Authenticode-signed via Azure Trusted Signing
+(see the `sign-windows` job in `.github/workflows/release.yml`), so
+SmartScreen should not prompt when running an `ana.exe` downloaded from
+GitHub Releases.
+
+Binaries built from source (`go install` / `make build`) are **not** signed
+and SmartScreen may still block them on first run with "Windows protected
+your PC". Click **More info → Run anyway**, or unblock the file before
+running:
 
 ```powershell
 Unblock-File -Path .\ana.exe
@@ -73,6 +79,11 @@ ana chat send "show me last month's revenue"
 ```
 
 Run `ana --help` or `ana <verb> --help` for command-specific flags.
+
+Connector-create commands are structured as `dialect auth-mode` subcommands
+(e.g. `ana connector create postgres password --name prod --host … --user …
+--database … --password-stdin`) so new dialects and auth modes land as
+additions rather than growing a conditional flag matrix.
 
 ## Configuration
 

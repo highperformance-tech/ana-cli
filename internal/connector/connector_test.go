@@ -55,7 +55,6 @@ func TestHelpStringsNonEmpty(t *testing.T) {
 	cases := map[string]cli.Command{
 		"list":     &listCmd{},
 		"get":      &getCmd{},
-		"create":   &createCmd{},
 		"update":   &updateCmd{},
 		"delete":   &deleteCmd{},
 		"test":     &testCmd{},

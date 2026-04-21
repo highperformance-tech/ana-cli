@@ -81,7 +81,7 @@ ana auth keys rotate <id>
 ana auth keys revoke <id>
 
 ana connector list
-ana connector create --type postgres --name X --host ... --db ...    # runs Test, then Create
+ana connector create postgres password --name X --host ... --database ...    # dialect + auth-mode subtree; runs Test, then Create
 ana connector test <id>
 ana connector update <id> --name X
 ana connector delete <id>
