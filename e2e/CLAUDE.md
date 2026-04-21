@@ -14,4 +14,5 @@ Live-smoke tests that drive real `app.textql.com` RPCs through the same verb pac
 | `chat_test.go` | Chat CRUD + streaming `send`. |
 | `connector_test.go` | Connector CRUD (create/update/test/delete) with ledger-backed cleanup. |
 | `connector_snowflake_test.go` | Snowflake create leaves (password/keypair/oauth-sso/oauth-individual), per-mode env-gated. |
+| `dashboard_test.go` | Dashboard list/get/folders read leaves (default + `--json`); `health`/`spawn` env-gated on `ANA_E2E_DASHBOARD_ID`. |
 | `org_test.go` | Org list/show + nested members/roles/permissions. |
