@@ -510,6 +510,31 @@ func TestRun_EndToEnd_ConnectorList(t *testing.T) {
 	}
 }
 
+// TestRun_LeafUsageErrorReturned asserts that an unknown flag on a leaf verb
+// surfaces as a non-nil ErrUsage-wrapped error whose message names the leaf
+// and the stdlib "flag provided but not defined" cause. main() then prints
+// the error text on stderr — previously it was swallowed because main skipped
+// any ErrUsage-wrapping error as "already reported", but leaf FlagSets use
+// io.Discard output so nothing had actually been reported.
+func TestRun_LeafUsageErrorReturned(t *testing.T) {
+	t.Parallel()
+	var out, errb bytes.Buffer
+	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: func(string) string { return "" }, Now: time.Now}
+	err := run([]string{"org", "show", "--no-such-flag"}, stdio, func(string) string { return "" })
+	if err == nil {
+		t.Fatalf("want non-nil error")
+	}
+	if cli.ExitCode(err) != 1 {
+		t.Fatalf("exit code = %d, want 1 (err=%v)", cli.ExitCode(err), err)
+	}
+	if !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err missing stdlib message: %v", err)
+	}
+	if !strings.Contains(err.Error(), "show") {
+		t.Errorf("err missing leaf name: %v", err)
+	}
+}
+
 // TestRun_UnknownProfile drives the ErrUnknownProfile branch in run: a
 // --profile pointing at a slot that doesn't exist (and no env fallback)
 // must print the canonical error to stderr and exit 1 via ErrUsage.
