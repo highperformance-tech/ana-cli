@@ -609,6 +609,39 @@ func TestRootHelpWritesSortedList(t *testing.T) {
 	if strings.Contains(s, "more") {
 		t.Errorf("only first line of child help should appear: %q", s)
 	}
+	// Global flags block must appear with every known flag, each exactly once.
+	if !strings.Contains(s, "Global Flags:") {
+		t.Errorf("missing Global Flags section: %q", s)
+	}
+	for _, name := range []string{"--json", "--endpoint", "--token-file", "--profile"} {
+		if n := strings.Count(s, name); n != 1 {
+			t.Errorf("flag %q appeared %d times, want 1: %q", name, n, s)
+		}
+	}
+}
+
+func TestDispatchLeafHelpShowsGlobalFlags(t *testing.T) {
+	t.Parallel()
+	child := &fakeCmd{help: "run leaf help"}
+	verbs := map[string]Command{"run": child}
+	stdio, out, _ := testIO()
+	err := Dispatch(context.Background(), verbs, []string{"run", "--help"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	s := out.String()
+	if !strings.Contains(s, "run leaf help") {
+		t.Errorf("leaf help missing: %q", s)
+	}
+	if !strings.Contains(s, "Global Flags:") {
+		t.Errorf("leaf --help should append Global Flags block: %q", s)
+	}
+	// No double-emit: each flag appears exactly once.
+	for _, name := range []string{"--json", "--endpoint", "--token-file", "--profile"} {
+		if n := strings.Count(s, name); n != 1 {
+			t.Errorf("flag %q appeared %d times, want 1: %q", name, n, s)
+		}
+	}
 }
 
 func TestWithGlobalAndFrom(t *testing.T) {

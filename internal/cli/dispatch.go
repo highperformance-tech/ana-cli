@@ -48,7 +48,7 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 }
 
 // RootHelp writes a sorted listing of the top-level verbs to w, each followed
-// by the first line of its own Help().
+// by the first line of its own Help(), then the canonical Global Flags block.
 func RootHelp(w io.Writer, verbs map[string]Command) {
 	names := make([]string, 0, len(verbs))
 	for name := range verbs {
@@ -67,4 +67,6 @@ func RootHelp(w io.Writer, verbs map[string]Command) {
 	for _, n := range names {
 		fmt.Fprintf(w, "  %-*s   %s\n", width, n, FirstLine(verbs[n].Help()))
 	}
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, globalFlagsHelp())
 }
