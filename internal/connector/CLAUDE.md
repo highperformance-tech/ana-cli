@@ -6,6 +6,8 @@ The `ana connector` verb tree: `list`, `get`, `create`, `update`, `delete`, `tes
 
 - `connector.go` — `New`, `Deps`, service path prefix.
 - `types.go` — shared wire shapes for create + update.
+- `types_postgres.go` — Postgres wire spec.
+- `types_snowflake.go` — Snowflake wire spec.
 - `list.go` / `get.go` — readonly `GetConnectors` / `GetConnector`.
 - `create.go` — dialect-selector Group and the shared `resolveSecret` helper.
 - `create_postgres.go` — Postgres dialect Group; sibling files add auth-mode leaves.

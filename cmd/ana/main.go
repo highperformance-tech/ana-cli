@@ -115,7 +115,7 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	}
 	client := transport.New(resolved.Endpoint, tokenFn)
 
-	verbs := buildVerbs(client, env, cfgPath, profileName)
+	verbs := buildVerbs(client, env, cfgPath, profileName, resolved.Endpoint)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -127,13 +127,16 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 // client and config path. Pulled out of run() so main_test can exercise it in
 // isolation. profileName is the slot that auth.Load/SaveCfg should read from
 // and write into — resolved upstream so login/logout always target the same
-// profile the rest of the invocation used.
-func buildVerbs(client *transport.Client, env func(string) string, cfgPath, profileName string) map[string]cli.Command {
+// profile the rest of the invocation used. endpoint is the resolved API base
+// URL (not just the --endpoint override), so verbs whose user-facing output
+// references the web app — e.g. connector OAuth success notes — can point
+// self-hosted and non-prod profiles at the right place.
+func buildVerbs(client *transport.Client, env func(string) string, cfgPath, profileName, endpoint string) map[string]cli.Command {
 	return map[string]cli.Command{
 		"auth":      auth.New(authDeps(client, env, cfgPath, profileName)),
 		"profile":   profile.New(profileDeps(env, cfgPath)),
 		"org":       org.New(org.Deps{Unary: client.Unary}),
-		"connector": connector.New(connector.Deps{Unary: client.Unary}),
+		"connector": connector.New(connector.Deps{Unary: client.Unary, Endpoint: endpoint}),
 		"chat":      chat.New(chatDeps(client)),
 		"dashboard": dashboard.New(dashboard.Deps{Unary: client.Unary}),
 		"playbook":  playbook.New(playbook.Deps{Unary: client.Unary}),

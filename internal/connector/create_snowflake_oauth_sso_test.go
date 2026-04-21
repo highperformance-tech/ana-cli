@@ -43,7 +43,7 @@ func TestCreateSnowflakeOAuthSSOHappy(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 	s := out.String()
-	if !strings.Contains(s, "connectorId: 55") || !strings.Contains(s, "complete OAuth at") {
+	if !strings.Contains(s, "connectorId: 55") || !strings.Contains(s, "complete OAuth at https://app.textql.com") {
 		t.Errorf("stdout=%q", s)
 	}
 	req := string(f.lastRawReq)
@@ -61,6 +61,35 @@ func TestCreateSnowflakeOAuthSSOHappy(t *testing.T) {
 		if strings.Contains(req, unwanted) {
 			t.Errorf("req unexpectedly contains %s in %s", unwanted, req)
 		}
+	}
+}
+
+func TestCreateSnowflakeOAuthSSOCustomEndpoint(t *testing.T) {
+	t.Parallel()
+	// Self-hosted / non-prod operators resolve an endpoint that is not
+	// app.textql.com; the success note must echo that URL so users complete
+	// the OAuth handshake in the right web app.
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"connectorId": 77.0, "name": "sf1", "connectorType": "SNOWFLAKE"}
+			return nil
+		},
+	}
+	deps := f.deps()
+	deps.Endpoint = "https://staging.example.com"
+	g := newCreateGroup(deps)
+	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
+	if err := g.Run(context.Background(), snowflakeOAuthSSOArgs(), stdio); err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	s := out.String()
+	if !strings.Contains(s, "complete OAuth at https://staging.example.com") {
+		t.Errorf("stdout=%q missing custom endpoint URL", s)
+	}
+	// And it must NOT leak the hardcoded default into a non-prod profile.
+	if strings.Contains(s, "https://app.textql.com") {
+		t.Errorf("stdout=%q leaked default endpoint", s)
 	}
 }
 

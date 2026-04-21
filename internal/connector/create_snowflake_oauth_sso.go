@@ -36,7 +36,7 @@ type snowflakeOAuthSSOCmd struct {
 func (c *snowflakeOAuthSSOCmd) Help() string {
 	return "oauth-sso  Shared-token OAuth auth (authStrategy=oauth_sso).\n" +
 		"Usage: ana connector create snowflake oauth-sso --name <n> --locator <acct> --database <db> --oauth-client-id <id> (--oauth-client-secret <s>|--oauth-client-secret-stdin) [--warehouse <w>] [--schema <s>] [--role <r>]\n" +
-		"Note: a human must complete the OAuth handshake at https://app.textql.com after create — the CLI cannot receive the redirect."
+		"Note: a human must complete the OAuth handshake in the TextQL web app you're pointed at after create — the CLI cannot receive the redirect. The success message prints the exact URL based on the active profile."
 }
 
 func (c *snowflakeOAuthSSOCmd) Flags(fs *flag.FlagSet) {
@@ -89,10 +89,11 @@ func (c *snowflakeOAuthSSOCmd) Run(ctx context.Context, args []string, stdio cli
 	if err := c.deps.Unary(ctx, servicePath+"/CreateConnector", req, &raw); err != nil {
 		return fmt.Errorf("connector create snowflake oauth-sso: %w", err)
 	}
+	endpoint := c.deps.resolveEndpoint()
 	var typed createResp
 	if err := cli.RenderOutput(stdio.Stdout, raw, cli.GlobalFrom(ctx).JSON, &typed, func(w io.Writer, t *createResp) error {
-		_, err := fmt.Fprintf(w, "connectorId: %d\nname: %s\nconnectorType: %s\nnote: complete OAuth at https://app.textql.com to activate\n",
-			t.ConnectorID, t.Name, t.ConnectorType)
+		_, err := fmt.Fprintf(w, "connectorId: %d\nname: %s\nconnectorType: %s\nnote: complete OAuth at %s to activate\n",
+			t.ConnectorID, t.Name, t.ConnectorType, endpoint)
 		return err
 	}); err != nil {
 		return fmt.Errorf("connector create snowflake oauth-sso: %w", err)
