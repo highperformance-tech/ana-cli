@@ -84,20 +84,22 @@ resolve_version() {
 
 verify_checksum() {
 	# verify_checksum ARCHIVE_PATH CHECKSUMS_PATH
-	archive="$1"
-	checksums="$2"
-	archive_name=$(basename "$archive")
-	expected=$(grep " $archive_name\$" "$checksums" | awk '{print $1}')
-	[ -n "$expected" ] || die "no checksum entry for $archive_name"
+	# Prefixed names avoid clobbering caller-scope `archive` in POSIX sh
+	# (no `local` keyword, so function vars are global by default).
+	_vc_archive="$1"
+	_vc_checksums="$2"
+	_vc_name=$(basename "$_vc_archive")
+	_vc_expected=$(grep " $_vc_name\$" "$_vc_checksums" | awk '{print $1}')
+	[ -n "$_vc_expected" ] || die "no checksum entry for $_vc_name"
 	if command -v sha256sum >/dev/null 2>&1; then
-		actual=$(sha256sum "$archive" | awk '{print $1}')
+		_vc_actual=$(sha256sum "$_vc_archive" | awk '{print $1}')
 	elif command -v shasum >/dev/null 2>&1; then
-		actual=$(shasum -a 256 "$archive" | awk '{print $1}')
+		_vc_actual=$(shasum -a 256 "$_vc_archive" | awk '{print $1}')
 	else
 		die "sha256sum or shasum required"
 	fi
-	if [ "$expected" != "$actual" ]; then
-		die "checksum mismatch: expected $expected, got $actual"
+	if [ "$_vc_expected" != "$_vc_actual" ]; then
+		die "checksum mismatch: expected $_vc_expected, got $_vc_actual"
 	fi
 }
 
