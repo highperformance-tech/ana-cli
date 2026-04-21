@@ -2,8 +2,8 @@ package connector
 
 // Shared wire types for the Connect-RPC Connector service. Field names follow
 // the captured API shapes in `api-catalog/`; anything else is rejected
-// server-side. Kept in one file so per-dialect files only need to add their
-// own `<dialect>Spec` struct and point configEnvelope at it.
+// server-side. Per-dialect spec structs live in `types_<dialect>.go` so new
+// dialects only need to add their own file and point configEnvelope at it.
 
 // createReq mirrors the exact wire shape captured in the API catalog.
 type createReq struct {
@@ -28,37 +28,6 @@ type configEnvelope struct {
 	AuthStrategy  string         `json:"authStrategy,omitempty"`
 	Postgres      *postgresSpec  `json:"postgres,omitempty"`
 	Snowflake     *snowflakeSpec `json:"snowflake,omitempty"`
-}
-
-// postgresSpec matches the oneof leaf for the POSTGRES dialect. Port is an int
-// per the catalog; sslMode is a boolean named `sslMode` (not `ssl`).
-type postgresSpec struct {
-	Host     string `json:"host,omitempty"`
-	Port     int    `json:"port,omitempty"`
-	User     string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
-	Database string `json:"database,omitempty"`
-	SSLMode  bool   `json:"sslMode,omitempty"`
-}
-
-// snowflakeSpec matches the oneof leaf for the SNOWFLAKE dialect. One struct
-// covers all four auth modes (password, key-pair, oauth-sso, oauth-individual)
-// — the server discriminates by which credential field is populated, paired
-// with `configEnvelope.AuthStrategy`. Every field is omitempty so each leaf
-// only emits the fields its mode actually uses. `locator` is TextQL's wire
-// name for what Snowflake's own docs call `account`.
-type snowflakeSpec struct {
-	Locator              string `json:"locator,omitempty"`
-	Database             string `json:"database,omitempty"`
-	Warehouse            string `json:"warehouse,omitempty"`
-	Schema               string `json:"schema,omitempty"`
-	Role                 string `json:"role,omitempty"`
-	Username             string `json:"username,omitempty"`
-	Password             string `json:"password,omitempty"`
-	PrivateKey           string `json:"privateKey,omitempty"`
-	PrivateKeyPassphrase string `json:"privateKeyPassphrase,omitempty"`
-	OAuthClientID        string `json:"oauthClientId,omitempty"`
-	OAuthClientSecret    string `json:"oauthClientSecret,omitempty"`
 }
 
 // createResp is the `{connectorId, name, connectorType}` captured response.
