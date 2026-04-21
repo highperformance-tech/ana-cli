@@ -30,7 +30,7 @@ func WithAncestorFlags(ctx context.Context, reg func(*flag.FlagSet)) context.Con
 	prior, _ := ctx.Value(ancestorFlagsKey{}).([]flagRegistrar)
 	next := make([]flagRegistrar, 0, len(prior)+1)
 	next = append(next, prior...)
-	next = append(next, flagRegistrar(reg))
+	next = append(next, reg)
 	return context.WithValue(ctx, ancestorFlagsKey{}, next)
 }
 
