@@ -404,6 +404,44 @@ func TestStripGlobalsMissingValue(t *testing.T) {
 	}
 }
 
+// Stdlib `flag.FlagSet.Parse` treats `-name` and `--name` as equivalent.
+// StripGlobals must do the same so `ana -json org show` works the same as
+// `ana --json org show` — otherwise a user used to the single-dash form
+// would have their flag silently passed through to the leaf's FlagSet.
+func TestStripGlobalsSingleDashForm(t *testing.T) {
+	t.Parallel()
+	g, rest, err := StripGlobals([]string{"-json", "org", "-endpoint=https://x", "show"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if !g.JSON || g.Endpoint != "https://x" {
+		t.Errorf("global=%+v", g)
+	}
+	if len(rest) != 2 || rest[0] != "org" || rest[1] != "show" {
+		t.Errorf("rest=%v", rest)
+	}
+}
+
+// Pathological dash-only tokens (`-`, `---`, `-=val`) are not flags; they
+// must be passed through to rest unchanged so the leaf can reject or accept
+// them on its own terms.
+func TestStripGlobalsDashNoise(t *testing.T) {
+	t.Parallel()
+	_, rest, err := StripGlobals([]string{"-", "org", "---", "-=val", "show"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	want := []string{"-", "org", "---", "-=val", "show"}
+	if len(rest) != len(want) {
+		t.Fatalf("rest=%v want %v", rest, want)
+	}
+	for i := range want {
+		if rest[i] != want[i] {
+			t.Errorf("rest[%d]=%q want %q", i, rest[i], want[i])
+		}
+	}
+}
+
 // Bool-valued globals accept an explicit `--name=value`. A non-bool-parseable
 // value should surface as a usage error rather than being silently coerced.
 func TestStripGlobalsBoolEqualsInvalid(t *testing.T) {
@@ -568,6 +606,9 @@ func TestDispatchUnknownVerb(t *testing.T) {
 	if !errors.Is(err, ErrUsage) {
 		t.Fatalf("err=%v", err)
 	}
+	if !errors.Is(err, ErrReported) {
+		t.Errorf("err should carry ErrReported: %v", err)
+	}
 	if !strings.Contains(errb.String(), "unknown command: zzz") {
 		t.Errorf("stderr missing unknown msg: %q", errb.String())
 	}
@@ -588,7 +629,8 @@ func TestDispatchBadGlobalFlag(t *testing.T) {
 
 // StripGlobals-level failures (missing value, invalid bool) must surface to
 // stderr and map to ErrUsage — distinct from leaf-level flag errors which
-// TestDispatchBadGlobalFlag covers via the pass-through path.
+// TestDispatchBadGlobalFlag covers via the pass-through path. The returned
+// err must also carry ErrReported so main() knows not to double-print.
 func TestDispatchStripGlobalsError(t *testing.T) {
 	t.Parallel()
 	verbs := map[string]Command{"x": &fakeCmd{help: "x"}}
@@ -596,6 +638,9 @@ func TestDispatchStripGlobalsError(t *testing.T) {
 	err := Dispatch(context.Background(), verbs, []string{"--endpoint"}, stdio)
 	if !errors.Is(err, ErrUsage) {
 		t.Fatalf("err=%v want ErrUsage", err)
+	}
+	if !errors.Is(err, ErrReported) {
+		t.Errorf("err should carry ErrReported: %v", err)
 	}
 	if !strings.Contains(errb.String(), "flag needs an argument") {
 		t.Errorf("stderr missing global-parse msg: %q", errb.String())

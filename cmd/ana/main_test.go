@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -563,5 +564,12 @@ func TestRun_UnknownProfile(t *testing.T) {
 	}
 	if !strings.Contains(errb.String(), `unknown profile "ghost"`) {
 		t.Errorf("stderr missing message: %q", errb.String())
+	}
+	// run() writes the diagnostic itself and returns an ErrReported-wrapped
+	// err so main's fallback print is suppressed. Regression guard — if
+	// ErrReported leaks off the error, users would see the same message
+	// twice. Confirms the sentinel is actually in the chain.
+	if !errors.Is(err, cli.ErrReported) {
+		t.Errorf("err should carry cli.ErrReported to suppress main's duplicate print: %v", err)
 	}
 }

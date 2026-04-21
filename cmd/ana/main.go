@@ -32,11 +32,13 @@ import (
 func main() {
 	stdio := cli.DefaultIO()
 	err := run(os.Args[1:], stdio, os.Getenv)
-	if err != nil && !errors.Is(err, cli.ErrHelp) {
-		// ErrHelp means help text was already written to stdout; skip. Every
-		// other error (including ErrUsage from leaves whose FlagSet output is
-		// io.Discard) still needs to surface — otherwise misplaced flags
-		// exit 1 with silent output.
+	if err != nil && !errors.Is(err, cli.ErrHelp) && !errors.Is(err, cli.ErrReported) {
+		// ErrHelp means help text was already written to stdout; skip.
+		// ErrReported means the callee already wrote its diagnostic to
+		// stderr (Dispatch for bad globals / unknown commands, run() for
+		// unknown profiles). Every other error — including ErrUsage from
+		// leaves whose FlagSet output is io.Discard — still needs to
+		// surface, otherwise misplaced flags exit 1 with silent output.
 		fmt.Fprintln(stdio.Stderr, err)
 	}
 	os.Exit(cli.ExitCode(err))
@@ -99,7 +101,7 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 		// by wrapping cli.ErrUsage.
 		if errors.Is(rerr, config.ErrUnknownProfile) {
 			fmt.Fprintf(stdio.Stderr, "ana: unknown profile %q\n", global.Profile)
-			return fmt.Errorf("%w: %s", cli.ErrUsage, rerr)
+			return errors.Join(fmt.Errorf("%w: %s", cli.ErrUsage, rerr), cli.ErrReported)
 		}
 		return rerr
 	}

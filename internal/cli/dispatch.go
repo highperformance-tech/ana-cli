@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -24,7 +25,7 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 	if err != nil {
 		fmt.Fprintln(stdio.Stderr, err)
 		RootHelp(stdio.Stderr, verbs)
-		return fmt.Errorf("%w: %s", ErrUsage, err.Error())
+		return errors.Join(fmt.Errorf("%w: %s", ErrUsage, err.Error()), ErrReported)
 	}
 	ctx = WithGlobal(ctx, global)
 
@@ -42,7 +43,7 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 	if !ok {
 		fmt.Fprintf(stdio.Stderr, "unknown command: %s\n", name)
 		RootHelp(stdio.Stderr, verbs)
-		return fmt.Errorf("unknown command %q: %w", name, ErrUsage)
+		return errors.Join(fmt.Errorf("unknown command %q: %w", name, ErrUsage), ErrReported)
 	}
 	return dispatchChild(ctx, verb, rest[1:], stdio)
 }

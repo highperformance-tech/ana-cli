@@ -184,9 +184,11 @@ func ParseGlobal(args []string) (Global, []string, error) {
 // Everything it does not recognise is passed through to rest in original
 // order so the leaf's FlagSet still handles unknown-flag errors.
 //
-// Supported forms per known flag in globalFlagRegistry:
+// Supported forms per known flag in globalFlagRegistry (single- and double-
+// dash spellings are equivalent, matching stdlib `flag.FlagSet.Parse`):
 //
-//   - `--name` (bool) or `--name=value` / `--name value` (takesValue)
+//   - `-name` / `--name` (bool) or `-name=value` / `--name=value` /
+//     `-name value` / `--name value` (takesValue)
 //
 // A bare `--` terminator stops global consumption: every remaining token is
 // copied verbatim to rest (including the `--` itself), so leaves can still
@@ -257,15 +259,25 @@ func StripGlobals(args []string) (Global, []string, error) {
 	return g, rest, nil
 }
 
-// parseFlagToken classifies a token as a long-form flag (`--name` or
-// `--name=value`) and returns its components. isLong is false for anything
-// that doesn't start with `--` or for the bare `--` terminator — both are
-// passed through to rest untouched.
+// parseFlagToken classifies a token as a long-form flag (`--name`,
+// `-name`, `--name=value`, or `-name=value`) and returns its components.
+// Both single- and double-dash spellings are accepted per stdlib
+// `flag.FlagSet.Parse` docs ("One or two dashes may be used; they are
+// equivalent"). isLong is false for non-flag tokens, the bare `--`
+// terminator, or a bare `-` — all are passed through to rest untouched.
 func parseFlagToken(tok string) (name, value string, hasEquals, isLong bool) {
-	if len(tok) < 3 || !strings.HasPrefix(tok, "--") {
+	if len(tok) < 2 || tok[0] != '-' {
 		return "", "", false, false
 	}
-	body := tok[2:]
+	body := tok[1:]
+	if body[0] == '-' {
+		// `--` terminator or `--name` — strip the second dash. A bare `--`
+		// has body=="-" here which we reject below (len check).
+		body = body[1:]
+	}
+	if body == "" || body == "-" {
+		return "", "", false, false
+	}
 	if eq := strings.IndexByte(body, '='); eq >= 0 {
 		return body[:eq], body[eq+1:], true, true
 	}
