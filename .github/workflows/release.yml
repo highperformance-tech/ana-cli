@@ -11,11 +11,11 @@ permissions:
 
 jobs:
   # Windows Authenticode via Azure Trusted Signing has to run on a Windows
-  # runner — both dotnet/sign and azure/trusted-signing-action are explicitly
+  # runner — both dotnet/sign and Azure/artifact-signing-action are
   # Windows-only. The OSS `prebuilt` builder is GoReleaser Pro, so instead
   # of handing the signed exes to goreleaser this job produces the final
   # release zips (matching goreleaser's name_template) plus a sha256
-  # fragment. The release job merges them into dist/ and appends the
+  # fragment. The publish job merges them into dist/ and appends the
   # fragment to checksums.txt.
   sign-windows:
     runs-on: windows-latest
@@ -67,9 +67,6 @@ jobs:
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
 
-      # Produce final release zips matching goreleaser's name_template
-      # (ana_<version>_windows_<arch>.zip) and a sha256 fragment that the
-      # release job will append to checksums.txt.
       - name: Archive signed binaries
         shell: bash
         run: |
@@ -100,11 +97,9 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  # macOS + Linux build, Apple codesign, notarize, and publish. Pre-built
-  # Windows zips flow in via download-artifact and are merged into dist/
-  # before upload so a single `gh release upload` covers every artifact.
-  release:
-    needs: sign-windows
+  # macOS + Linux build, Apple codesign, notarize. Runs in parallel with
+  # sign-windows. Uploads its dist/ directory for the publish job to merge.
+  build-unix:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -145,11 +140,6 @@ jobs:
 
           rm -f "$CERT_PATH"
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: windows-dist
-          path: windows-dist
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
@@ -174,8 +164,33 @@ jobs:
             .github/scripts/notarize-archive.sh "$archive"
           done
 
-      # Merge the windows zips into dist/ and append their sha256 lines to
-      # the goreleaser-generated checksums.txt so install.sh's single-file
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unix-dist
+          path: dist/
+          retention-days: 1
+          if-no-files-found: error
+
+  # Merge windows + unix artifacts and upload to the release. Tiny ubuntu
+  # job — no signing, no codesigning, just tar/zip/sha256/gh cli.
+  publish:
+    needs: [sign-windows, build-unix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unix-dist
+          path: dist
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: windows-dist
+          path: windows-dist
+
+      # Merge windows zips into dist/ and append their sha256 lines to the
+      # goreleaser-generated checksums.txt so install.sh's single-file
       # verification flow keeps working for the .tar.gz path and any future
       # windows installer can use the same manifest.
       - name: Merge windows artifacts into dist
@@ -187,9 +202,6 @@ jobs:
       - name: Publish release artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # The GitHub release is created by release-please when the release PR
-        # merges (or by `gh release create` for manual prereleases). This step
-        # uploads the signed + notarized artifacts to that release.
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -200,7 +212,7 @@ jobs:
             dist/*.sbom.json
           )
           if [[ ${#artifacts[@]} -eq 0 ]]; then
-            echo "no artifacts in dist/ — goreleaser step likely failed" >&2
+            echo "no artifacts in dist/ — upstream jobs likely failed" >&2
             exit 1
           fi
           gh release upload "$GITHUB_REF_NAME" "${artifacts[@]}" --clobber
