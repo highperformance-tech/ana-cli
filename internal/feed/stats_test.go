@@ -26,7 +26,7 @@ func TestStatsTable(t *testing.T) {
 				"threadsCreated":       399,
 				"playbooksCreated":     5,
 				"connectorsConfigured": 4,
-				"connectorNames":       []any{"HPT", "tableau.hpt.tools"},
+				"connectorNames":       []any{"HPT", "tableau.example.com"},
 				"activeAgentNames":     []any{"AWS Inspector"},
 			}
 			return nil
@@ -60,7 +60,7 @@ func TestStatsTable(t *testing.T) {
 		"threadsCreated":       "399",
 		"playbooksCreated":     "5",
 		"connectorsConfigured": "4",
-		"connectorNames":       "HPT, tableau.hpt.tools",
+		"connectorNames":       "HPT, tableau.example.com",
 		"activeAgentNames":     "AWS Inspector",
 	} {
 		if !rowHas(label, value) {
