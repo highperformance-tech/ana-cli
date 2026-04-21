@@ -128,7 +128,7 @@ Per-endpoint request/response schemas live in `api-catalog/` (~85 endpoints as o
 
 ## Datasets
 
-- **Entity:** `Dataset` — queryable collection scoped to a connector (e.g. "Superstore Dataset" under `tableau.hpt.tools`).
+- **Entity:** `Dataset` — queryable collection scoped to a connector (e.g. "Superstore Dataset" under `tableau.example.com`).
 - **Service:** `dataset.DatasetService`
 - **Methods:** `GetDatasets` (called with different scopes).
 - **Last verified:** 2026-04-17

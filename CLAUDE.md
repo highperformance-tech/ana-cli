@@ -14,11 +14,13 @@
 - `.github/workflows/` — CI (`ci.yml` + release pipeline). Docs-only PRs skip the heavy jobs; see README § "CI scope".
 - `install.sh` — curl-friendly installer that fetches the matching `ana_<version>_<os>_<arch>` archive, verifies the sha256, and drops `ana` on `PATH`.
 - `.goreleaser.yml`, `release-please-config.json`, `.release-please-manifest.json` — release pipeline config. Conventional commits drive release-please → goreleaser.
+- `CONTRIBUTING.md`, `SECURITY.md` — external-contributor onboarding + security disclosure policy. Wired into `.github/pull_request_template.md`.
 
 ## Workflow at a glance
 
 - Build / test / cover: `make build`, `make test`, `make cover` (100% coverage gate on `./internal/...`).
 - Lint: `make lint` (gofmt, go vet, staticcheck).
 - Local release smoke: `make release-local` (`goreleaser check` + `--snapshot`).
-- Live smoke tests: `make e2e` (requires `ANA_E2E_ENDPOINT` + `ANA_E2E_TOKEN`; see `e2e/README.md`).
+- Live smoke tests: `make e2e` (requires `ANA_E2E_ENDPOINT`, `ANA_E2E_TOKEN`, `ANA_E2E_EXPECT_ORG`; see `e2e/README.md`).
+- `make help` — self-documenting list of every target.
 - Capture a new endpoint: run the `textql-webapp-probe` skill — output lands in `.playwright-mcp/`, then gets emitted into `api-catalog/`.
