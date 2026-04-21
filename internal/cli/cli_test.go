@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -594,3 +595,312 @@ func TestExitCode(t *testing.T) {
 var _ io.Reader = DefaultIO().Stdin
 var _ io.Writer = DefaultIO().Stdout
 var _ io.Writer = DefaultIO().Stderr
+
+// flagLeaf is a Flagger-implementing leaf used by the Phase 2 tests. It
+// declares its own flags in Flags, then in Run declares them on a private
+// FlagSet, calls ApplyAncestorFlags, and records what parsed. Keeping the
+// declaration inside Flags (rather than repeating it inline in Run) mirrors
+// the contract the real verb packages will adopt when they migrate.
+type flagLeaf struct {
+	declareOwn func(fs *flag.FlagSet)
+	ancestorFS *flag.FlagSet
+	parsedArgs []string
+	ran        bool
+}
+
+func (l *flagLeaf) Flags(fs *flag.FlagSet) {
+	if l.declareOwn != nil {
+		l.declareOwn(fs)
+	}
+}
+
+func (l *flagLeaf) Help() string { return "leaf help line" }
+
+func (l *flagLeaf) Run(ctx context.Context, args []string, _ IO) error {
+	fs := flag.NewFlagSet("leaf", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	l.Flags(fs)
+	ApplyAncestorFlags(ctx, fs)
+	l.ancestorFS = fs
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	l.parsedArgs = fs.Args()
+	l.ran = true
+	return nil
+}
+
+func TestWithAncestorFlagsPreservesOrder(t *testing.T) {
+	t.Parallel()
+	var order []string
+	ctx := context.Background()
+	ctx = WithAncestorFlags(ctx, func(fs *flag.FlagSet) { order = append(order, "outer") })
+	ctx = WithAncestorFlags(ctx, func(fs *flag.FlagSet) { order = append(order, "inner") })
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	ApplyAncestorFlags(ctx, fs)
+	if len(order) != 2 || order[0] != "outer" || order[1] != "inner" {
+		t.Errorf("order=%v want [outer inner]", order)
+	}
+}
+
+func TestApplyAncestorFlagsNoRegistrars(t *testing.T) {
+	t.Parallel()
+	// Zero-registrar ctx must not panic — the absence path matters for
+	// leaves dispatched directly (not under a Group with Flags set).
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	ApplyAncestorFlags(context.Background(), fs)
+	// sanity: no flags were declared
+	count := 0
+	fs.VisitAll(func(*flag.Flag) { count++ })
+	if count != 0 {
+		t.Errorf("VisitAll count=%d want 0", count)
+	}
+}
+
+func TestDeclareStringGuardsAgainstRedeclare(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var leafT, ancT string
+	fs.StringVar(&leafT, "foo", "leafdef", "leaf usage")
+	DeclareString(fs, &ancT, "foo", "ancdef", "anc usage")
+	if err := fs.Parse([]string{"--foo", "x"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if leafT != "x" {
+		t.Errorf("leafT=%q want x", leafT)
+	}
+	if ancT != "" {
+		t.Errorf("ancT=%q want '' (ancestor should not have been bound)", ancT)
+	}
+}
+
+func TestDeclareBoolGuardsAgainstRedeclare(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var leafT, ancT bool
+	fs.BoolVar(&leafT, "v", false, "leaf usage")
+	DeclareBool(fs, &ancT, "v", false, "anc usage")
+	if err := fs.Parse([]string{"--v"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if !leafT {
+		t.Errorf("leafT=false want true")
+	}
+	if ancT {
+		t.Errorf("ancT=true want false (ancestor should not have been bound)")
+	}
+}
+
+func TestDeclareBoolFreshDeclaration(t *testing.T) {
+	t.Parallel()
+	// When no prior declaration exists, DeclareBool must bind the target.
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var target bool
+	DeclareBool(fs, &target, "v", false, "usage")
+	if err := fs.Parse([]string{"--v"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if !target {
+		t.Errorf("target=false want true")
+	}
+}
+
+func TestDeclareStringFreshDeclaration(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var target string
+	DeclareString(fs, &target, "s", "def", "usage")
+	if err := fs.Parse([]string{"--s", "x"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if target != "x" {
+		t.Errorf("target=%q want x", target)
+	}
+}
+
+func TestRenderFlagsAsTextDefaultAndEmptyType(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	// Bool with zero-value default "false" → no "(default: X)" suffix
+	fs.Bool("v", false, "verbose flag")
+	// String with non-empty default → suffix emitted
+	fs.String("name", "mydef", "a `NAME`")
+	// String with empty default → no suffix
+	fs.String("other", "", "other flag")
+	got := renderFlagsAsText(fs)
+	if !strings.Contains(got, "--name") || !strings.Contains(got, "(default: mydef)") {
+		t.Errorf("expected --name with default: %q", got)
+	}
+	if strings.Contains(got, "--v ") && strings.Contains(got, "(default: false)") {
+		t.Errorf("bool false default should not render: %q", got)
+	}
+	if strings.Contains(got, "--other  ") && strings.Contains(got, "(default:") {
+		t.Errorf("empty string default should not render: %q", got)
+	}
+}
+
+func TestGroupFlagsPropagateToLeaf(t *testing.T) {
+	t.Parallel()
+	var leafFoo string
+	leaf := &flagLeaf{declareOwn: func(fs *flag.FlagSet) {
+		// leaf-only flag so ancestor's declaration wins via DeclareString
+		fs.StringVar(new(string), "leaf-only", "", "leaf-only flag")
+	}}
+	g := &Group{
+		Flags: func(fs *flag.FlagSet) {
+			DeclareString(fs, &leafFoo, "foo", "", "inherited foo flag")
+		},
+		Children: map[string]Command{"leaf": leaf},
+	}
+	stdio, _, _ := testIO()
+	err := g.Run(context.Background(), []string{"leaf", "--foo", "x", "--leaf-only", "y"}, stdio)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if !leaf.ran {
+		t.Fatalf("leaf did not run")
+	}
+	if leafFoo != "x" {
+		t.Errorf("leafFoo=%q want x", leafFoo)
+	}
+}
+
+func TestGroupFlagsVisibleInLeafHelp(t *testing.T) {
+	t.Parallel()
+	leaf := &flagLeaf{declareOwn: func(fs *flag.FlagSet) {
+		fs.String("leaf-only", "", "leaf flag `NAME`")
+	}}
+	g := &Group{
+		Flags: func(fs *flag.FlagSet) {
+			DeclareString(fs, new(string), "foo", "", "the foo `VALUE`")
+		},
+		Children: map[string]Command{"leaf": leaf},
+	}
+	stdio, out, _ := testIO()
+	err := g.Run(context.Background(), []string{"leaf", "--help"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	s := out.String()
+	if !strings.Contains(s, "--foo") {
+		t.Errorf("leaf --help missing ancestor --foo: %q", s)
+	}
+	if !strings.Contains(s, "--leaf-only") {
+		t.Errorf("leaf --help missing leaf --leaf-only: %q", s)
+	}
+	if !strings.Contains(s, "Flags:") {
+		t.Errorf("leaf --help missing Flags: header: %q", s)
+	}
+}
+
+func TestGroupFlagsNestedTwoLevels(t *testing.T) {
+	t.Parallel()
+	var outerV, middleV string
+	leaf := &flagLeaf{declareOwn: func(fs *flag.FlagSet) {
+		fs.String("leaf-only", "", "leaf-only flag")
+	}}
+	middle := &Group{
+		Flags: func(fs *flag.FlagSet) {
+			DeclareString(fs, &middleV, "middle", "", "middle flag")
+		},
+		Children: map[string]Command{"leaf": leaf},
+	}
+	outer := &Group{
+		Flags: func(fs *flag.FlagSet) {
+			DeclareString(fs, &outerV, "outer", "", "outer flag")
+		},
+		Children: map[string]Command{"mid": middle},
+	}
+	stdio, _, _ := testIO()
+	err := outer.Run(context.Background(),
+		[]string{"mid", "leaf", "--outer", "o", "--middle", "m", "--leaf-only", "l"}, stdio)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if !leaf.ran {
+		t.Fatalf("leaf did not run")
+	}
+	if outerV != "o" {
+		t.Errorf("outerV=%q want o", outerV)
+	}
+	if middleV != "m" {
+		t.Errorf("middleV=%q want m", middleV)
+	}
+}
+
+func TestGroupFlagsPrecedenceLeafWins(t *testing.T) {
+	t.Parallel()
+	// Both ancestor and leaf declare --foo; leaf declares FIRST (via its
+	// Flags method called from Run), so DeclareString in the ancestor
+	// registrar is a no-op. The leaf's target pointer receives the value.
+	var ancestorV string
+	var leafV string
+	leaf := &flagLeaf{declareOwn: func(fs *flag.FlagSet) {
+		fs.StringVar(&leafV, "foo", "leafdef", "leaf foo")
+	}}
+	g := &Group{
+		Flags: func(fs *flag.FlagSet) {
+			DeclareString(fs, &ancestorV, "foo", "ancdef", "ancestor foo")
+		},
+		Children: map[string]Command{"leaf": leaf},
+	}
+	stdio, _, _ := testIO()
+	err := g.Run(context.Background(), []string{"leaf", "--foo", "x"}, stdio)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if leafV != "x" {
+		t.Errorf("leafV=%q want x", leafV)
+	}
+	if ancestorV != "" {
+		t.Errorf("ancestorV=%q want '' (ancestor target should not bind)", ancestorV)
+	}
+}
+
+func TestGroupFlagsHelpForGroupItself(t *testing.T) {
+	t.Parallel()
+	g := &Group{
+		Summary: "group sum",
+		Flags: func(fs *flag.FlagSet) {
+			DeclareString(fs, new(string), "groupflag", "", "the group flag")
+		},
+		Children: map[string]Command{"c": &fakeCmd{help: "c help"}},
+	}
+	stdio, out, _ := testIO()
+	// "--help" on the group itself shows group help (including group Flags)
+	err := g.Run(context.Background(), []string{"--help"}, stdio)
+	if !errors.Is(err, ErrHelp) {
+		t.Fatalf("err=%v want ErrHelp", err)
+	}
+	s := out.String()
+	if !strings.Contains(s, "group sum") {
+		t.Errorf("group help missing summary: %q", s)
+	}
+	if !strings.Contains(s, "Flags:") {
+		t.Errorf("group help missing Flags: block: %q", s)
+	}
+	if !strings.Contains(s, "--groupflag") {
+		t.Errorf("group help missing --groupflag: %q", s)
+	}
+}
+
+func TestRenderFlagsAsTextEmpty(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	if got := renderFlagsAsText(fs); got != "" {
+		t.Errorf("empty fs should render '', got %q", got)
+	}
+}
+
+func TestRenderFlagsAsTextSorted(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	fs.String("zebra", "", "the zebra")
+	fs.String("alpha", "", "the alpha")
+	got := renderFlagsAsText(fs)
+	ai := strings.Index(got, "--alpha")
+	zi := strings.Index(got, "--zebra")
+	if ai < 0 || zi < 0 || ai >= zi {
+		t.Errorf("flags should be sorted alpha→zebra: %q", got)
+	}
+}
