@@ -18,4 +18,4 @@ Live-smoke tests that drive real `app.textql.com` RPCs through the same verb pac
 | `playbook_test.go` | Playbook list/get/reports/lineage read leaves (default + `--json`); id discovered via `list --json`. |
 | `ontology_test.go` | Ontology list/get read leaves (default + `--json`); id is integer on the wire. |
 | `feed_test.go` | Feed show + stats (default + `--json`). |
-| `org_test.go` | Org list/show + nested members/roles/permissions. |
+| `org_test.go` | Org list/show + nested members/roles/permissions, each with `--json` shape assertions. |
