@@ -19,24 +19,6 @@ func (c *updateCmd) Help() string {
 		"Usage: ana connector update <id> [--type postgres] [--name ...] [--host ...] [--port ...] [--user ...] [--database ...] [--password ...|--password-stdin] [--ssl]"
 }
 
-// updateReq's `connectorId` MUST sit at the top level — putting it inside
-// config returns 500 "could not find connector" (captured regression).
-type updateReq struct {
-	ConnectorID int            `json:"connectorId"`
-	Config      configEnvelope `json:"config"`
-}
-
-// getConnectorResp narrows the GetConnector response to the fields the update
-// flow needs to merge as a baseline. PostgresMetadata carries host/port/user/
-// database/sslMode (no password — the server keeps that secret).
-type getConnectorResp struct {
-	Connector struct {
-		ConnectorType    string       `json:"connectorType"`
-		Name             string       `json:"name"`
-		PostgresMetadata postgresSpec `json:"postgresMetadata"`
-	} `json:"connector"`
-}
-
 func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := cli.NewFlagSet("connector update")
 	typ := fs.String("type", "", "connector type (postgres)")
