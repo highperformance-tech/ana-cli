@@ -1,0 +1,41 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "CreateConnector — Snowflake oauth-individual (per_member_oauth).",
+  "lastVerified": "2026-04-21",
+  "samples": [],
+  "inferredRequestSchema": {
+    "config": {
+      "connectorType": "string",
+      "name": "string",
+      "snowflake": {
+        "role": "string",
+        "schema": "string",
+        "locator": "string",
+        "database": "string",
+        "warehouse": "string",
+        "oauthClientId": "string",
+        "oauthClientSecret": "string"
+      },
+      "authStrategy": "string"
+    }
+  },
+  "inferredResponseSchema": {
+    "connectorId": "integer",
+    "name": "string",
+    "connectorType": "string"
+  },
+  "notes": [
+    "UI auth-mode label: 'OAuth (Individual)'. Sibling of 'OAuth (SSO)'. Helper copy: 'SSO uses one shared token. Individual Login requires each member to authenticate separately.'",
+    "authStrategy wire tag: `per_member_oauth` (distinct from `oauth_sso` used by the shared SSO mode, and from `service_role` used by Password + Key Pair). Same `per_member_oauth` tag is reused by Databricks' OAuth (Individual) mode.",
+    "`config.snowflake` field set for OAuth (Individual): locator, database, warehouse, schema, role, oauthClientId, oauthClientSecret — identical to OAuth (SSO). The only request-body diff vs `oauth_sso` is the `authStrategy` string.",
+    "UI-only 'SSO Mode' select (values: Disabled | Direct SSO | Token Exchange) is present at Disabled default on the Individual form. At Disabled, no extra field is sent. Non-Disabled values not probed — likely map to an additional field on `config.snowflake` (e.g. `ssoMode`).",
+    "UI-required fields: name, locator, database, oauthClientId, oauthClientSecret. Warehouse, schema, role are optional.",
+    "No username, password, or privateKey — same shape as OAuth (SSO).",
+    "Pending-OAuth state: server accepts CreateConnector with only clientId/clientSecret and persists the row immediately. Unlike the OAuth (SSO) form, the UI does not gate the Create button behind an in-setup OAuth dance for this mode — the button is enabled as soon as required fields are filled, matching the helper text 'No personal authentication is needed during setup.' Per-member handshakes happen lazily at first query.",
+    "TestConnector behavior: same server-side quirk as `oauth_sso` — a direct TestConnector with a `per_member_oauth` body returns 200 + `{error: 'Username is required'}`. The UI skips Test in both OAuth modes.",
+    "GetConnector persisted shape: `connector.snowflakeMetadata.{role, schema, locator, database, warehouse, oauthClientId}` + `connector.authStrategy = per_member_oauth`. `oauthClientSecret` is never echoed. No `username` field.",
+    "Snowflake-side prerequisite: same as `oauth_sso` — a Snowflake OAuth Security Integration (`CREATE SECURITY INTEGRATION ... TYPE = OAUTH OAUTH_CLIENT = CUSTOM`). Per-member handshakes use the same `/auth/snowflake/callback` redirect endpoint and `SnowflakeOAuthService.GetSnowflakeOAuthURL`."
+  ]
+}

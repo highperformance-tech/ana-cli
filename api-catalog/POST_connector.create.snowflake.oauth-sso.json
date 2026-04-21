@@ -1,0 +1,39 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "CreateConnector — Snowflake oauth-sso (oauth_sso strategy).",
+  "lastVerified": "2026-04-21",
+  "samples": [],
+  "inferredRequestSchema": {
+    "config": {
+      "connectorType": "string",
+      "name": "string",
+      "snowflake": {
+        "locator": "string",
+        "database": "string",
+        "warehouse": "string",
+        "schema": "string",
+        "role": "string",
+        "oauthClientId": "string",
+        "oauthClientSecret": "string"
+      },
+      "authStrategy": "string"
+    }
+  },
+  "inferredResponseSchema": {
+    "connectorId": "integer",
+    "name": "string",
+    "connectorType": "string"
+  },
+  "notes": [
+    "UI auth-mode label: 'OAuth (SSO)'. Sibling tab 'OAuth (Individual)' is the per-member variant captured in POST_connector.create.snowflake.oauth-individual.json.",
+    "authStrategy wire tag: `oauth_sso` (distinct from `service_role` used by Password + Key Pair).",
+    "`config.snowflake` fields for OAuth SSO: locator, database, warehouse, schema, role, oauthClientId, oauthClientSecret. No username, password, or privateKey. UI-required: name, locator, database, oauthClientId, oauthClientSecret.",
+    "Pending-OAuth state: the server accepts CreateConnector without any completed OAuth handshake. The UI disables its Create button in-browser until the user clicks 'Authenticate with Snowflake' and completes the redirect, but that gate is purely UI — a direct POST with only the fields above returns 200 and persists the row. The connector is not usable for queries until a human finishes the handshake (refresh token is set by the callback endpoint).",
+    "OAuth URL construction: the webapp calls a separate service `SnowflakeOAuthService.GetSnowflakeOAuthURL` (see sibling catalog entry) with `{accountUrl, clientId, state, role}`. Redirect URI is hard-coded to `https://app.textql.com/auth/snowflake/callback`; scope derives from the `role` field as `session:role:<ROLE>`; `access_type=offline` is appended to request a refresh token.",
+    "TestConnector behavior: the UI skips pre-create testing in OAuth modes. A direct TestConnector with an `oauth_sso` body returns 200 with `{error: 'Username is required'}` — the Snowflake validator assumes user-level creds and does not understand OAuth.",
+    "GetConnector persisted shape: `connector.snowflakeMetadata.{role, schema, locator, database, warehouse, oauthClientId}`. `oauthClientSecret` is never echoed. `connector.authStrategy` = `oauth_sso` at top level. No `username` field (absent, not empty).",
+    "Snowflake-side prerequisite: `CREATE SECURITY INTEGRATION ... TYPE = OAUTH OAUTH_CLIENT = CUSTOM`. The `oauthClientId`/`oauthClientSecret` come from that integration. The TextQL catalog entry is independent of that configuration."
+  ]
+}

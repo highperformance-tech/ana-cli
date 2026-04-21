@@ -1,0 +1,46 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "CreateConnector — Databricks oauth-individual (per-member U2M).",
+  "lastVerified": "2026-04-21",
+  "samples": [],
+  "inferredRequestSchema": {
+    "config": {
+      "connectorType": "string",
+      "name": "string",
+      "databricks": {
+        "host": "string",
+        "httpPath": "string",
+        "port": "integer",
+        "databricksAuth": {
+          "oauthU2m": {
+            "clientId": "string",
+            "clientSecret": "string"
+          }
+        },
+        "catalog": "string",
+        "schema": "string"
+      },
+      "authStrategy": "string"
+    }
+  },
+  "inferredResponseSchema": {
+    "connectorId": "integer",
+    "name": "string",
+    "connectorType": "string"
+  },
+  "notes": [
+    "UI auth-mode label: 'OAuth (Individual)'. Sibling of 'OAuth (SSO)' on the Databricks connector form. Helper copy: 'SSO uses one shared token. Individual Login requires each member to authenticate separately.' and 'Each team member will authenticate individually when they first query this connector. No personal authentication is needed during setup.' — same phrasing as Snowflake's Individual form.",
+    "authStrategy wire tag: `per_member_oauth` — identical to Snowflake OAuth (Individual), distinct from Databricks OAuth (SSO) which uses `oauth_sso`. The SSO-vs-Individual split is expressed by the top-level `authStrategy` enum across both Snowflake and Databricks, not by a dialect-specific variant.",
+    "UI/wire label mismatch (same as OAuth (SSO)): the oneof variant is `oauthU2m` (camelCase wire) / `oauth_u2m` (snake_case server-side). The `databricksAuth` oneof has three valid siblings — `pat` (Access Token), `clientCredentials` (Client Credentials), `oauthU2m` (both OAuth SSO and OAuth Individual). The SSO-vs-Individual distinction lives in `authStrategy`, not in `databricksAuth`.",
+    "`config.databricks` fields for OAuth (Individual): host, httpPath, port, catalog, schema + `databricksAuth.oauthU2m.{clientId, clientSecret}`. Identical field set to OAuth (SSO). UI-required: name, host, httpPath, port, catalog, schema, clientId, clientSecret (same 8 as OAuth (SSO) and Client Credentials).",
+    "UI-only 'Enable SSO Token Exchange' toggle is present on the Individual form, default off. Helper text: 'When enabled, users authenticate via SSO without a Databricks popup (RFC 8693).' At off, no extra field is sent. Unlike Snowflake's Individual form (three-value SSO Mode select), Databricks' is a boolean toggle covering only the Token-Exchange case. Non-default value not probed — likely maps to an additional field on `config.databricks` (e.g. `ssoTokenExchange: true`).",
+    "Pending-OAuth state: server accepts CreateConnector with only clientId/clientSecret + workspace fields and persists the row immediately. Unlike OAuth (SSO), the Individual UI does NOT gate Create behind an in-setup OAuth dance — the button is enabled as soon as required fields are filled, matching 'No personal authentication is needed during setup.' Per-member handshakes happen lazily at first query via `DatabricksOAuthService.GetDatabricksOAuthURL`.",
+    "No TestConnector: the OAuth (Individual) tab has no 'Test Connection' button (same as OAuth (SSO) and Snowflake OAuth modes).",
+    "GetConnector persisted shape: `connector.databricksMetadata.{host, httpPath, port, databricksAuth, catalog, schema}`. `databricksAuth.oauthU2m.clientId` is echoed; `clientSecret` is absent. `connector.authStrategy` = `per_member_oauth` at top level.",
+    "GetConnectors (list) adds `memberAuthenticated: false` on `per_member_oauth` records while the viewing member has not yet completed their personal handshake. New field observed only on this mode. Likely flips to true on first-query success. Single-connector `GetConnector` does NOT include this field; it appears only in the list RPC.",
+    "Field diff vs OAuth (SSO): zero request-body differences in shape — same fields, same oneof variant (`oauthU2m`). The only diffs are (a) `authStrategy` (`per_member_oauth` vs `oauth_sso`), (b) UI adds the 'Enable SSO Token Exchange' toggle, (c) UI does not gate Create behind in-setup OAuth, (d) GetConnectors echoes a per-member `memberAuthenticated` flag.",
+    "Databricks-side prerequisite: same as OAuth (SSO) — a confidential OAuth app in Databricks with SQL-warehouse access. Each member runs Authorization-Code+PKCE against the same app; redirect URI is still `https://app.textql.com/auth/databricks/callback`."
+  ]
+}

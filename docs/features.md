@@ -1,8 +1,8 @@
 # TextQL features & domain entities
 
-Human-readable inventory, maintained by the `textql-webapp-probe` skill. Last updated: 2026-04-17.
+Human-readable inventory, maintained by the `textql-webapp-probe` skill. Last updated: 2026-04-21.
 
-Per-endpoint request/response schemas live in `api-catalog/` (~85 endpoints as of 2026-04-17).
+Per-endpoint request/response schemas live in `api-catalog/` (~95 endpoints as of 2026-04-21).
 
 ## API shape (global)
 
@@ -25,9 +25,9 @@ Per-endpoint request/response schemas live in `api-catalog/` (~85 endpoints as o
   - **Do NOT use:** `secret.SecretService/ListApiAccessKeys` — that's connector-scoped OAuth/API credentials, not platform auth.
 - **Last verified:** 2026-04-17
 
-## Services observed (19)
+## Services observed (21)
 
-`audit_log.AuditLogService`, `auth.PublicAuthService`, `chat.ChatService`, `connector.ConnectorService`, `context_prompts.ContextPromptsService`, `dashboard.DashboardService`, `dataset.DatasetService`, `engagement.EngagementService`, `feed.FeedService`, `notifications.NotificationService`, `ontology.OntologyService`, `packages.OrgPackageService`, `playbook.PlaybookService`, `rbac.RBACService`, `scim.ScimService`, `secret.SecretService`, `settings.SettingsService`, `sharing.SharingService`, `slack.SlackService`.
+`audit_log.AuditLogService`, `auth.PublicAuthService`, `chat.ChatService`, `connector.ConnectorService`, `context_prompts.ContextPromptsService`, `dashboard.DashboardService`, `databricks_oauth.DatabricksOAuthService`, `dataset.DatasetService`, `engagement.EngagementService`, `feed.FeedService`, `notifications.NotificationService`, `ontology.OntologyService`, `packages.OrgPackageService`, `playbook.PlaybookService`, `rbac.RBACService`, `scim.ScimService`, `secret.SecretService`, `settings.SettingsService`, `sharing.SharingService`, `slack.SlackService`, `snowflake_oauth.SnowflakeOAuthService`.
 
 ## Auth & organization
 
@@ -116,15 +116,32 @@ Per-endpoint request/response schemas live in `api-catalog/` (~85 endpoints as o
 - **Entity:** `Connector` — data-source binding (Tableau, Databricks, Zoom, Zoho, Neo4j, AWS, HPT, example orgs, etc.). Integer `connectorId`.
 - **Service:** `connector.ConnectorService`
 - **Methods:** `GetConnectors`, `GetExampleQueries`, `ListConnectorTables`, `TestConnector`, `CreateConnector`, `GetConnector`, `UpdateConnector`, `DeleteConnector`.
-- **CRUD (verified 2026-04-17, Postgres dialect):**
-  - Request shape uses a protobuf oneof nested under `config`: `{config: {connectorType: "POSTGRES", name, postgres: {host, port, user, password, database, dialect, sslMode}}}`. Other dialect variants (bigquery/snowflake/redshift/mysql/sqlserver/databricks/supabase/motherduck) almost certainly follow the same nesting — unverified.
-  - `TestConnector` is non-blocking: 200 with `{error: "<driver error>"}` on failure; server does NOT require a passing test before Create. UI gates Create behind Test but server will happily create an unreachable connector.
+- **CRUD (verified 2026-04-17 Postgres; 2026-04-21 Snowflake + Databricks):**
+  - Request shape: protobuf oneof nested under `config`: `{config: {connectorType, name, <dialect>: {...}, authStrategy}}`. `authStrategy` lives **inside** `config`, not at the top level.
+  - `TestConnector` is non-blocking: 200 with `{error: "<driver error>"}` on failure; server does NOT require a passing test before Create. UI gates Create behind Test but server will happily create an unreachable connector. OAuth modes skip Test entirely (no Test button).
   - `CreateConnector` returns `{connectorId: <int>, name, connectorType}`.
-  - `UpdateConnector` requires top-level `connectorId` alongside `config` (putting id inside config → 500). Returns `{connector: {id, name, connectorType, memberId, createdAt, <dialect>Metadata: {...}, authStrategy}}` — password omitted.
+  - `UpdateConnector` requires top-level `connectorId` alongside `config` (putting id inside config → 500). Returns `{connector: {id, name, connectorType, memberId, createdAt, <dialect>Metadata: {...}, authStrategy}}` — secrets omitted.
   - `GetConnector {connectorId}` returns same connector shape; `{id}` returns 404.
   - `DeleteConnector {connectorId}` → `{success: true}`.
+- **Dialects + auth modes verified:**
+  | Dialect | Sub-object | Auth mode | `authStrategy` | Credential location |
+  | --- | --- | --- | --- | --- |
+  | Postgres | `config.postgres` | password | `service_role` | `postgres.{user, password}` |
+  | Snowflake | `config.snowflake` | password | `service_role` | `snowflake.{username, password}` + common: `locator, database, warehouse, role, schema` |
+  | Snowflake | `config.snowflake` | key-pair | `service_role` | `snowflake.{username, privateKey}` (PEM string) + optional `privateKeyPassphrase` |
+  | Snowflake | `config.snowflake` | oauth-sso | `oauth_sso` | `snowflake.{oauthClientId, oauthClientSecret}` (no `username`/`password`) |
+  | Snowflake | `config.snowflake` | oauth-individual | `per_member_oauth` | Same fields as oauth-sso; only `authStrategy` differs. UI adds "SSO Mode" select (`Disabled`/`Direct SSO`/`Token Exchange`, not probed beyond default). |
+  | Databricks | `config.databricks` | access-token (PAT) | `service_role` | `databricks.databricksAuth.pat.token` + common: `host, httpPath, port (int), catalog, schema` |
+  | Databricks | `config.databricks` | client-credentials (M2M) | `service_role` | `databricks.databricksAuth.clientCredentials.{clientId, clientSecret}` |
+  | Databricks | `config.databricks` | oauth-sso (U2M) | `oauth_sso` | `databricks.databricksAuth.oauthU2m.{clientId, clientSecret}` — wire name is `oauthU2m`, NOT `oauthSso` (UI/wire label mismatch) |
+  | Databricks | `config.databricks` | oauth-individual | `per_member_oauth` | Same `oauthU2m` variant as oauth-sso. UI adds "Enable SSO Token Exchange" boolean (RFC 8693); `GetConnectors` response adds `memberAuthenticated: bool` only for this mode. |
+- **Auth-mode discrimination:** Snowflake and Databricks both use `authStrategy` for the OAuth split (`service_role` vs `oauth_sso` vs `per_member_oauth`) but differ in how non-OAuth modes are tagged: Snowflake discriminates password-vs-keypair by **which credential field is populated** (both carry `authStrategy=service_role`), while Databricks uses a nested `databricksAuth` one-of (`pat`|`clientCredentials`|`oauthU2m`).
+- **OAuth pending-state semantics (verified 2026-04-21):** All four OAuth modes (Snowflake sso/individual, Databricks sso/individual) accept `CreateConnector` server-side without a completed handshake — direct RPC POST returns 200 and persists the row. UI gates the Create button client-side via "Please complete OAuth authentication" prose. Handshake redirect URI is hardcoded to `app.textql.com/auth/<dialect>/callback` → a CLI cannot receive the callback; CLI oauth commands ship as **instructional-only** pointing to the webapp.
+- **OAuth handshake RPCs (new services, catalogued separately):**
+  - `snowflake_oauth.SnowflakeOAuthService/GetSnowflakeOAuthURL` — fires on "Authenticate with Snowflake". Req `{accountUrl, clientId, state, role}` → `{oauthUrl}`. Scope includes `session:role:<ROLE>`.
+  - `databricks_oauth.DatabricksOAuthService/GetDatabricksOAuthURL` — fires on "Authenticate with Databricks". Req `{workspaceUrl, clientId, state}` → `{oauthUrl}`. PKCE S256, scopes `all-apis offline_access`.
 - **Route:** `/connectors`.
-- **Last verified:** 2026-04-17
+- **Last verified:** 2026-04-21 (Snowflake + Databricks); 2026-04-17 (Postgres)
 
 ## Datasets
 

@@ -77,7 +77,11 @@ UUID_RE = re.compile(
     r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.IGNORECASE
 )
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
-SLACK_RE = re.compile(r"\b(?P<prefix>U|C|T|D|G|W)[A-Z0-9]{8,}\b")
+# Slack IDs use a prefix letter + 8+ alphanumerics; require at least one digit
+# in the tail so pure-letter enums like "DATABRICKS" / "WORKSPACE" don't get
+# swept into the Slack mapper. Real Slack IDs have random hex-ish tails that
+# always include digits in practice.
+SLACK_RE = re.compile(r"\b(?P<prefix>U|C|T|D|G|W)(?=[A-Z0-9]*[0-9])[A-Z0-9]{8,}\b")
 SIGNED_URL_RE = re.compile(r"https?://[^\s\"]+?(?:keyId|signature)=[^\s\"]+")
 # Databricks warehouse IDs leak a stable internal cluster identifier. Preserve
 # the `/sql/1.0/warehouses/` prefix so the endpoint shape is still readable.
