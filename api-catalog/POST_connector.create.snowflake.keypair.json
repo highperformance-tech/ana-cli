@@ -1,0 +1,39 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "CreateConnector — Snowflake key-pair auth (authStrategy=service_role).",
+  "lastVerified": "2026-04-21",
+  "inferredRequestSchema": {
+    "config": {
+      "connectorType": "string",
+      "name": "string",
+      "snowflake": {
+        "username": "string",
+        "privateKey": "string",
+        "role": "string",
+        "schema": "string",
+        "locator": "string",
+        "database": "string",
+        "warehouse": "string"
+      },
+      "authStrategy": "string"
+    }
+  },
+  "inferredResponseSchema": {
+    "connectorId": "integer",
+    "name": "string",
+    "connectorType": "string"
+  },
+  "notes": [
+    "Key-pair mode embeds the PEM private key at `config.snowflake.privateKey` as a single string (full `-----BEGIN PRIVATE KEY-----` … `-----END PRIVATE KEY-----` block with embedded `\\n` newlines). Same `snowflake` sub-object as password mode — no separate nesting.",
+    "authStrategy stays `service_role` for key-pair mode (same tag as password). The server distinguishes password vs key-pair purely by which credential field is populated — `password` vs `privateKey`. Only one of the two should be set.",
+    "Username is still required in key-pair mode (Snowflake binds the RSA public key to a user). The `password` field is omitted entirely — not empty string, absent from the `snowflake` sub-object.",
+    "UI exposes a `Private Key Passphrase` textbox for encrypted PKCS#8 keys. When the key is unencrypted, no passphrase field is sent. Expected wire name is `privateKeyPassphrase` (under `snowflake`) but unverified until a probe with an encrypted key is run.",
+    "UI also exposes the private key as a file-upload control (not a textarea); the client reads the file and sends contents as a plain string. There is no multipart upload — body stays application/json Connect-RPC.",
+    "UI-required fields: name, locator, database, username, privateKey. Optional: warehouse, schema, role, privateKeyPassphrase.",
+    "TestConnector accepts the identical body shape and returns 200 for reachable creds; CreateConnector then uses the same body and returns `{connectorId, name, connectorType}`.",
+    "GetConnector persisted shape: `connector.snowflakeMetadata.{username, role, schema, locator, database, warehouse}`. `privateKey` is never echoed (matches password-mode redaction). `connector.authStrategy` remains `service_role`.",
+    "Snowflake auth-mode UI tabs: Key Pair, OAuth (SSO), OAuth (Individual), Password. `service_role` is shared by Password and Key Pair; OAuth modes use distinct `authStrategy` tags (see sibling catalog files)."
+  ]
+}

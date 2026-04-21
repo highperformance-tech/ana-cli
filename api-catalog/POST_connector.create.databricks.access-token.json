@@ -1,0 +1,42 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "CreateConnector — Databricks access-token (PAT) auth.",
+  "lastVerified": "2026-04-21",
+  "inferredRequestSchema": {
+    "config": {
+      "connectorType": "string",
+      "name": "string",
+      "databricks": {
+        "host": "string",
+        "httpPath": "string",
+        "port": "integer",
+        "databricksAuth": {
+          "pat": {
+            "token": "string"
+          }
+        },
+        "catalog": "string",
+        "schema": "string"
+      },
+      "authStrategy": "string"
+    }
+  },
+  "inferredResponseSchema": {
+    "connectorId": "integer",
+    "name": "string",
+    "connectorType": "string"
+  },
+  "notes": [
+    "connectorType: \"DATABRICKS\". Dialect fields embed under `config.databricks` (sibling of `config.snowflake`, `config.postgres`).",
+    "authStrategy=`service_role` covers the shared-credential Databricks modes (Access Token and Client Credentials). The server discriminates Databricks modes by which nested `databricksAuth.*` variant is populated, not by `authStrategy` (matches the Snowflake pattern where Password + Key Pair both use `service_role`).",
+    "PAT credential lives at `config.databricks.databricksAuth.pat.token` — two-level nesting. `databricksAuth` is a oneof-style discriminator with three valid siblings: `pat` (Access Token), `clientCredentials` (Client Credentials), `oauthU2m` (both OAuth SSO and OAuth Individual).",
+    "UI-required fields: name, host, httpPath, port, catalog, schema, token. No optional fields in Access Token mode — all seven are required. Port defaults to 443 and is sent as integer.",
+    "`host` is the Databricks workspace hostname without scheme. `httpPath` is the SQL warehouse path (format `/sql/1.0/warehouses/<id>`). Both are copy-paste fields from the Databricks SQL warehouse 'Connection details' panel.",
+    "Pre-create behavior: UI fires TestConnector first with the identical body; on 200 it fires CreateConnector. Both accept the same body shape.",
+    "GetConnector persisted shape: `connector.databricksMetadata.{host, httpPath, port, databricksAuth, catalog, schema}`. `databricksAuth.pat` is returned as an empty object `{}` — the token is never echoed. `connector.authStrategy` is echoed at top level.",
+    "Wire name asymmetry: `databricks` on the request side and `databricksMetadata` on the response side (same pattern Snowflake uses: `snowflake` → `snowflakeMetadata`).",
+    "Databricks auth-mode UI tabs (in order): Access Token, Client Credentials, OAuth (SSO), OAuth (Individual). Access Token is the default."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.snowflake_oauth.SnowflakeOAuthService/GetSnowflakeOAuthURL",
+  "host": "app.textql.com",
+  "description": "GetSnowflakeOAuthURL — composes Snowflake OAuth authorize URL.",
+  "lastVerified": "2026-04-21",
+  "inferredRequestSchema": {
+    "accountUrl": "string",
+    "clientId": "string",
+    "state": "string",
+    "role": "string"
+  },
+  "inferredResponseSchema": {
+    "oauthUrl": "string"
+  },
+  "notes": [
+    "Separate service namespace: `textql.rpc.public.snowflake_oauth.SnowflakeOAuthService` (NOT under `connector`). Discovered during the Snowflake OAuth (SSO) CreateConnector flow.",
+    "Thin helper — composes the authorize URL server-side. Caller supplies `state` (UUID), `role` (used to build `scope=session:role:<ROLE>`), `clientId`, and `accountUrl`. Server appends `access_type=offline`, `redirect_uri=https://app.textql.com/auth/snowflake/callback`, `response_type=code`.",
+    "Callback lands at `https://app.textql.com/auth/snowflake/callback` — that endpoint exchanges the auth code for a refresh token and associates it with the connector. Not captured here (would require a real Snowflake Security Integration to observe end-to-end).",
+    "`accountUrl` format: `https://<LOCATOR>.snowflakecomputing.com` (no trailing slash, uppercase locator). The webapp uppercases the locator before sending.",
+    "CLI implication: an `ana connector create snowflake oauth-sso` command can create the TextQL row headlessly (CreateConnector returns 200 without a refresh token), but the connector is not usable for queries until a human finishes the OAuth handshake in a browser. The ana CLI cannot complete the handshake itself because the redirect URI is hard-coded to app.textql.com, not localhost."
+  ]
+}

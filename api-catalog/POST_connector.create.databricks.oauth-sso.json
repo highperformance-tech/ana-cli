@@ -1,0 +1,44 @@
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "CreateConnector — Databricks oauth-sso (U2M shared refresh token).",
+  "lastVerified": "2026-04-21",
+  "inferredRequestSchema": {
+    "config": {
+      "connectorType": "string",
+      "name": "string",
+      "databricks": {
+        "host": "string",
+        "httpPath": "string",
+        "port": "integer",
+        "databricksAuth": {
+          "oauthU2m": {
+            "clientId": "string",
+            "clientSecret": "string"
+          }
+        },
+        "catalog": "string",
+        "schema": "string"
+      },
+      "authStrategy": "string"
+    }
+  },
+  "inferredResponseSchema": {
+    "connectorId": "integer",
+    "name": "string",
+    "connectorType": "string"
+  },
+  "notes": [
+    "UI auth-mode label: 'OAuth (SSO)'. Shared-credential OAuth U2M (user-to-machine) flow — one refresh token serves the whole workspace. Sibling tab 'OAuth (Individual)' is the per-member variant.",
+    "authStrategy wire tag: `oauth_sso` (same value Snowflake OAuth SSO uses). Distinct from `service_role` used by Access Token + Client Credentials.",
+    "UI/wire label mismatch: UI says 'OAuth (SSO)' but the oneof variant is `oauthU2m` (camelCase wire) / `oauth_u2m` (snake_case server-side) — NOT `oauthSso`. First attempts with `oauthSso` return 400 'databricks.databricks_auth requires pat, client_credentials, or oauth_u2m'. The three valid `databricksAuth` siblings are `pat`, `clientCredentials`, `oauthU2m`. 'U2M' is Databricks' own term for user-to-machine OAuth, as opposed to M2M (mapped by TextQL to `clientCredentials`).",
+    "`config.databricks` fields for OAuth SSO: host, httpPath, port, catalog, schema + `databricksAuth.oauthU2m.{clientId, clientSecret}`. UI-required: name, host, httpPath, port, catalog, schema, clientId, clientSecret — 8 fields, same count as Client Credentials. TextQL requires a client secret even though Databricks U2M apps can be public (PKCE); presumably for the server-side refresh-token exchange.",
+    "Pending-OAuth state: server accepts CreateConnector without any completed OAuth handshake. The UI disables its Create button in-browser with 'Please complete OAuth authentication', but a direct POST with only clientId/clientSecret + workspace fields returns 200 and persists the connector. Matches Snowflake OAuth SSO behavior — the ana CLI can create SSO connectors headlessly (connector not usable for queries until a human completes the handshake).",
+    "No TestConnector: the OAuth (SSO) tab has no 'Test Connection' button — the UI skips pre-create testing entirely (same as Snowflake OAuth modes). The server can't validate OAuth creds without a live refresh token.",
+    "Separate RPC service observed: `textql.rpc.public.databricks_oauth.DatabricksOAuthService/GetDatabricksOAuthURL`. Fires when the user clicks 'Authenticate with Databricks'. Request: `{workspaceUrl, clientId, state: <uuid>}`. Equivalent to Snowflake's `SnowflakeOAuthService.GetSnowflakeOAuthURL`. Authorize URL format: `https://<host>/oidc/v1/authorize?client_id=<id>&code_challenge=<S256-pkce>&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fapp.textql.com%2Fauth%2Fdatabricks%2Fcallback&response_type=code&scope=all-apis+offline_access&state=<uuid>`. Scopes are fixed as `all-apis offline_access` (no role-based scope like Snowflake). PKCE challenge is generated in-browser. Redirect URI is hard-coded to `https://app.textql.com/auth/databricks/callback`. Worth cataloging separately if needed.",
+    "GetConnector persisted shape: `connector.databricksMetadata.{host, httpPath, port, databricksAuth, catalog, schema}`. `databricksAuth.oauthU2m.clientId` IS echoed; `clientSecret` is absent. `connector.authStrategy` = `oauth_sso` at top level.",
+    "Field diff vs Client Credentials mode: identical shape except `databricksAuth.clientCredentials.{clientId, clientSecret}` becomes `databricksAuth.oauthU2m.{clientId, clientSecret}` and `authStrategy` flips from `service_role` to `oauth_sso`. No new top-level fields introduced.",
+    "Databricks-side prerequisite: a confidential OAuth app registered in Databricks (Workspace → Settings → Identity & access → OAuth apps) with SQL-warehouse access. The `clientId`/`clientSecret` come from that app. Distinct from Service Principal OAuth secrets used by Client Credentials mode."
+  ]
+}
