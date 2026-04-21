@@ -116,6 +116,8 @@ func dispatchChild(ctx context.Context, cmd Command, args []string, stdio IO) er
 						fmt.Fprint(stdio.Stdout, block)
 					}
 				}
+				fmt.Fprintln(stdio.Stdout)
+				fmt.Fprintln(stdio.Stdout, globalFlagsHelp())
 				return ErrHelp
 			}
 		}

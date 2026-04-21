@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -17,11 +18,14 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 		RootHelp(stdio.Stdout, verbs)
 		return ErrHelp
 	}
-	global, rest, err := ParseGlobal(args)
+	// StripGlobals instead of ParseGlobal: globals may appear before, after,
+	// or interleaved with the verb path. Anything unrecognised is passed
+	// through to rest so the leaf's own FlagSet reports the usage error.
+	global, rest, err := StripGlobals(args)
 	if err != nil {
 		fmt.Fprintln(stdio.Stderr, err)
 		RootHelp(stdio.Stderr, verbs)
-		return fmt.Errorf("%w: %s", ErrUsage, err.Error())
+		return errors.Join(fmt.Errorf("%w: %w", ErrUsage, err), ErrReported)
 	}
 	ctx = WithGlobal(ctx, global)
 
@@ -39,13 +43,13 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 	if !ok {
 		fmt.Fprintf(stdio.Stderr, "unknown command: %s\n", name)
 		RootHelp(stdio.Stderr, verbs)
-		return fmt.Errorf("unknown command %q: %w", name, ErrUsage)
+		return errors.Join(fmt.Errorf("unknown command %q: %w", name, ErrUsage), ErrReported)
 	}
 	return dispatchChild(ctx, verb, rest[1:], stdio)
 }
 
 // RootHelp writes a sorted listing of the top-level verbs to w, each followed
-// by the first line of its own Help().
+// by the first line of its own Help(), then the canonical Global Flags block.
 func RootHelp(w io.Writer, verbs map[string]Command) {
 	names := make([]string, 0, len(verbs))
 	for name := range verbs {
@@ -64,4 +68,6 @@ func RootHelp(w io.Writer, verbs map[string]Command) {
 	for _, n := range names {
 		fmt.Fprintf(w, "  %-*s   %s\n", width, n, FirstLine(verbs[n].Help()))
 	}
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, globalFlagsHelp())
 }

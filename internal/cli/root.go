@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"slices"
+	"strings"
 )
 
 // flagRegistrar declares flags on a target FlagSet. Used for Group.Flags
@@ -79,6 +81,56 @@ type Flagger interface {
 	Flags(fs *flag.FlagSet)
 }
 
+// globalFlagSpec records a root-level flag name and whether it consumes the
+// next token as its value. Keep in sync with ParseGlobal's FlagSet — the
+// TestGlobalFlagsRegistrySync regression test asserts they do not drift.
+type globalFlagSpec struct {
+	name       string
+	takesValue bool
+}
+
+// globalFlagRegistry is the canonical list of root-level flags StripGlobals
+// knows about. ParseGlobal is the source of truth for behavior; this slice
+// mirrors that shape so StripGlobals can consume globals at any position in
+// argv instead of only at the front (stdlib flag.FlagSet.Parse stops at the
+// first positional).
+var globalFlagRegistry = []globalFlagSpec{
+	{name: "json", takesValue: false},
+	{name: "endpoint", takesValue: true},
+	{name: "token-file", takesValue: true},
+	{name: "profile", takesValue: true},
+}
+
+// globalFlagsHelp renders the root-level flags as a `Global Flags:` block for
+// both RootHelp and the leaf --help path. One source of truth so every
+// surface lists the same flags with the same usage strings.
+func globalFlagsHelp() string {
+	var b strings.Builder
+	fs := flag.NewFlagSet("global", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	var g Global
+	fs.BoolVar(&g.JSON, "json", false, "emit JSON output")
+	fs.StringVar(&g.Endpoint, "endpoint", "", "override API endpoint URL")
+	fs.StringVar(&g.TokenFile, "token-file", "", "path to bearer-token file")
+	fs.StringVar(&g.Profile, "profile", "", "config profile to use")
+	b.WriteString("Global Flags:\n")
+	// Gather, sort, then measure for a stable two-column layout.
+	names := make([]string, 0, 4)
+	fs.VisitAll(func(f *flag.Flag) { names = append(names, f.Name) })
+	slices.Sort(names)
+	width := 0
+	for _, n := range names {
+		if len(n) > width {
+			width = len(n)
+		}
+	}
+	for _, n := range names {
+		f := fs.Lookup(n)
+		fmt.Fprintf(&b, "  --%-*s   %s\n", width, f.Name, f.Usage)
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
 // Global holds the root-level flags that apply to every verb. Command
 // implementations read it from context via GlobalFrom; ParseGlobal produces
 // it from raw argv.
@@ -123,4 +175,122 @@ func ParseGlobal(args []string) (Global, []string, error) {
 		return Global{}, nil, fmt.Errorf("parse global flags: %w", err)
 	}
 	return g, fs.Args(), nil
+}
+
+// StripGlobals walks args once and splits it into (Global, rest, err). Unlike
+// ParseGlobal, which relies on stdlib flag.FlagSet.Parse and stops at the
+// first positional, StripGlobals consumes known global flags wherever they
+// appear — before, after, or interleaved with the verb path and leaf flags.
+// Everything it does not recognise is passed through to rest in original
+// order so the leaf's FlagSet still handles unknown-flag errors.
+//
+// Supported forms per known flag in globalFlagRegistry (single- and double-
+// dash spellings are equivalent, matching stdlib `flag.FlagSet.Parse`):
+//
+//   - `-name` / `--name` (bool) or `-name=value` / `--name=value` /
+//     `-name value` / `--name value` (takesValue)
+//
+// A bare `--` terminator stops global consumption: every remaining token is
+// copied verbatim to rest (including the `--` itself), so leaves can still
+// use `--` to force positional interpretation of an arg that looks like a
+// flag.
+//
+// Duplicate globals follow stdlib semantics (last wins). Unknown flags are
+// left in rest unchanged so the leaf's own FlagSet reports a precise
+// `flag provided but not defined: --xyz` at its verb name.
+func StripGlobals(args []string) (Global, []string, error) {
+	var g Global
+	fs := flag.NewFlagSet("ana", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.BoolVar(&g.JSON, "json", false, "emit JSON output")
+	fs.StringVar(&g.Endpoint, "endpoint", "", "override API endpoint URL")
+	fs.StringVar(&g.TokenFile, "token-file", "", "path to bearer-token file")
+	fs.StringVar(&g.Profile, "profile", "", "config profile to use")
+
+	rest := make([]string, 0, len(args))
+	i := 0
+	for i < len(args) {
+		tok := args[i]
+		if tok == "--" {
+			// Terminator: preserve it and pass every remaining token through.
+			rest = append(rest, args[i:]...)
+			break
+		}
+		name, value, hasEquals, isLong := parseFlagToken(tok)
+		if !isLong {
+			rest = append(rest, tok)
+			i++
+			continue
+		}
+		spec, known := lookupGlobal(name)
+		if !known {
+			rest = append(rest, tok)
+			i++
+			continue
+		}
+		if spec.takesValue {
+			if hasEquals {
+				// String-valued flags: stdlib stringValue.Set never errors.
+				_ = fs.Set(name, value)
+				i++
+				continue
+			}
+			// Consumes next token as value. Missing next token is a usage error
+			// — mirrors stdlib behavior for `flag needs an argument`.
+			if i+1 >= len(args) {
+				return Global{}, nil, fmt.Errorf("parse global flags: flag needs an argument: -%s", name)
+			}
+			_ = fs.Set(name, args[i+1])
+			i += 2
+			continue
+		}
+		// Bool-valued global: `--name` sets true; `--name=false` respects the
+		// literal value. A bare `--name` with no `=` is the common path and
+		// always sets true.
+		raw := "true"
+		if hasEquals {
+			raw = value
+		}
+		if err := fs.Set(name, raw); err != nil {
+			return Global{}, nil, fmt.Errorf("parse global flags: invalid value %q for -%s: %w", raw, name, err)
+		}
+		i++
+	}
+	return g, rest, nil
+}
+
+// parseFlagToken classifies a token as a long-form flag (`--name`,
+// `-name`, `--name=value`, or `-name=value`) and returns its components.
+// Both single- and double-dash spellings are accepted per stdlib
+// `flag.FlagSet.Parse` docs ("One or two dashes may be used; they are
+// equivalent"). isLong is false for non-flag tokens, the bare `--`
+// terminator, or a bare `-` — all are passed through to rest untouched.
+func parseFlagToken(tok string) (name, value string, hasEquals, isLong bool) {
+	if len(tok) < 2 || tok[0] != '-' {
+		return "", "", false, false
+	}
+	body := tok[1:]
+	if body[0] == '-' {
+		// `--` terminator or `--name` — strip the second dash. A bare `--`
+		// has body=="-" here which we reject below (len check).
+		body = body[1:]
+	}
+	if body == "" || body == "-" {
+		return "", "", false, false
+	}
+	if eq := strings.IndexByte(body, '='); eq >= 0 {
+		return body[:eq], body[eq+1:], true, true
+	}
+	return body, "", false, true
+}
+
+// lookupGlobal reports whether name is one of the recognised global flags
+// and, if so, whether it consumes a value token.
+func lookupGlobal(name string) (globalFlagSpec, bool) {
+	for _, spec := range globalFlagRegistry {
+		if spec.name == name {
+			return spec, true
+		}
+	}
+	return globalFlagSpec{}, false
 }

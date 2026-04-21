@@ -12,6 +12,12 @@ var ErrUsage = errors.New("usage")
 // user asked for help and got it — that is success, not a usage error.
 var ErrHelp = errors.New("help")
 
+// ErrReported marks errors whose diagnostic text has already been written
+// to stderr by the callee. main()'s fallback stderr print skips these to
+// avoid double-reporting. Wrap with errors.Join(err, ErrReported) after
+// emitting the diagnostic yourself.
+var ErrReported = errors.New("reported")
+
 // authError is an optional interface a transport/auth error can implement so
 // the root dispatcher can map it to exit code 3 without importing that package.
 type authError interface {
