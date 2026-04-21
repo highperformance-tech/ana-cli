@@ -12,7 +12,7 @@ Live-smoke tests that drive real `app.textql.com` RPCs through the same verb pac
 | `audit_test.go` | Audit-log `tail` smoke. |
 | `auth_test.go` | Keys + service-accounts CLI-driven create/rotate/revoke/delete (helper-backed legacy tests still live here for coverage); `--json` shape checks + error-path smokes for usage guards. |
 | `chat_test.go` | Chat CRUD + streaming `send`. |
-| `connector_test.go` | Connector CRUD (create/update/test/delete) with ledger-backed cleanup. |
+| `connector_test.go` | Connector CRUD + `--json` envelopes, CLI postgres create matrix (password-stdin × ssl on/off), `update --password-stdin`, `tables`/`examples`/`test` leaves, `get <missing>` error-path. |
 | `connector_snowflake_test.go` | Snowflake create leaves (password/keypair/oauth-sso/oauth-individual), per-mode env-gated. |
 | `dashboard_test.go` | Dashboard list/get/folders read leaves (default + `--json`); `health`/`spawn` env-gated on `ANA_E2E_DASHBOARD_ID`. |
 | `playbook_test.go` | Playbook list/get/reports/lineage read leaves (default + `--json`); id discovered via `list --json`. |
