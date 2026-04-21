@@ -53,7 +53,7 @@ jobs:
             -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: \
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          security list-keychains -d user -s "$KEYCHAIN" "$(security list-keychains -d user | tr -d '"')"
 
           rm -f "$CERT_PATH"
 
@@ -64,6 +64,9 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      # `dotnet/sign` has only ever shipped prereleases (the 0.9.x-beta series);
+      # there's no stable tag to pin. Pin the exact beta so the toolchain stays
+      # reproducible and revisit when a non-beta is cut.
       - name: Install sign CLI
         run: dotnet tool install --global sign --prerelease --version "0.9.1-beta.26179.1"
 
@@ -78,10 +81,9 @@ jobs:
           args: release --clean --skip=publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Apple — consumed by sign-binary.sh (codesign, pre-archive).
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # codesign resolves the Developer ID identity from the keychain
+          # imported above — no Apple env vars needed here. APPLE_* only
+          # matters in the notarize step.
           # Azure — consumed by `sign` tool which reads them from the env.
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -115,4 +117,8 @@ jobs:
             dist/checksums.txt
             dist/*.sbom.json
           )
+          if [[ ${#artifacts[@]} -eq 0 ]]; then
+            echo "no artifacts in dist/ — goreleaser step likely failed" >&2
+            exit 1
+          fi
           gh release upload "$GITHUB_REF_NAME" "${artifacts[@]}" --clobber

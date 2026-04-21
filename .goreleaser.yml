@@ -32,7 +32,7 @@ builds:
       # tar.gz/zip. sign-binary.sh branches on $os: codesign for darwin,
       # Azure Trusted Signing for windows, no-op for linux.
       post:
-        - .github/scripts/sign-binary.sh "{{ .Path }}" "{{ .Os }}" "{{ .Arch }}"
+        - .github/scripts/sign-binary.sh "{{ .Path }}" "{{ .Os }}"
 
 archives:
   - id: ana

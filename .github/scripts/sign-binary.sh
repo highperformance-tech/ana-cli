@@ -11,7 +11,7 @@
 #              the sha256 in checksums.txt is the integrity anchor.
 set -euo pipefail
 
-path="$1" os="$2" arch="$3"
+path="$1" os="$2"
 
 case "$os" in
   darwin)
