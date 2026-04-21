@@ -101,7 +101,7 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 		// by wrapping cli.ErrUsage.
 		if errors.Is(rerr, config.ErrUnknownProfile) {
 			fmt.Fprintf(stdio.Stderr, "ana: unknown profile %q\n", global.Profile)
-			return errors.Join(fmt.Errorf("%w: %s", cli.ErrUsage, rerr), cli.ErrReported)
+			return errors.Join(fmt.Errorf("%w: %w", cli.ErrUsage, rerr), cli.ErrReported)
 		}
 		return rerr
 	}

@@ -25,7 +25,7 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 	if err != nil {
 		fmt.Fprintln(stdio.Stderr, err)
 		RootHelp(stdio.Stderr, verbs)
-		return errors.Join(fmt.Errorf("%w: %s", ErrUsage, err.Error()), ErrReported)
+		return errors.Join(fmt.Errorf("%w: %w", ErrUsage, err), ErrReported)
 	}
 	ctx = WithGlobal(ctx, global)
 
