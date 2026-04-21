@@ -4,6 +4,7 @@
   "host": "app.textql.com",
   "description": "CreateConnector — Databricks access-token (PAT) auth.",
   "lastVerified": "2026-04-21",
+  "samples": [],
   "inferredRequestSchema": {
     "config": {
       "connectorType": "string",

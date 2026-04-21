@@ -4,6 +4,7 @@
   "host": "app.textql.com",
   "description": "CreateConnector — Databricks oauth-sso (U2M shared refresh token).",
   "lastVerified": "2026-04-21",
+  "samples": [],
   "inferredRequestSchema": {
     "config": {
       "connectorType": "string",

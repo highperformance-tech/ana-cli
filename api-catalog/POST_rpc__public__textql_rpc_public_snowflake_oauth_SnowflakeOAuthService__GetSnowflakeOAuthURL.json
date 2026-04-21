@@ -4,6 +4,7 @@
   "host": "app.textql.com",
   "description": "GetSnowflakeOAuthURL — composes Snowflake OAuth authorize URL.",
   "lastVerified": "2026-04-21",
+  "samples": [],
   "inferredRequestSchema": {
     "accountUrl": "string",
     "clientId": "string",

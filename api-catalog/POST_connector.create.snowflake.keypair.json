@@ -4,6 +4,7 @@
   "host": "app.textql.com",
   "description": "CreateConnector — Snowflake key-pair auth (authStrategy=service_role).",
   "lastVerified": "2026-04-21",
+  "samples": [],
   "inferredRequestSchema": {
     "config": {
       "connectorType": "string",

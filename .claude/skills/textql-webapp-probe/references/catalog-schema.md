@@ -15,6 +15,10 @@ One file per distinct `(method, path-template)` pair.
 
 ## Catalog entry JSON shape
 
+Two variants. Default is the **sample-bearing** variant (body below). The **shape-only** variant skips the raw capture and keeps just the inferred schemas + notes — use it when the captured body carries business content the anonymizer can't safely scrub (customer prose, unique IDs that tie back to real environments, secrets whose shape we care about but whose values we cannot retain).
+
+### Sample-bearing variant (default)
+
 ```json
 {
   "method": "GET",
@@ -44,11 +48,33 @@ One file per distinct `(method, path-template)` pair.
 }
 ```
 
+### Shape-only variant
+
+Top-level `inferredRequestSchema` + `inferredResponseSchema`, empty `samples`, scrubbed `notes`. Schema values are TypeScript-ish strings (`"string"`, `"integer"`, `"array<…>"`) — not literal example values. Used for connector-create flows where the request body is a live credential or workspace identifier.
+
+```json
+{
+  "method": "POST",
+  "pathTemplate": "/rpc/public/textql.rpc.public.connector.ConnectorService/CreateConnector",
+  "host": "app.textql.com",
+  "description": "Short one-liner.",
+  "lastVerified": "YYYY-MM-DD",
+  "samples": [],
+  "inferredRequestSchema": { "config": { "name": "string", "…": "…" } },
+  "inferredResponseSchema": { "connectorId": "integer", "name": "string" },
+  "notes": [
+    "Observations about the shape, wire/UI label mismatches, auth-mode discrimination, server-side defaults, …"
+  ]
+}
+```
+
 ### Update rules
 
-- First capture: create the file with one entry in `samples`.
-- Re-probe: if `inferredResponseSchema` matches the latest sample, overwrite `lastVerified` and replace the `samples` array with the new single capture (keep history small — git holds the real history).
-- Schema drift: if the new `inferredResponseSchema` differs from the last sample's, append the new sample instead of replacing, and add a note describing the change. This is the signal that the CLI needs attention.
+- Sample-bearing first capture: create the file with one entry in `samples`.
+- Sample-bearing re-probe: if `inferredResponseSchema` matches the latest sample, overwrite `lastVerified` and replace `samples` with the new single capture.
+- Shape-only first capture: keep `samples` empty; fill the top-level `inferredRequestSchema` + `inferredResponseSchema` from normalized observation. Pile observations into `notes` — they are the only persistent record.
+- Shape-only re-probe: overwrite `lastVerified`; update schemas/notes if the wire shape moved.
+- Schema drift (either variant): append a note dated the drift date and update the schemas. This is the signal the CLI needs attention.
 - Never delete a catalog file manually — if an endpoint disappears, leave the file and add a note with the removal date.
 
 ## `docs/features.md` format
