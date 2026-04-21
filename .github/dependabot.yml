@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Group all action bumps into one PR per week so the CI surface churns
+    # once per cycle instead of every action releasing independently.
+    groups:
+      actions:
+        patterns:
+          - "*"
