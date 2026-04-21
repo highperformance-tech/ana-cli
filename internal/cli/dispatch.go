@@ -17,7 +17,10 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 		RootHelp(stdio.Stdout, verbs)
 		return ErrHelp
 	}
-	global, rest, err := ParseGlobal(args)
+	// StripGlobals instead of ParseGlobal: globals may appear before, after,
+	// or interleaved with the verb path. Anything unrecognised is passed
+	// through to rest so the leaf's own FlagSet reports the usage error.
+	global, rest, err := StripGlobals(args)
 	if err != nil {
 		fmt.Fprintln(stdio.Stderr, err)
 		RootHelp(stdio.Stderr, verbs)

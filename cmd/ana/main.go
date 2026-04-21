@@ -57,8 +57,11 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	// Parse global flags up front so the token-file/endpoint/profile
 	// overrides are available before we touch config on disk. cli.Dispatch
 	// re-parses globals, but doing it here lets us wire deps correctly
-	// before dispatch.
-	global, _, err := cli.ParseGlobal(args)
+	// before dispatch. StripGlobals (rather than ParseGlobal) so operators
+	// can place `--profile`/`--endpoint`/`--token-file` after the verb and
+	// still have config resolution honour them — ParseGlobal stops at the
+	// first positional, which would leave those flags invisible here.
+	global, _, err := cli.StripGlobals(args)
 	if err != nil {
 		// Don't return here — let Dispatch produce the canonical usage error
 		// (it prints root help + err to stderr). Fall through with zero

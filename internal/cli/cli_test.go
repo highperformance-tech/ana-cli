@@ -261,6 +261,209 @@ func TestParseGlobalUnknownFlag(t *testing.T) {
 	}
 }
 
+func TestStripGlobalsBeforeVerb(t *testing.T) {
+	t.Parallel()
+	g, rest, err := StripGlobals([]string{"--json", "org", "show"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if !g.JSON {
+		t.Errorf("JSON not set: %+v", g)
+	}
+	if len(rest) != 2 || rest[0] != "org" || rest[1] != "show" {
+		t.Errorf("rest=%v", rest)
+	}
+}
+
+func TestStripGlobalsAfterVerb(t *testing.T) {
+	t.Parallel()
+	g, rest, err := StripGlobals([]string{"org", "show", "--json"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if !g.JSON {
+		t.Errorf("JSON not set: %+v", g)
+	}
+	if len(rest) != 2 || rest[0] != "org" || rest[1] != "show" {
+		t.Errorf("rest=%v", rest)
+	}
+}
+
+func TestStripGlobalsInterleaved(t *testing.T) {
+	t.Parallel()
+	// Global interleaved with a leaf positional; the positional must reach
+	// the leaf unchanged.
+	g, rest, err := StripGlobals([]string{"chat", "send", "--json", "id-123", "hello"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if !g.JSON {
+		t.Errorf("JSON not set: %+v", g)
+	}
+	want := []string{"chat", "send", "id-123", "hello"}
+	if len(rest) != len(want) {
+		t.Fatalf("rest=%v want %v", rest, want)
+	}
+	for i := range want {
+		if rest[i] != want[i] {
+			t.Errorf("rest[%d]=%q want %q", i, rest[i], want[i])
+		}
+	}
+}
+
+func TestStripGlobalsEqualsForm(t *testing.T) {
+	t.Parallel()
+	g, rest, err := StripGlobals([]string{"org", "show", "--endpoint=https://x", "--json"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if g.Endpoint != "https://x" {
+		t.Errorf("Endpoint=%q", g.Endpoint)
+	}
+	if !g.JSON {
+		t.Errorf("JSON not set")
+	}
+	if len(rest) != 2 || rest[0] != "org" || rest[1] != "show" {
+		t.Errorf("rest=%v", rest)
+	}
+}
+
+func TestStripGlobalsSpaceForm(t *testing.T) {
+	t.Parallel()
+	g, rest, err := StripGlobals([]string{"--endpoint", "https://x", "org", "show"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if g.Endpoint != "https://x" {
+		t.Errorf("Endpoint=%q", g.Endpoint)
+	}
+	if len(rest) != 2 || rest[0] != "org" || rest[1] != "show" {
+		t.Errorf("rest=%v", rest)
+	}
+}
+
+func TestStripGlobalsDoubleDashTerminator(t *testing.T) {
+	t.Parallel()
+	// After `--`, `--json` must be passed through as a positional so the leaf
+	// receives it and reports an unknown-flag error. StripGlobals must not
+	// consume it as the global.
+	g, rest, err := StripGlobals([]string{"org", "show", "--", "--json"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if g.JSON {
+		t.Errorf("JSON should NOT be set after --")
+	}
+	want := []string{"org", "show", "--", "--json"}
+	if len(rest) != len(want) {
+		t.Fatalf("rest=%v want %v", rest, want)
+	}
+	for i := range want {
+		if rest[i] != want[i] {
+			t.Errorf("rest[%d]=%q want %q", i, rest[i], want[i])
+		}
+	}
+}
+
+func TestStripGlobalsDuplicateLastWins(t *testing.T) {
+	t.Parallel()
+	g, _, err := StripGlobals([]string{"--endpoint", "https://a", "org", "--endpoint", "https://b", "show"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if g.Endpoint != "https://b" {
+		t.Errorf("Endpoint=%q want https://b", g.Endpoint)
+	}
+}
+
+func TestStripGlobalsUnknownFlagPassesThrough(t *testing.T) {
+	t.Parallel()
+	// Unknown flags stay in rest unchanged so the leaf's FlagSet emits the
+	// canonical `flag provided but not defined: --xyz` error.
+	g, rest, err := StripGlobals([]string{"org", "show", "--xyz"})
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if g.JSON || g.Endpoint != "" {
+		t.Errorf("nothing should be consumed: %+v", g)
+	}
+	want := []string{"org", "show", "--xyz"}
+	if len(rest) != len(want) {
+		t.Fatalf("rest=%v want %v", rest, want)
+	}
+}
+
+func TestStripGlobalsMissingValue(t *testing.T) {
+	t.Parallel()
+	_, _, err := StripGlobals([]string{"org", "show", "--endpoint"})
+	if err == nil {
+		t.Fatalf("want error for trailing value-less flag")
+	}
+	if !strings.Contains(err.Error(), "flag needs an argument") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestStripGlobalsAllFourFlags(t *testing.T) {
+	t.Parallel()
+	args := []string{
+		"connector", "list",
+		"--json",
+		"--endpoint=https://api",
+		"--token-file", "/tmp/t",
+		"--profile=prod",
+	}
+	g, rest, err := StripGlobals(args)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	want := Global{JSON: true, Endpoint: "https://api", TokenFile: "/tmp/t", Profile: "prod"}
+	if g != want {
+		t.Errorf("global=%+v want %+v", g, want)
+	}
+	if len(rest) != 2 || rest[0] != "connector" || rest[1] != "list" {
+		t.Errorf("rest=%v", rest)
+	}
+}
+
+// TestGlobalFlagsRegistrySync catches drift between ParseGlobal's FlagSet and
+// globalFlagRegistry. Any new global flag must appear in both; if the registry
+// lags, StripGlobals would silently pass the flag through to the leaf (which
+// would fail with `flag provided but not defined`).
+func TestGlobalFlagsRegistrySync(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("sync", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	var g Global
+	fs.BoolVar(&g.JSON, "json", false, "")
+	fs.StringVar(&g.Endpoint, "endpoint", "", "")
+	fs.StringVar(&g.TokenFile, "token-file", "", "")
+	fs.StringVar(&g.Profile, "profile", "", "")
+	// Reflect ParseGlobal: every flag it declares must have an entry in the
+	// registry with the correct takesValue classification.
+	fs.VisitAll(func(f *flag.Flag) {
+		spec, ok := lookupGlobal(f.Name)
+		if !ok {
+			t.Errorf("global flag %q missing from globalFlagRegistry", f.Name)
+			return
+		}
+		// Stdlib flag.Flag.Value is a flag.Value; bool-typed values satisfy
+		// flag.boolFlag (unexported) with IsBoolFlag() bool. Use the adapter
+		// getter below to detect bool-ness without reaching into stdlib.
+		boolish, isBool := f.Value.(interface{ IsBoolFlag() bool })
+		takesValue := !(isBool && boolish.IsBoolFlag())
+		if spec.takesValue != takesValue {
+			t.Errorf("flag %q takesValue=%v want %v", f.Name, spec.takesValue, takesValue)
+		}
+	})
+	// And no extras in the registry that ParseGlobal doesn't declare.
+	for _, spec := range globalFlagRegistry {
+		if fs.Lookup(spec.name) == nil {
+			t.Errorf("registry has %q but ParseGlobal does not declare it", spec.name)
+		}
+	}
+}
+
 func TestDispatchHappyPath(t *testing.T) {
 	t.Parallel()
 	child := &fakeCmd{help: "child"}
