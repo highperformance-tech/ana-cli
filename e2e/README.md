@@ -36,7 +36,22 @@ Optional env:
 |------------------------|----------------------------------------------------|
 | `ANA_E2E_DRYRUN=1`     | Log planned mutations without issuing RPCs         |
 | `ANA_E2E_SWEEP_ONLY=1` | Run the leftover-sweep only, then skip tests       |
-| `ANA_E2E_PG_HOST` etc. | Use a real postgres for connector tests (optional) |
+| `ANA_E2E_DASHBOARD_ID` | Existing dashboard id to probe (`health`, `spawn`); unset skips those leaves |
+
+### Postgres connector env
+
+Connector tests default to a syntactically valid but unreachable spec
+(`host=e2e.invalid`); `CreateConnector` accepts it because only `connector
+test` actually dials the db. Set these to exercise the driver path against a
+reachable Postgres:
+
+| Variable               | Meaning                                           |
+|------------------------|---------------------------------------------------|
+| `ANA_E2E_PG_HOST`      | Hostname (default `e2e.invalid`; required for `connector tables`) |
+| `ANA_E2E_PG_PORT`      | TCP port (default `5432`)                         |
+| `ANA_E2E_PG_USER`      | Username (default `e2e`)                          |
+| `ANA_E2E_PG_PASSWORD`  | Password (default `e2e`); piped via `--password-stdin` |
+| `ANA_E2E_PG_DATABASE`  | Database name (default `postgres`)                |
 
 ### Snowflake connector env
 
