@@ -2,8 +2,8 @@ package connector
 
 // Shared wire types for the Connect-RPC Connector service. Field names follow
 // the captured API shapes in `api-catalog/`; anything else is rejected
-// server-side. Kept in one file so per-dialect files only need to add their
-// own `<dialect>Spec` struct and point configEnvelope at it.
+// server-side. Per-dialect spec structs live in `types_<dialect>.go` so new
+// dialects only need to add their own file and point configEnvelope at it.
 
 // createReq mirrors the exact wire shape captured in the API catalog.
 type createReq struct {
@@ -17,24 +17,17 @@ type updateReq struct {
 	Config      configEnvelope `json:"config"`
 }
 
-// configEnvelope is shared by create + update. The Postgres pointer is a
-// pointer (not a value) so update can omit the block when no postgres flags
-// were set (partial-update case).
+// configEnvelope is shared by create + update. Dialect pointers (not values)
+// so update can omit the block when no dialect flags were set (partial-update
+// case). AuthStrategy sits at envelope level per the captured wire shape
+// (`config.authStrategy`, not nested under a dialect sub-object); it's empty
+// for Postgres, populated for Snowflake/Databricks.
 type configEnvelope struct {
-	ConnectorType string        `json:"connectorType,omitempty"`
-	Name          string        `json:"name,omitempty"`
-	Postgres      *postgresSpec `json:"postgres,omitempty"`
-}
-
-// postgresSpec matches the oneof leaf for the POSTGRES dialect. Port is an int
-// per the catalog; sslMode is a boolean named `sslMode` (not `ssl`).
-type postgresSpec struct {
-	Host     string `json:"host,omitempty"`
-	Port     int    `json:"port,omitempty"`
-	User     string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
-	Database string `json:"database,omitempty"`
-	SSLMode  bool   `json:"sslMode,omitempty"`
+	ConnectorType string         `json:"connectorType,omitempty"`
+	Name          string         `json:"name,omitempty"`
+	AuthStrategy  string         `json:"authStrategy,omitempty"`
+	Postgres      *postgresSpec  `json:"postgres,omitempty"`
+	Snowflake     *snowflakeSpec `json:"snowflake,omitempty"`
 }
 
 // createResp is the `{connectorId, name, connectorType}` captured response.

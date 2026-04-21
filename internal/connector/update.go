@@ -97,7 +97,7 @@ func (c *updateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	// user didn't touch --password{,-stdin}, leave pg.Password empty and the
 	// server keeps the existing secret. Otherwise resolve and overlay.
 	if cli.FlagWasSet(fs, "password") || cli.FlagWasSet(fs, "password-stdin") {
-		resolved, err := resolvePassword(*pass, *passStdin, stdio.Stdin)
+		resolved, err := resolveSecret("password", *pass, *passStdin, stdio.Stdin)
 		if err != nil {
 			return fmt.Errorf("connector update: %w", err)
 		}

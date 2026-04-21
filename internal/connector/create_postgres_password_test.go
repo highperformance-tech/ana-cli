@@ -158,7 +158,7 @@ func TestCreatePostgresPasswordStdinReadErr(t *testing.T) {
 
 func TestResolvePasswordNilReader(t *testing.T) {
 	t.Parallel()
-	_, err := resolvePassword("", true, nil)
+	_, err := resolveSecret("password", "", true, nil)
 	if err == nil {
 		t.Errorf("want error on nil reader")
 	}
@@ -171,12 +171,12 @@ func TestResolvePasswordNilReader(t *testing.T) {
 // only the trailing line terminator (\n or \r\n) and nothing else.
 func TestResolvePasswordPreservesSurroundingWhitespace(t *testing.T) {
 	t.Parallel()
-	got, err := resolvePassword("", true, strings.NewReader(" secret\twith\tabs \n"))
+	got, err := resolveSecret("password", "", true, strings.NewReader(" secret\twith\tabs \n"))
 	if err != nil {
-		t.Fatalf("resolvePassword: %v", err)
+		t.Fatalf("resolveSecret: %v", err)
 	}
 	if want := " secret\twith\tabs "; got != want {
-		t.Errorf("resolvePassword=%q want %q", got, want)
+		t.Errorf("resolveSecret=%q want %q", got, want)
 	}
 }
 
@@ -184,12 +184,12 @@ func TestResolvePasswordPreservesSurroundingWhitespace(t *testing.T) {
 // stripped cleanly without swallowing any user bytes that precede it.
 func TestResolvePasswordStripsCRLF(t *testing.T) {
 	t.Parallel()
-	got, err := resolvePassword("", true, strings.NewReader(" hunter2 \r\n"))
+	got, err := resolveSecret("password", "", true, strings.NewReader(" hunter2 \r\n"))
 	if err != nil {
-		t.Fatalf("resolvePassword: %v", err)
+		t.Fatalf("resolveSecret: %v", err)
 	}
 	if want := " hunter2 "; got != want {
-		t.Errorf("resolvePassword=%q want %q", got, want)
+		t.Errorf("resolveSecret=%q want %q", got, want)
 	}
 }
 
@@ -323,7 +323,7 @@ func TestCreateGroupHelpMentionsDialects(t *testing.T) {
 	t.Parallel()
 	g := newCreateGroup(Deps{})
 	h := g.Help()
-	for _, d := range []string{"postgres"} {
+	for _, d := range []string{"postgres", "snowflake"} {
 		if !strings.Contains(h, d) {
 			t.Errorf("create Help missing dialect %q: %q", d, h)
 		}

@@ -94,7 +94,7 @@ func (c *postgresPasswordCmd) Run(ctx context.Context, args []string, stdio cli.
 	if c.port <= 0 || c.port > 65535 {
 		return cli.UsageErrf("connector create postgres password: --port must be in 1..65535 (got %d)", c.port)
 	}
-	resolvedPass, err := resolvePassword(c.password, c.passStdin, stdio.Stdin)
+	resolvedPass, err := resolveSecret("password", c.password, c.passStdin, stdio.Stdin)
 	if err != nil {
 		return fmt.Errorf("connector create postgres password: %w", err)
 	}

@@ -37,39 +37,13 @@ make build
 ./bin/ana --version
 ```
 
-### Windows SmartScreen
-
-Official release binaries are Authenticode-signed via Azure Trusted Signing
-(see the `sign-windows` job in `.github/workflows/release.yml`), so
-SmartScreen should not prompt when running an `ana.exe` downloaded from
-GitHub Releases.
-
-Binaries built from source (`go install` / `make build`) are **not** signed
-and SmartScreen may still block them on first run with "Windows protected
-your PC". Click **More info → Run anyway**, or unblock the file before
-running:
-
-```powershell
-Unblock-File -Path .\ana.exe
-```
+Windows users: see [docs/windows-smartscreen.md](docs/windows-smartscreen.md).
 
 ## Usage
 
 ```bash
 ana [global flags] <command> [args]
 ```
-
-Global flags:
-
-| Flag | Description |
-|------|-------------|
-| `--endpoint <url>` | Override the API endpoint |
-| `--token-file <path>` | Path to a bearer-token file |
-| `--profile <name>` | Select a config profile |
-| `--json` | Emit JSON output |
-| `--version`, `-V` | Print version info |
-
-### Getting started
 
 ```bash
 ana auth login --endpoint https://app.textql.com
@@ -80,17 +54,10 @@ ana chat send "show me last month's revenue"
 
 Run `ana --help` or `ana <verb> --help` for command-specific flags.
 
-Connector-create commands are structured as `dialect auth-mode` subcommands
-(e.g. `ana connector create postgres password --name prod --host … --user …
---database … --password-stdin`) so new dialects and auth modes land as
-additions rather than growing a conditional flag matrix.
-
 ## Configuration
 
 `ana` stores tokens and per-profile endpoints at
-`$XDG_CONFIG_HOME/ana/config.json` (falling back to
-`~/.config/ana/config.json`). Override with `--token-file` or the
-`ANA_TOKEN_FILE` environment variable.
+`$XDG_CONFIG_HOME/ana/config.json` (falling back to `~/.config/ana/config.json`).
 
 ## Development
 
@@ -101,26 +68,6 @@ make lint          # gofmt, go vet, staticcheck
 make build         # -> ./bin/ana
 make release-local # goreleaser check + snapshot (requires goreleaser)
 ```
-
-Conventional commits drive the release pipeline: a `feat:` or `fix:` landing
-on `main` causes [release-please](https://github.com/googleapis/release-please)
-to open a PR; merging that PR tags the release and triggers GoReleaser to
-publish binaries, archives, checksums, and SBOMs to GitHub Releases.
-
-### CI scope
-
-PRs are gated by a single required check, `CI Complete`. To keep runner time
-proportional to impact, docs-only PRs skip the Go lint / test / build /
-goreleaser jobs and `CI Complete` reports green immediately. A PR counts as
-"code" when it touches any of:
-
-- `**/*.go`, `go.mod`, `go.sum`
-- `Makefile`, `.goreleaser.yml`, `install.sh`
-- `.github/workflows/**`
-
-Everything else — `README.md`, `LICENSE`, `docs/**`, `api-catalog/**`,
-`.claude/**`, `.gitignore` — skips the heavy jobs. Release-please likewise
-ignores doc-only merges on `main`.
 
 ## License
 
