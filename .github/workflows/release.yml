@@ -11,7 +11,11 @@ permissions:
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-latest
+    # macos-14 is required: goreleaser runs `codesign` + `xcrun notarytool`
+    # against the darwin builds in-place, and those tools only exist on macOS.
+    # Cross-OS matrix isn't worth the plumbing — a single mac runner can still
+    # cross-compile linux/windows via CGO_ENABLED=0.
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -25,11 +29,90 @@ jobs:
       - name: Install syft for SBOM generation
         uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
 
+      # Import the Apple Developer ID into a throwaway keychain so codesign
+      # can find it. The keychain is scoped to this runner and discarded when
+      # the job finishes. partition-list must be set or codesign will prompt
+      # for the key (and hang on a headless runner).
+      - name: Import Apple Developer ID
+        env:
+          APPLE_DISTRIBUTION_PKCS12: ${{ secrets.APPLE_DISTRIBUTION_PKCS12 }}
+          APPLE_DISTRIBUTION_PKCS12_PASSPHRASE: ${{ secrets.APPLE_DISTRIBUTION_PKCS12_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/ana-release.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          CERT_PATH="$RUNNER_TEMP/apple-dist.p12"
+
+          printf '%s' "$APPLE_DISTRIBUTION_PKCS12" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$CERT_PATH" -k "$KEYCHAIN" \
+            -P "$APPLE_DISTRIBUTION_PKCS12_PASSPHRASE" \
+            -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+          rm -f "$CERT_PATH"
+
+      # Azure Trusted Signing for Windows binaries. Uses the shared HPT
+      # "Elevate" cert profile under account "tooling-and-automation".
+      - name: Install .NET for sign tool
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install sign CLI
+        run: dotnet tool install --global sign --prerelease --version "0.9.1-beta.26179.1"
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          # --skip=publish so archives exist on disk for the notarize step
+          # before they're uploaded. The follow-up step flips them back
+          # onto the release after notarization succeeds.
+          args: release --clean --skip=publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Apple — consumed by sign-binary.sh (codesign, pre-archive).
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Azure — consumed by `sign` tool which reads them from the env.
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+      - name: Notarize darwin archives
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for archive in dist/*darwin*.tar.gz; do
+            echo "notarizing: $archive"
+            .github/scripts/notarize-archive.sh "$archive"
+          done
+
+      - name: Publish release artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The GitHub release itself is created by release-please when the
+        # release PR merges. Here we upload the signed + notarized artifacts
+        # to that release. --clobber handles re-runs without errors.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+            dist/*.sbom.json
+          )
+          gh release upload "$GITHUB_REF_NAME" "${artifacts[@]}" --clobber
