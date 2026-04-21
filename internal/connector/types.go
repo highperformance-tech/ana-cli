@@ -17,13 +17,17 @@ type updateReq struct {
 	Config      configEnvelope `json:"config"`
 }
 
-// configEnvelope is shared by create + update. The Postgres pointer is a
-// pointer (not a value) so update can omit the block when no postgres flags
-// were set (partial-update case).
+// configEnvelope is shared by create + update. Dialect pointers (not values)
+// so update can omit the block when no dialect flags were set (partial-update
+// case). AuthStrategy sits at envelope level per the captured wire shape
+// (`config.authStrategy`, not nested under a dialect sub-object); it's empty
+// for Postgres, populated for Snowflake/Databricks.
 type configEnvelope struct {
-	ConnectorType string        `json:"connectorType,omitempty"`
-	Name          string        `json:"name,omitempty"`
-	Postgres      *postgresSpec `json:"postgres,omitempty"`
+	ConnectorType string         `json:"connectorType,omitempty"`
+	Name          string         `json:"name,omitempty"`
+	AuthStrategy  string         `json:"authStrategy,omitempty"`
+	Postgres      *postgresSpec  `json:"postgres,omitempty"`
+	Snowflake     *snowflakeSpec `json:"snowflake,omitempty"`
 }
 
 // postgresSpec matches the oneof leaf for the POSTGRES dialect. Port is an int
@@ -35,6 +39,26 @@ type postgresSpec struct {
 	Password string `json:"password,omitempty"`
 	Database string `json:"database,omitempty"`
 	SSLMode  bool   `json:"sslMode,omitempty"`
+}
+
+// snowflakeSpec matches the oneof leaf for the SNOWFLAKE dialect. One struct
+// covers all four auth modes (password, key-pair, oauth-sso, oauth-individual)
+// — the server discriminates by which credential field is populated, paired
+// with `configEnvelope.AuthStrategy`. Every field is omitempty so each leaf
+// only emits the fields its mode actually uses. `locator` is TextQL's wire
+// name for what Snowflake's own docs call `account`.
+type snowflakeSpec struct {
+	Locator              string `json:"locator,omitempty"`
+	Database             string `json:"database,omitempty"`
+	Warehouse            string `json:"warehouse,omitempty"`
+	Schema               string `json:"schema,omitempty"`
+	Role                 string `json:"role,omitempty"`
+	Username             string `json:"username,omitempty"`
+	Password             string `json:"password,omitempty"`
+	PrivateKey           string `json:"privateKey,omitempty"`
+	PrivateKeyPassphrase string `json:"privateKeyPassphrase,omitempty"`
+	OAuthClientID        string `json:"oauthClientId,omitempty"`
+	OAuthClientSecret    string `json:"oauthClientSecret,omitempty"`
 }
 
 // createResp is the `{connectorId, name, connectorType}` captured response.

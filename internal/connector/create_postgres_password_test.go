@@ -323,7 +323,7 @@ func TestCreateGroupHelpMentionsDialects(t *testing.T) {
 	t.Parallel()
 	g := newCreateGroup(Deps{})
 	h := g.Help()
-	for _, d := range []string{"postgres"} {
+	for _, d := range []string{"postgres", "snowflake"} {
 		if !strings.Contains(h, d) {
 			t.Errorf("create Help missing dialect %q: %q", d, h)
 		}

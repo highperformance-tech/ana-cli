@@ -19,7 +19,8 @@ func newCreateGroup(deps Deps) *cli.Group {
 	return &cli.Group{
 		Summary: "Create a new connector. Pick a dialect, then an auth mode.",
 		Children: map[string]cli.Command{
-			"postgres": newPostgresCreateGroup(deps),
+			"postgres":  newPostgresCreateGroup(deps),
+			"snowflake": newSnowflakeCreateGroup(deps),
 		},
 	}
 }
