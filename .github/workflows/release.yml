@@ -68,7 +68,9 @@ jobs:
       # there's no stable tag to pin. Pin the exact beta so the toolchain stays
       # reproducible and revisit when a non-beta is cut.
       - name: Install sign CLI
-        run: dotnet tool install --global sign --prerelease --version "0.9.1-beta.26179.1"
+        # Explicit --version already carries the prerelease identifier;
+        # `dotnet tool install` rejects --prerelease + --version together.
+        run: dotnet tool install --global sign --version "0.9.1-beta.26179.1"
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e24998b8b67b290c2fa8b7c14fcfa7de2c5c9b8c # v7.1.0
