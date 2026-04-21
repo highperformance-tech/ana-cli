@@ -59,7 +59,7 @@ func (c *snowflakePasswordCmd) Run(ctx context.Context, args []string, stdio cli
 			return cli.UsageErrf("connector create snowflake password: --%s must not be empty", p.name)
 		}
 	}
-	resolvedPass, err := resolvePassword(c.password, c.passStdin, stdio.Stdin)
+	resolvedPass, err := resolveSecret("password", c.password, c.passStdin, stdio.Stdin)
 	if err != nil {
 		return fmt.Errorf("connector create snowflake password: %w", err)
 	}
