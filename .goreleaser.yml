@@ -9,8 +9,12 @@ before:
   hooks:
     - go mod tidy
 
+# Unix only. Windows binaries are cross-built, Authenticode-signed, and
+# archived in a sibling Windows job because Azure Trusted Signing only runs
+# on Windows runners. The Windows zips are merged into dist/ and their
+# sha256s appended to checksums.txt in the release workflow.
 builds:
-  - id: ana
+  - id: ana-unix
     main: ./cmd/ana
     binary: ana
     env:
@@ -18,7 +22,6 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
     goarch:
       - amd64
       - arm64
@@ -28,22 +31,15 @@ builds:
       - -X main.commit={{.Commit}}
       - -X main.date={{.Date}}
     hooks:
-      # Sign the binary before archiving so the signature lands inside the
-      # tar.gz/zip. sign-binary.sh branches on $os: codesign for darwin,
-      # Azure Trusted Signing for windows, no-op for linux.
       post:
         - .github/scripts/sign-binary.sh "{{ .Path }}" "{{ .Os }}"
 
 archives:
   - id: ana
     ids:
-      - ana
+      - ana-unix
     formats:
       - tar.gz
-    format_overrides:
-      - goos: windows
-        formats:
-          - zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
