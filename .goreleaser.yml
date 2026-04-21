@@ -27,6 +27,12 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.Commit}}
       - -X main.date={{.Date}}
+    hooks:
+      # Sign the binary before archiving so the signature lands inside the
+      # tar.gz/zip. sign-binary.sh branches on $os: codesign for darwin,
+      # Azure Trusted Signing for windows, no-op for linux.
+      post:
+        - .github/scripts/sign-binary.sh "{{ .Path }}" "{{ .Os }}"
 
 archives:
   - id: ana
