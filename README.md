@@ -39,9 +39,14 @@ make build
 
 ### Windows SmartScreen
 
-The Windows binary is unsigned. On first run SmartScreen may block it with
-"Windows protected your PC". Click **More info → Run anyway**. To avoid the
-prompt altogether, unblock the executable before running:
+Release binaries are Authenticode-signed with Azure Trusted Signing (see the
+`sign-windows` job in `.github/workflows/release.yml`), so SmartScreen should
+not prompt for official downloads from GitHub Releases.
+
+If you build from source (`go install` / `make build`), the resulting
+`ana.exe` is **not** signed and SmartScreen may still block it on first run
+with "Windows protected your PC". Click **More info → Run anyway**, or
+unblock the file before running:
 
 ```powershell
 Unblock-File -Path .\ana.exe
