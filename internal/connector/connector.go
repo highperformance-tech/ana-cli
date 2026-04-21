@@ -29,7 +29,7 @@ func New(deps Deps) *cli.Group {
 		Children: map[string]cli.Command{
 			"list":     &listCmd{deps: deps},
 			"get":      &getCmd{deps: deps},
-			"create":   &createCmd{deps: deps},
+			"create":   newCreateGroup(deps),
 			"update":   &updateCmd{deps: deps},
 			"delete":   &deleteCmd{deps: deps},
 			"test":     &testCmd{deps: deps},
