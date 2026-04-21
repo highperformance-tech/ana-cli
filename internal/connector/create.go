@@ -17,39 +17,6 @@ func (c *createCmd) Help() string {
 		"Usage: ana connector create --type postgres --name <name> --host <h> --port <p> --user <u> (--password-stdin|--password <p>) --database <db> [--ssl]"
 }
 
-// createReq mirrors the exact wire shape captured in the API catalog. Field
-// names are protobuf camelCase; anything else is rejected server-side.
-type createReq struct {
-	Config configEnvelope `json:"config"`
-}
-
-// configEnvelope is also used by update; see update.go. The Postgres pointer
-// so we can omit the block when no postgres flags were set (update's partial
-// case).
-type configEnvelope struct {
-	ConnectorType string        `json:"connectorType,omitempty"`
-	Name          string        `json:"name,omitempty"`
-	Postgres      *postgresSpec `json:"postgres,omitempty"`
-}
-
-// postgresSpec matches the oneof leaf for the POSTGRES dialect. Port is an int
-// per the catalog; sslMode is a boolean named `sslMode` (not `ssl`).
-type postgresSpec struct {
-	Host     string `json:"host,omitempty"`
-	Port     int    `json:"port,omitempty"`
-	User     string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
-	Database string `json:"database,omitempty"`
-	SSLMode  bool   `json:"sslMode,omitempty"`
-}
-
-// createResp is the `{connectorId, name, connectorType}` captured response.
-type createResp struct {
-	ConnectorID   int    `json:"connectorId"`
-	Name          string `json:"name"`
-	ConnectorType string `json:"connectorType"`
-}
-
 func (c *createCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	fs := cli.NewFlagSet("connector create")
 	var typ string
