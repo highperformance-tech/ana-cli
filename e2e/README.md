@@ -38,6 +38,45 @@ Optional env:
 | `ANA_E2E_SWEEP_ONLY=1` | Run the leftover-sweep only, then skip tests       |
 | `ANA_E2E_PG_HOST` etc. | Use a real postgres for connector tests (optional) |
 
+### Snowflake connector env
+
+Snowflake tests (`e2e/connector_snowflake_test.go`) skip per-test when their
+required vars are absent — unlike Postgres, there are no sensible defaults.
+Two vars are shared across every mode; set both or every Snowflake test
+skips:
+
+| Variable               | Meaning                                                         |
+|------------------------|-----------------------------------------------------------------|
+| `ANA_E2E_SF_LOCATOR`   | Snowflake account locator (e.g. `abc12345.us-east-1`)           |
+| `ANA_E2E_SF_DATABASE`  | Database name (required)                                        |
+| `ANA_E2E_SF_WAREHOUSE` | Default warehouse (optional; unset to exercise omitempty)       |
+| `ANA_E2E_SF_SCHEMA`    | Default schema (optional)                                       |
+| `ANA_E2E_SF_ROLE`      | Default role (optional)                                         |
+
+Password mode (`TestConnectorCreateSnowflakePassword`):
+
+| Variable               | Meaning                                                         |
+|------------------------|-----------------------------------------------------------------|
+| `ANA_E2E_SF_USER`      | Snowflake username                                              |
+| `ANA_E2E_SF_PASSWORD`  | Password; piped via `--password-stdin`                          |
+
+Keypair mode (`TestConnectorCreateSnowflakeKeypair`):
+
+| Variable                             | Meaning                                           |
+|--------------------------------------|---------------------------------------------------|
+| `ANA_E2E_SF_USER`                    | Snowflake username bound to the public key        |
+| `ANA_E2E_SF_PRIVATE_KEY_PATH`        | Path to a PEM-encoded PKCS#8 private key file     |
+| `ANA_E2E_SF_PRIVATE_KEY_PASSPHRASE`  | Optional; piped via `--private-key-passphrase-stdin` when set |
+
+OAuth SSO + OAuth individual (`TestConnectorCreateSnowflakeOAuthSSO`,
+`TestConnectorCreateSnowflakeOAuthIndividual`) share the same vars and only
+differ in wire `authStrategy`:
+
+| Variable                          | Meaning                                                 |
+|-----------------------------------|---------------------------------------------------------|
+| `ANA_E2E_SF_OAUTH_CLIENT_ID`      | Snowflake OAuth client id                               |
+| `ANA_E2E_SF_OAUTH_CLIENT_SECRET`  | Client secret; piped via `--oauth-client-secret-stdin`  |
+
 Invocations:
 
 ```sh

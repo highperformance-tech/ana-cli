@@ -90,7 +90,7 @@ func buildVerbs(client *transport.Client, env func(string) string, cfgPath strin
 		"auth":      auth.New(authDeps(client, env, cfgPath)),
 		"profile":   profile.New(profileDeps(env, cfgPath)),
 		"org":       org.New(org.Deps{Unary: client.Unary}),
-		"connector": connector.New(connector.Deps{Unary: client.Unary}),
+		"connector": connector.New(connector.Deps{Unary: client.Unary, Endpoint: os.Getenv("ANA_E2E_ENDPOINT")}),
 		"chat":      chat.New(chatDeps(client)),
 		"dashboard": dashboard.New(dashboard.Deps{Unary: client.Unary}),
 		"playbook":  playbook.New(playbook.Deps{Unary: client.Unary}),

@@ -59,6 +59,14 @@ func (h *H) CreateConnector(suffix string, spec ConnSpec) int {
 	return id
 }
 
+// RegisterConnectorCleanup registers a LIFO cleanup that DeleteConnectors id.
+// Tests that create a connector via `h.Run("connector","create",…)` (rather
+// than the raw-RPC CreateConnector helper) call this after parsing the id
+// out of stdout so the ledger still owns the teardown.
+func (h *H) RegisterConnectorCleanup(id int) {
+	h.Register(func() { h.deleteConnector(id) })
+}
+
 func (h *H) deleteConnector(id int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

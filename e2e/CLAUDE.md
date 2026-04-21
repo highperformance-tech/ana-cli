@@ -13,4 +13,5 @@ Live-smoke tests that drive real `app.textql.com` RPCs through the same verb pac
 | `auth_test.go` | Login/logout/whoami round-trip against a real org. |
 | `chat_test.go` | Chat CRUD + streaming `send`. |
 | `connector_test.go` | Connector CRUD (create/update/test/delete) with ledger-backed cleanup. |
+| `connector_snowflake_test.go` | Snowflake create leaves (password/keypair/oauth-sso/oauth-individual), per-mode env-gated. |
 | `org_test.go` | Org list/show + nested members/roles/permissions. |
