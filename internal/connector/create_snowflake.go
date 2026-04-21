@@ -62,6 +62,15 @@ func newSnowflakeCreateGroup(deps Deps) *cli.Group {
 				schema:    &schema,
 				role:      &role,
 			},
+			"oauth-individual": &snowflakeOAuthIndividualCmd{
+				deps:      deps,
+				name:      &name,
+				locator:   &locator,
+				database:  &database,
+				warehouse: &warehouse,
+				schema:    &schema,
+				role:      &role,
+			},
 		},
 	}
 }
