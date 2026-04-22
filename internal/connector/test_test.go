@@ -10,10 +10,28 @@ import (
 	"github.com/highperformance-tech/ana-cli/internal/testcli"
 )
 
+// stubGetConnector returns a minimal GetConnector response so `connector test`
+// can build a config body for the follow-up TestConnector call.
+func stubGetConnector(resp any) {
+	out := resp.(*map[string]any)
+	*out = map[string]any{
+		"connector": map[string]any{
+			"id":               1.0,
+			"name":             "probe",
+			"connectorType":    "POSTGRES",
+			"postgresMetadata": map[string]any{"host": "h", "port": 5432.0, "user": "u", "database": "d", "dialect": "postgres", "sslMode": true},
+		},
+	}
+}
+
 func TestTestOK(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				stubGetConnector(resp)
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"error": ""}
 			return nil
@@ -35,7 +53,11 @@ func TestTestOK(t *testing.T) {
 func TestTestFail(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				stubGetConnector(resp)
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"error": "connection refused"}
 			return nil
@@ -54,7 +76,11 @@ func TestTestFail(t *testing.T) {
 func TestTestJSON(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				stubGetConnector(resp)
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"error": ""}
 			return nil
@@ -115,7 +141,11 @@ func TestTestBadFlag(t *testing.T) {
 func TestTestRemarshalErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{
-		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				stubGetConnector(resp)
+				return nil
+			}
 			out := resp.(*map[string]any)
 			*out = map[string]any{"error": 123.0}
 			return nil
@@ -125,6 +155,59 @@ func TestTestRemarshalErr(t *testing.T) {
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), []string{"1"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "decode response") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestTestTestConnectorUnaryErr(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, path string, _, resp any) error {
+			if strings.HasSuffix(path, "/GetConnector") {
+				stubGetConnector(resp)
+				return nil
+			}
+			return errors.New("boom")
+		},
+	}
+	cmd := &testCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"1"}, stdio)
+	if err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestTestMissingConnectorType(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{"connector": map[string]any{"id": 1.0}}
+			return nil
+		},
+	}
+	cmd := &testCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"1"}, stdio)
+	if err == nil || !strings.Contains(err.Error(), "missing connectorType") {
+		t.Errorf("err=%v", err)
+	}
+}
+
+func TestTestMissingConnector(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, _ string, _, resp any) error {
+			out := resp.(*map[string]any)
+			*out = map[string]any{}
+			return nil
+		},
+	}
+	cmd := &testCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"1"}, stdio)
+	if err == nil || !strings.Contains(err.Error(), "missing connector object") {
 		t.Errorf("err=%v", err)
 	}
 }
