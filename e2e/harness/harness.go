@@ -132,6 +132,11 @@ func (h *H) Client() *transport.Client { return h.client }
 // ExpectOrgID returns the ANA_E2E_EXPECT_ORG_ID value the harness validated.
 func (h *H) ExpectOrgID() string { return h.env.expectOrgID }
 
+// Endpoint returns the ANA_E2E_ENDPOINT value the harness validated at Begin.
+// Tests that need to assert endpoint-referencing stdout (e.g. OAuth callback
+// URLs) should read it through here rather than re-fetching the env var.
+func (h *H) Endpoint() string { return h.env.endpoint }
+
 // defer registers fn to run in LIFO order when End fires. Exported indirectly
 // via Register so callers can deregister on successful delete.
 func (h *H) Register(fn func()) {

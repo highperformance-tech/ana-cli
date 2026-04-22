@@ -186,12 +186,9 @@ func TestConnectorCreateSnowflakeOAuthSSO(t *testing.T) {
 	if !strings.Contains(stdout, "connectorType: SNOWFLAKE") {
 		t.Errorf("stdout missing connectorType: SNOWFLAKE:\n%s", stdout)
 	}
-	endpoint := os.Getenv("ANA_E2E_ENDPOINT")
-	if endpoint == "" {
-		t.Fatalf("ANA_E2E_ENDPOINT should be set inside Begin — got empty")
-	}
+	endpoint := h.Endpoint()
 	if !strings.Contains(stdout, "complete OAuth at "+endpoint) {
-		t.Errorf("oauth-sso note should reference ANA_E2E_ENDPOINT %q:\n%s", endpoint, stdout)
+		t.Errorf("oauth-sso note should reference harness endpoint %q:\n%s", endpoint, stdout)
 	}
 }
 
