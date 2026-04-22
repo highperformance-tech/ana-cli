@@ -104,7 +104,10 @@ func (h *H) deleteConnectorByName(name string) {
 			continue
 		}
 		const delPath = "/rpc/public/textql.rpc.public.connector.ConnectorService/DeleteConnector"
-		if err := h.client.Unary(ctx, delPath, map[string]any{"connectorId": c.ID}, nil); err != nil {
+		// 404 is expected when the id-based cleanup (registered after a
+		// successful parse) ran first and already deleted the row — the
+		// by-name helper is just the safety net.
+		if err := h.client.Unary(ctx, delPath, map[string]any{"connectorId": c.ID}, nil); err != nil && !isNotFound(err) {
 			h.t.Errorf("cleanup-by-name DeleteConnector(%s id=%d): %v", name, c.ID, err)
 			h.RecordManualRevert(
 				fmt.Sprintf("connector id=%d name=%s", c.ID, name),
