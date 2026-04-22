@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -55,6 +54,15 @@ func databricksCommonArgs(h *harness.H, suffix string, env dbxCommonEnv) []strin
 	return args
 }
 
+// databricksLeafArgs builds the full argv for `connector create databricks
+// <auth-mode>` using the shared workspace flags. `suffix` seeds the name-based
+// cleanup safety-net; `extra` carries the auth-mode-specific flags.
+func databricksLeafArgs(h *harness.H, authMode, suffix string, env dbxCommonEnv, extra ...string) []string {
+	args := append([]string{"connector", "create", "databricks", authMode},
+		databricksCommonArgs(h, suffix, env)...)
+	return append(args, extra...)
+}
+
 // TestConnectorCreateDatabricksAccessToken smokes
 // `connector create databricks access-token --token-stdin`. Requires
 // ANA_E2E_DBX_TOKEN in addition to the common workspace env.
@@ -67,25 +75,12 @@ func TestConnectorCreateDatabricksAccessToken(t *testing.T) {
 
 	h := harness.Begin(t)
 	h.RegisterConnectorCleanupByName(h.ResourceName("dbx-access-token"))
-	args := append([]string{"connector", "create", "databricks", "access-token"},
-		databricksCommonArgs(h, "dbx-access-token", common)...)
-	args = append(args, "--token-stdin")
-
-	stdout, stderr, err := h.RunStdin(token+"\n", args...)
-	if err != nil {
-		t.Fatalf("connector create databricks access-token: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: DATABRICKS") {
-		t.Errorf("stdout missing connectorType: DATABRICKS:\n%s", stdout)
-	}
-	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
-		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
-	}
+	connectorCreateLeaf{
+		Name:          "databricks access-token",
+		Args:          databricksLeafArgs(h, "access-token", "dbx-access-token", common, "--token-stdin"),
+		Stdin:         token + "\n",
+		ConnectorType: "DATABRICKS",
+	}.Run(t, h)
 }
 
 // TestConnectorCreateDatabricksClientCredentials smokes the M2M leaf.
@@ -101,25 +96,12 @@ func TestConnectorCreateDatabricksClientCredentials(t *testing.T) {
 
 	h := harness.Begin(t)
 	h.RegisterConnectorCleanupByName(h.ResourceName("dbx-client-credentials"))
-	args := append([]string{"connector", "create", "databricks", "client-credentials"},
-		databricksCommonArgs(h, "dbx-client-credentials", common)...)
-	args = append(args, "--client-id", clientID, "--client-secret-stdin")
-
-	stdout, stderr, err := h.RunStdin(clientSecret+"\n", args...)
-	if err != nil {
-		t.Fatalf("connector create databricks client-credentials: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: DATABRICKS") {
-		t.Errorf("stdout missing connectorType: DATABRICKS:\n%s", stdout)
-	}
-	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
-		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
-	}
+	connectorCreateLeaf{
+		Name:          "databricks client-credentials",
+		Args:          databricksLeafArgs(h, "client-credentials", "dbx-client-credentials", common, "--client-id", clientID, "--client-secret-stdin"),
+		Stdin:         clientSecret + "\n",
+		ConnectorType: "DATABRICKS",
+	}.Run(t, h)
 }
 
 // TestConnectorCreateDatabricksOAuthSSO smokes the oauth-sso leaf. Asserts
@@ -137,29 +119,18 @@ func TestConnectorCreateDatabricksOAuthSSO(t *testing.T) {
 
 	h := harness.Begin(t)
 	h.RegisterConnectorCleanupByName(h.ResourceName("dbx-oauth-sso"))
-	args := append([]string{"connector", "create", "databricks", "oauth-sso"},
-		databricksCommonArgs(h, "dbx-oauth-sso", common)...)
-	args = append(args, "--client-id", clientID, "--client-secret-stdin")
-
-	stdout, stderr, err := h.RunStdin(clientSecret+"\n", args...)
-	if err != nil {
-		t.Fatalf("connector create databricks oauth-sso: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: DATABRICKS") {
-		t.Errorf("stdout missing connectorType: DATABRICKS:\n%s", stdout)
-	}
 	endpoint := h.Endpoint()
-	if !strings.Contains(stdout, "complete OAuth at "+endpoint) {
-		t.Errorf("oauth-sso note should reference harness endpoint %q:\n%s", endpoint, stdout)
-	}
-	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
-		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
-	}
+	connectorCreateLeaf{
+		Name:          "databricks oauth-sso",
+		Args:          databricksLeafArgs(h, "oauth-sso", "dbx-oauth-sso", common, "--client-id", clientID, "--client-secret-stdin"),
+		Stdin:         clientSecret + "\n",
+		ConnectorType: "DATABRICKS",
+		Extra: func(stdout string) {
+			if !strings.Contains(stdout, "complete OAuth at "+endpoint) {
+				t.Errorf("oauth-sso note should reference harness endpoint %q:\n%s", endpoint, stdout)
+			}
+		},
+	}.Run(t, h)
 }
 
 // TestConnectorCreateDatabricksOAuthIndividual smokes the oauth-individual
@@ -176,26 +147,15 @@ func TestConnectorCreateDatabricksOAuthIndividual(t *testing.T) {
 
 	h := harness.Begin(t)
 	h.RegisterConnectorCleanupByName(h.ResourceName("dbx-oauth-individual"))
-	args := append([]string{"connector", "create", "databricks", "oauth-individual"},
-		databricksCommonArgs(h, "dbx-oauth-individual", common)...)
-	args = append(args, "--client-id", clientID, "--client-secret-stdin")
-
-	stdout, stderr, err := h.RunStdin(clientSecret+"\n", args...)
-	if err != nil {
-		t.Fatalf("connector create databricks oauth-individual: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: DATABRICKS") {
-		t.Errorf("stdout missing connectorType: DATABRICKS:\n%s", stdout)
-	}
-	if !strings.Contains(stdout, "lazily at first query") {
-		t.Errorf("oauth-individual note should mention lazy per-member auth:\n%s", stdout)
-	}
-	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
-		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
-	}
+	connectorCreateLeaf{
+		Name:          "databricks oauth-individual",
+		Args:          databricksLeafArgs(h, "oauth-individual", "dbx-oauth-individual", common, "--client-id", clientID, "--client-secret-stdin"),
+		Stdin:         clientSecret + "\n",
+		ConnectorType: "DATABRICKS",
+		Extra: func(stdout string) {
+			if !strings.Contains(stdout, "lazily at first query") {
+				t.Errorf("oauth-individual note should mention lazy per-member auth:\n%s", stdout)
+			}
+		},
+	}.Run(t, h)
 }

@@ -13,6 +13,7 @@ Live-smoke tests that drive real `app.textql.com` RPCs through the same verb pac
 | `auth_test.go` | Keys + service-accounts CLI-driven create/rotate/revoke/delete (helper-backed legacy tests still live here for coverage); `--json` shape checks + error-path smokes for usage guards. |
 | `chat_test.go` | Chat CRUD + streaming `send`, `--json` envelopes on list/show, CLI-path `chat new`, `history`/`bookmark`/`unbookmark`, `show <missing>` error-path. |
 | `connector_test.go` | Connector CRUD + `--json` envelopes, CLI postgres create matrix (password-stdin × ssl on/off), `update --password-stdin`, `tables`/`examples`/`test` leaves, `get <missing>` error-path. |
+| `connector_create_leaves_test.go` | Dialect-neutral `connectorCreateLeaf` helper + shared `extractConnectorID`; every Snowflake/Databricks create-leaf smoke runs its create/dry-run/id/cleanup/connectorType/get round-trip through this helper so the pattern can't drift. |
 | `connector_snowflake_test.go` | Snowflake create leaves (password/keypair/oauth-sso/oauth-individual), per-mode env-gated. |
 | `connector_databricks_test.go` | Databricks create leaves (access-token/client-credentials/oauth-sso/oauth-individual), per-mode env-gated on `ANA_E2E_DBX_*`. |
 | `dashboard_test.go` | Dashboard list/get/folders read leaves (default + `--json`); `health`/`spawn` env-gated on `ANA_E2E_DASHBOARD_ID`. |
