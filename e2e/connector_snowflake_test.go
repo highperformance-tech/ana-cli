@@ -155,6 +155,9 @@ func TestConnectorCreateSnowflakeKeypair(t *testing.T) {
 	if !strings.Contains(stdout, "connectorType: SNOWFLAKE") {
 		t.Errorf("stdout missing connectorType: SNOWFLAKE:\n%s", stdout)
 	}
+	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
+		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
+	}
 }
 
 // TestConnectorCreateSnowflakeOAuthSSO smokes the oauth-sso leaf. Asserts the
@@ -190,6 +193,9 @@ func TestConnectorCreateSnowflakeOAuthSSO(t *testing.T) {
 	if !strings.Contains(stdout, "complete OAuth at "+endpoint) {
 		t.Errorf("oauth-sso note should reference harness endpoint %q:\n%s", endpoint, stdout)
 	}
+	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
+		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
+	}
 }
 
 // TestConnectorCreateSnowflakeOAuthIndividual smokes the oauth-individual
@@ -223,5 +229,8 @@ func TestConnectorCreateSnowflakeOAuthIndividual(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "lazily at first query") {
 		t.Errorf("oauth-individual note should mention lazy per-member auth:\n%s", stdout)
+	}
+	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
+		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
 	}
 }
