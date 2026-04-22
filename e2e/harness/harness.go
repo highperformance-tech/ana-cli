@@ -62,7 +62,7 @@ func Begin(t *testing.T) *H {
 
 	client := buildTransport(env.endpoint, env.token)
 	envFn := makeEnv(dir)
-	verbs := buildVerbs(client, envFn, cfgPath)
+	verbs := buildVerbs(client, envFn, cfgPath, env.endpoint)
 
 	h := &H{
 		t:         t,

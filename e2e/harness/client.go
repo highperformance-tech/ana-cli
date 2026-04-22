@@ -85,12 +85,14 @@ func makeEnv(configHome string) func(string) string {
 
 // buildVerbs duplicates cmd/ana/main.go:buildVerbs. The logic is kept in sync
 // by hand; TestBuildVerbs_Shape in cmd/ana/main_test.go guards the verb set.
-func buildVerbs(client *transport.Client, env func(string) string, cfgPath string) map[string]cli.Command {
+// `endpoint` is threaded through (rather than re-read from the environment)
+// so the connector verb sees the same value the harness already resolved.
+func buildVerbs(client *transport.Client, env func(string) string, cfgPath, endpoint string) map[string]cli.Command {
 	return map[string]cli.Command{
 		"auth":      auth.New(authDeps(client, env, cfgPath)),
 		"profile":   profile.New(profileDeps(env, cfgPath)),
 		"org":       org.New(org.Deps{Unary: client.Unary}),
-		"connector": connector.New(connector.Deps{Unary: client.Unary, Endpoint: os.Getenv("ANA_E2E_ENDPOINT")}),
+		"connector": connector.New(connector.Deps{Unary: client.Unary, Endpoint: endpoint}),
 		"chat":      chat.New(chatDeps(client)),
 		"dashboard": dashboard.New(dashboard.Deps{Unary: client.Unary}),
 		"playbook":  playbook.New(playbook.Deps{Unary: client.Unary}),

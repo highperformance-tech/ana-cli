@@ -142,9 +142,15 @@ func TestConnectorGetJSON(t *testing.T) {
 func TestConnectorCreatePostgresCLI(t *testing.T) {
 	h := harness.Begin(t)
 	spec := connSpecFromEnv()
+	name := h.ResourceName("pg-cli")
+	// Register the name-based safety net BEFORE running the CLI: if the create
+	// succeeds server-side but extractConnectorID later fails, the by-name
+	// cleanup catches the orphan. The id-based cleanup registered after a
+	// successful parse runs first (LIFO), making this a no-op on the happy path.
+	h.RegisterConnectorCleanupByName(name)
 	args := []string{
 		"connector", "create", "postgres", "password",
-		"--name", h.ResourceName("pg-cli"),
+		"--name", name,
 		"--host", spec.Host,
 		"--port", fmt.Sprint(spec.Port),
 		"--user", spec.User,
@@ -172,9 +178,11 @@ func TestConnectorCreatePostgresCLI(t *testing.T) {
 func TestConnectorCreatePostgresCLISSL(t *testing.T) {
 	h := harness.Begin(t)
 	spec := connSpecFromEnv()
+	name := h.ResourceName("pg-cli-ssl")
+	h.RegisterConnectorCleanupByName(name)
 	args := []string{
 		"connector", "create", "postgres", "password",
-		"--name", h.ResourceName("pg-cli-ssl"),
+		"--name", name,
 		"--host", spec.Host,
 		"--port", fmt.Sprint(spec.Port),
 		"--user", spec.User,

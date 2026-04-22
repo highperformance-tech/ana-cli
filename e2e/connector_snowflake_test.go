@@ -95,6 +95,9 @@ func TestConnectorCreateSnowflakePassword(t *testing.T) {
 	}
 
 	h := harness.Begin(t)
+	// Pre-register a name-based safety-net cleanup so a successful create
+	// followed by a failing extractConnectorID can't orphan the connector.
+	h.RegisterConnectorCleanupByName(h.ResourceName("sf-password"))
 	args := append([]string{"connector", "create", "snowflake", "password"},
 		snowflakeCommonArgs(h, "sf-password", common)...)
 	args = append(args, "--user", user, "--password-stdin")
@@ -130,6 +133,7 @@ func TestConnectorCreateSnowflakeKeypair(t *testing.T) {
 	passphrase := os.Getenv("ANA_E2E_SF_PRIVATE_KEY_PASSPHRASE")
 
 	h := harness.Begin(t)
+	h.RegisterConnectorCleanupByName(h.ResourceName("sf-keypair"))
 	args := append([]string{"connector", "create", "snowflake", "keypair"},
 		snowflakeCommonArgs(h, "sf-keypair", common)...)
 	args = append(args, "--user", user, "--private-key-file", keyPath)
@@ -165,6 +169,7 @@ func TestConnectorCreateSnowflakeOAuthSSO(t *testing.T) {
 	}
 
 	h := harness.Begin(t)
+	h.RegisterConnectorCleanupByName(h.ResourceName("sf-oauth-sso"))
 	args := append([]string{"connector", "create", "snowflake", "oauth-sso"},
 		snowflakeCommonArgs(h, "sf-oauth-sso", common)...)
 	args = append(args, "--oauth-client-id", clientID, "--oauth-client-secret-stdin")
@@ -202,6 +207,7 @@ func TestConnectorCreateSnowflakeOAuthIndividual(t *testing.T) {
 	}
 
 	h := harness.Begin(t)
+	h.RegisterConnectorCleanupByName(h.ResourceName("sf-oauth-individual"))
 	args := append([]string{"connector", "create", "snowflake", "oauth-individual"},
 		snowflakeCommonArgs(h, "sf-oauth-individual", common)...)
 	args = append(args, "--oauth-client-id", clientID, "--oauth-client-secret-stdin")

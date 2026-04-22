@@ -86,8 +86,8 @@ func TestDashboardFoldersListJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dashboard folders list --json: %v\nstderr: %s", err, stderr)
 	}
-	if stdout == "" {
-		return
+	if strings.TrimSpace(stdout) == "" {
+		t.Fatalf("dashboard folders list --json: empty stdout (expected JSON envelope)")
 	}
 	var raw map[string]any
 	if err := json.Unmarshal([]byte(stdout), &raw); err != nil {

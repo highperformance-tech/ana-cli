@@ -113,6 +113,9 @@ func TestAuthKeysCreateCLI(t *testing.T) {
 		return
 	}
 	name := h.ResourceName("cli-key")
+	// Pre-register the name-based safety net so a successful create followed
+	// by a failing list-lookup or assertion can't leak a real API key.
+	h.RegisterAPIKeyCleanupByName(name)
 	stdout, stderr, err := h.Run("auth", "keys", "create", "--name", name)
 	if err != nil {
 		t.Fatalf("auth keys create: %v\nstderr: %s", err, stderr)
@@ -148,6 +151,9 @@ func TestAuthKeysRotateCLI(t *testing.T) {
 		return
 	}
 	name := h.ResourceName("cli-rotate")
+	// Same-name safety net works across the rotate: the rotated key keeps
+	// the logical name, so list-by-name will find whichever id is current.
+	h.RegisterAPIKeyCleanupByName(name)
 	stdout, _, err := h.Run("auth", "keys", "create", "--name", name)
 	if err != nil {
 		t.Fatalf("auth keys create (for rotate): %v", err)
@@ -194,6 +200,7 @@ func TestAuthServiceAccountsCreateCLI(t *testing.T) {
 		return
 	}
 	name := h.ResourceName("cli-sa")
+	h.RegisterServiceAccountCleanupByName(name)
 	stdout, stderr, err := h.Run("auth", "service-accounts", "create",
 		"--name", name, "--description", "e2e temp")
 	if err != nil {

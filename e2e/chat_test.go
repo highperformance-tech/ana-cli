@@ -204,10 +204,10 @@ func TestChatNewCLI(t *testing.T) {
 		t.Fatalf("chat new: empty id on stdout")
 	}
 	h.Register(func() {
-		if _, delErr, err := h.Run("chat", "delete", chatID); err != nil {
+		if _, delStderr, err := h.Run("chat", "delete", chatID); err != nil {
 			h.RecordManualRevert(
 				fmt.Sprintf("chat id=%s", chatID),
-				fmt.Sprintf("CLI-path delete failed: %v stderr=%s", err, delErr),
+				fmt.Sprintf("CLI-path delete failed: %v stderr=%s", err, delStderr),
 			)
 		}
 	})
