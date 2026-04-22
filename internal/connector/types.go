@@ -23,11 +23,12 @@ type updateReq struct {
 // (`config.authStrategy`, not nested under a dialect sub-object); it's empty
 // for Postgres, populated for Snowflake/Databricks.
 type configEnvelope struct {
-	ConnectorType string         `json:"connectorType,omitempty"`
-	Name          string         `json:"name,omitempty"`
-	AuthStrategy  string         `json:"authStrategy,omitempty"`
-	Postgres      *postgresSpec  `json:"postgres,omitempty"`
-	Snowflake     *snowflakeSpec `json:"snowflake,omitempty"`
+	ConnectorType string          `json:"connectorType,omitempty"`
+	Name          string          `json:"name,omitempty"`
+	AuthStrategy  string          `json:"authStrategy,omitempty"`
+	Postgres      *postgresSpec   `json:"postgres,omitempty"`
+	Snowflake     *snowflakeSpec  `json:"snowflake,omitempty"`
+	Databricks    *databricksSpec `json:"databricks,omitempty"`
 }
 
 // createResp is the `{connectorId, name, connectorType}` captured response.

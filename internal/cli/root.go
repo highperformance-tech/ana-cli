@@ -71,6 +71,16 @@ func DeclareBool(fs *flag.FlagSet, target *bool, name string, def bool, usage st
 	}
 }
 
+// DeclareInt is the int counterpart to DeclareString. Same guard against
+// panicking on duplicate names — used by Group.Flags closures that want to
+// inherit-declare an integer flag (e.g. the Databricks Group's shared
+// `--port`) without clobbering a leaf that already declared the same name.
+func DeclareInt(fs *flag.FlagSet, target *int, name string, def int, usage string) {
+	if fs.Lookup(name) == nil {
+		fs.IntVar(target, name, def, usage)
+	}
+}
+
 // Flagger is an optional opt-in for leaf commands whose help should include
 // a flag enumeration that stacks ancestor-declared flags with the leaf's
 // own. Leaves that implement Flags(fs) get an automatic Flags: block

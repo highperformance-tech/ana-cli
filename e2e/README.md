@@ -92,6 +92,43 @@ differ in wire `authStrategy`:
 | `ANA_E2E_SF_OAUTH_CLIENT_ID`      | Snowflake OAuth client id                               |
 | `ANA_E2E_SF_OAUTH_CLIENT_SECRET`  | Client secret; piped via `--oauth-client-secret-stdin`  |
 
+### Databricks connector env
+
+Databricks tests (`e2e/connector_databricks_test.go`) skip per-test when
+their required vars are absent — same treatment as Snowflake. Four vars are
+shared across every mode; set all four or every Databricks test skips:
+
+| Variable                | Meaning                                                        |
+|-------------------------|----------------------------------------------------------------|
+| `ANA_E2E_DBX_HOST`      | Workspace hostname without scheme (e.g. `dbc-xxxx.cloud.databricks.com`) |
+| `ANA_E2E_DBX_HTTP_PATH` | SQL warehouse path (`/sql/1.0/warehouses/<id>`)               |
+| `ANA_E2E_DBX_CATALOG`   | Unity Catalog name                                            |
+| `ANA_E2E_DBX_SCHEMA`    | Default schema                                                |
+| `ANA_E2E_DBX_PORT`      | Optional port override (defaults to 443 when unset)           |
+
+Access Token mode (`TestConnectorCreateDatabricksAccessToken`):
+
+| Variable              | Meaning                                                        |
+|-----------------------|----------------------------------------------------------------|
+| `ANA_E2E_DBX_TOKEN`   | Personal Access Token; piped via `--token-stdin`              |
+
+Client Credentials mode (`TestConnectorCreateDatabricksClientCredentials`):
+
+| Variable                    | Meaning                                                        |
+|-----------------------------|----------------------------------------------------------------|
+| `ANA_E2E_DBX_CLIENT_ID`     | Service Principal OAuth applicationId (UUID)                  |
+| `ANA_E2E_DBX_CLIENT_SECRET` | Service Principal OAuth secret; piped via `--client-secret-stdin` |
+
+OAuth SSO + OAuth individual (`TestConnectorCreateDatabricksOAuthSSO`,
+`TestConnectorCreateDatabricksOAuthIndividual`) share the same vars — the
+Databricks OAuth app credentials, distinct from the Service Principal
+credentials used by Client Credentials mode:
+
+| Variable                          | Meaning                                                 |
+|-----------------------------------|---------------------------------------------------------|
+| `ANA_E2E_DBX_OAUTH_CLIENT_ID`     | Databricks OAuth app client id                          |
+| `ANA_E2E_DBX_OAUTH_CLIENT_SECRET` | OAuth app secret; piped via `--client-secret-stdin`     |
+
 Invocations:
 
 ```sh

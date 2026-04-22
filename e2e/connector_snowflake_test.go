@@ -1,20 +1,12 @@
 package e2e
 
 import (
-	"fmt"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/highperformance-tech/ana-cli/e2e/harness"
 )
-
-// connectorId: <int> is the first line of non-JSON stdout from every
-// snowflake create leaf; this regex extracts the id so the test can register
-// cleanup and assert on the value.
-var snowflakeConnectorIDRE = regexp.MustCompile(`(?m)^connectorId:\s+(\d+)\s*$`)
 
 // sfCommonEnv holds the Snowflake connection fields every auth mode shares.
 // Empty optional fields are preserved so tests can exercise omitempty paths
@@ -67,20 +59,13 @@ func snowflakeCommonArgs(h *harness.H, suffix string, env sfCommonEnv) []string 
 	return args
 }
 
-// extractConnectorID pulls the integer id out of `connectorId: <int>` stdout.
-// Fails the test if no match — the leaf's contract is to always emit this line
-// on success, so a miss means the output shape drifted.
-func extractConnectorID(t *testing.T, stdout string) int {
-	t.Helper()
-	m := snowflakeConnectorIDRE.FindStringSubmatch(stdout)
-	if len(m) != 2 {
-		t.Fatalf("could not find connectorId in stdout:\n%s", stdout)
-	}
-	id, err := strconv.Atoi(m[1])
-	if err != nil {
-		t.Fatalf("connectorId %q is not an int: %v", m[1], err)
-	}
-	return id
+// snowflakeLeafArgs builds the full argv for `connector create snowflake
+// <auth-mode>` using the shared connection flags. `suffix` seeds the
+// name-based cleanup safety-net; `extra` carries the auth-mode-specific flags.
+func snowflakeLeafArgs(h *harness.H, authMode, suffix string, env sfCommonEnv, extra ...string) []string {
+	args := append([]string{"connector", "create", "snowflake", authMode},
+		snowflakeCommonArgs(h, suffix, env)...)
+	return append(args, extra...)
 }
 
 // TestConnectorCreateSnowflakePassword smokes `connector create snowflake
@@ -98,26 +83,12 @@ func TestConnectorCreateSnowflakePassword(t *testing.T) {
 	// Pre-register a name-based safety-net cleanup so a successful create
 	// followed by a failing extractConnectorID can't orphan the connector.
 	h.RegisterConnectorCleanupByName(h.ResourceName("sf-password"))
-	args := append([]string{"connector", "create", "snowflake", "password"},
-		snowflakeCommonArgs(h, "sf-password", common)...)
-	args = append(args, "--user", user, "--password-stdin")
-
-	stdout, stderr, err := h.RunStdin(password+"\n", args...)
-	if err != nil {
-		t.Fatalf("connector create snowflake password: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: SNOWFLAKE") {
-		t.Errorf("stdout missing connectorType: SNOWFLAKE:\n%s", stdout)
-	}
-	// Verify the server can read the new row back.
-	if _, estderr, gerr := h.Run("connector", "get", fmt.Sprint(id)); gerr != nil {
-		t.Fatalf("connector get %d: %v\nstderr: %s", id, gerr, estderr)
-	}
+	connectorCreateLeaf{
+		Name:          "snowflake password",
+		Args:          snowflakeLeafArgs(h, "password", "sf-password", common, "--user", user, "--password-stdin"),
+		Stdin:         password + "\n",
+		ConnectorType: "SNOWFLAKE",
+	}.Run(t, h)
 }
 
 // TestConnectorCreateSnowflakeKeypair smokes the keypair leaf. Requires
@@ -134,27 +105,18 @@ func TestConnectorCreateSnowflakeKeypair(t *testing.T) {
 
 	h := harness.Begin(t)
 	h.RegisterConnectorCleanupByName(h.ResourceName("sf-keypair"))
-	args := append([]string{"connector", "create", "snowflake", "keypair"},
-		snowflakeCommonArgs(h, "sf-keypair", common)...)
-	args = append(args, "--user", user, "--private-key-file", keyPath)
+	extra := []string{"--user", user, "--private-key-file", keyPath}
 	stdin := ""
 	if passphrase != "" {
-		args = append(args, "--private-key-passphrase-stdin")
+		extra = append(extra, "--private-key-passphrase-stdin")
 		stdin = passphrase + "\n"
 	}
-
-	stdout, stderr, err := h.RunStdin(stdin, args...)
-	if err != nil {
-		t.Fatalf("connector create snowflake keypair: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: SNOWFLAKE") {
-		t.Errorf("stdout missing connectorType: SNOWFLAKE:\n%s", stdout)
-	}
+	connectorCreateLeaf{
+		Name:          "snowflake keypair",
+		Args:          snowflakeLeafArgs(h, "keypair", "sf-keypair", common, extra...),
+		Stdin:         stdin,
+		ConnectorType: "SNOWFLAKE",
+	}.Run(t, h)
 }
 
 // TestConnectorCreateSnowflakeOAuthSSO smokes the oauth-sso leaf. Asserts the
@@ -170,29 +132,18 @@ func TestConnectorCreateSnowflakeOAuthSSO(t *testing.T) {
 
 	h := harness.Begin(t)
 	h.RegisterConnectorCleanupByName(h.ResourceName("sf-oauth-sso"))
-	args := append([]string{"connector", "create", "snowflake", "oauth-sso"},
-		snowflakeCommonArgs(h, "sf-oauth-sso", common)...)
-	args = append(args, "--oauth-client-id", clientID, "--oauth-client-secret-stdin")
-
-	stdout, stderr, err := h.RunStdin(clientSecret+"\n", args...)
-	if err != nil {
-		t.Fatalf("connector create snowflake oauth-sso: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: SNOWFLAKE") {
-		t.Errorf("stdout missing connectorType: SNOWFLAKE:\n%s", stdout)
-	}
-	endpoint := os.Getenv("ANA_E2E_ENDPOINT")
-	if endpoint == "" {
-		t.Fatalf("ANA_E2E_ENDPOINT should be set inside Begin — got empty")
-	}
-	if !strings.Contains(stdout, "complete OAuth at "+endpoint) {
-		t.Errorf("oauth-sso note should reference ANA_E2E_ENDPOINT %q:\n%s", endpoint, stdout)
-	}
+	endpoint := h.Endpoint()
+	connectorCreateLeaf{
+		Name:          "snowflake oauth-sso",
+		Args:          snowflakeLeafArgs(h, "oauth-sso", "sf-oauth-sso", common, "--oauth-client-id", clientID, "--oauth-client-secret-stdin"),
+		Stdin:         clientSecret + "\n",
+		ConnectorType: "SNOWFLAKE",
+		Extra: func(stdout string) {
+			if !strings.Contains(stdout, "complete OAuth at "+endpoint) {
+				t.Errorf("oauth-sso note should reference harness endpoint %q:\n%s", endpoint, stdout)
+			}
+		},
+	}.Run(t, h)
 }
 
 // TestConnectorCreateSnowflakeOAuthIndividual smokes the oauth-individual
@@ -208,23 +159,15 @@ func TestConnectorCreateSnowflakeOAuthIndividual(t *testing.T) {
 
 	h := harness.Begin(t)
 	h.RegisterConnectorCleanupByName(h.ResourceName("sf-oauth-individual"))
-	args := append([]string{"connector", "create", "snowflake", "oauth-individual"},
-		snowflakeCommonArgs(h, "sf-oauth-individual", common)...)
-	args = append(args, "--oauth-client-id", clientID, "--oauth-client-secret-stdin")
-
-	stdout, stderr, err := h.RunStdin(clientSecret+"\n", args...)
-	if err != nil {
-		t.Fatalf("connector create snowflake oauth-individual: %v\nstderr: %s", err, stderr)
-	}
-	if h.DryRun() {
-		return
-	}
-	id := extractConnectorID(t, stdout)
-	h.RegisterConnectorCleanup(id)
-	if !strings.Contains(stdout, "connectorType: SNOWFLAKE") {
-		t.Errorf("stdout missing connectorType: SNOWFLAKE:\n%s", stdout)
-	}
-	if !strings.Contains(stdout, "lazily at first query") {
-		t.Errorf("oauth-individual note should mention lazy per-member auth:\n%s", stdout)
-	}
+	connectorCreateLeaf{
+		Name:          "snowflake oauth-individual",
+		Args:          snowflakeLeafArgs(h, "oauth-individual", "sf-oauth-individual", common, "--oauth-client-id", clientID, "--oauth-client-secret-stdin"),
+		Stdin:         clientSecret + "\n",
+		ConnectorType: "SNOWFLAKE",
+		Extra: func(stdout string) {
+			if !strings.Contains(stdout, "lazily at first query") {
+				t.Errorf("oauth-individual note should mention lazy per-member auth:\n%s", stdout)
+			}
+		},
+	}.Run(t, h)
 }

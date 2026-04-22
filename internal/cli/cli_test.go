@@ -986,7 +986,7 @@ func TestDeclareStringGuardsAgainstRedeclare(t *testing.T) {
 	var leafT, ancT string
 	fs.StringVar(&leafT, "foo", "leafdef", "leaf usage")
 	DeclareString(fs, &ancT, "foo", "ancdef", "anc usage")
-	if err := fs.Parse([]string{"--foo", "x"}); err != nil {
+	if err := ParseFlags(fs, []string{"--foo", "x"}); err != nil {
 		t.Fatalf("parse err=%v", err)
 	}
 	if leafT != "x" {
@@ -1003,7 +1003,7 @@ func TestDeclareBoolGuardsAgainstRedeclare(t *testing.T) {
 	var leafT, ancT bool
 	fs.BoolVar(&leafT, "v", false, "leaf usage")
 	DeclareBool(fs, &ancT, "v", false, "anc usage")
-	if err := fs.Parse([]string{"--v"}); err != nil {
+	if err := ParseFlags(fs, []string{"--v"}); err != nil {
 		t.Fatalf("parse err=%v", err)
 	}
 	if !leafT {
@@ -1020,7 +1020,7 @@ func TestDeclareBoolFreshDeclaration(t *testing.T) {
 	fs := flag.NewFlagSet("t", flag.ContinueOnError)
 	var target bool
 	DeclareBool(fs, &target, "v", false, "usage")
-	if err := fs.Parse([]string{"--v"}); err != nil {
+	if err := ParseFlags(fs, []string{"--v"}); err != nil {
 		t.Fatalf("parse err=%v", err)
 	}
 	if !target {
@@ -1033,11 +1033,54 @@ func TestDeclareStringFreshDeclaration(t *testing.T) {
 	fs := flag.NewFlagSet("t", flag.ContinueOnError)
 	var target string
 	DeclareString(fs, &target, "s", "def", "usage")
-	if err := fs.Parse([]string{"--s", "x"}); err != nil {
+	if err := ParseFlags(fs, []string{"--s", "x"}); err != nil {
 		t.Fatalf("parse err=%v", err)
 	}
 	if target != "x" {
 		t.Errorf("target=%q want x", target)
+	}
+}
+
+func TestDeclareIntGuardsAgainstRedeclare(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var leafT, ancT int
+	fs.IntVar(&leafT, "port", 1, "leaf usage")
+	DeclareInt(fs, &ancT, "port", 2, "anc usage")
+	if err := ParseFlags(fs, []string{"--port", "7"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if leafT != 7 {
+		t.Errorf("leafT=%d want 7", leafT)
+	}
+	if ancT != 0 {
+		t.Errorf("ancT=%d want 0 (ancestor should not have been bound)", ancT)
+	}
+}
+
+func TestDeclareIntFreshDeclaration(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var target int
+	DeclareInt(fs, &target, "port", 443, "usage")
+	if err := ParseFlags(fs, []string{"--port", "5432"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if target != 5432 {
+		t.Errorf("target=%d want 5432", target)
+	}
+}
+
+func TestDeclareIntDefault(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var target int
+	DeclareInt(fs, &target, "port", 443, "usage")
+	if err := ParseFlags(fs, nil); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if target != 443 {
+		t.Errorf("target=%d want 443 default", target)
 	}
 }
 
