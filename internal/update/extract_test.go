@@ -62,6 +62,50 @@ func TestExtractFromZip(t *testing.T) {
 	})
 }
 
+// TestExtract_PathTraversalSafe proves that a malicious archive entry
+// named `../../evil/ana` still lands at the caller-provided `dst` and
+// does NOT write outside dst's parent. Regression guard in case a future
+// refactor swaps `filepath.Base` for raw `h.Name`.
+func TestExtract_PathTraversalSafe(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, ext, member string
+	}{
+		{"tar.gz", "tar.gz", "../../../evil/ana"},
+		{"zip", "zip", "../../../evil/ana.exe"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			archive := filepath.Join(dir, "a")
+			if err := os.WriteFile(archive, fakeArchive(t, tc.ext, tc.member, []byte("PAYLOAD")), 0o600); err != nil {
+				t.Fatalf("seed: %v", err)
+			}
+			dst := filepath.Join(dir, "dst")
+			target := filepath.Base(tc.member) // "ana" or "ana.exe"
+			var err error
+			if tc.ext == "zip" {
+				err = extractFromZip(archive, target, dst)
+			} else {
+				err = extractFromTarGz(archive, target, dst)
+			}
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if got, _ := os.ReadFile(dst); string(got) != "PAYLOAD" {
+				t.Fatalf("dst content = %q", got)
+			}
+			// Nothing outside dir (the archive parent) should have been written.
+			entries, _ := os.ReadDir(filepath.Dir(dir))
+			for _, e := range entries {
+				if e.Name() == "evil" {
+					t.Fatalf("path traversal wrote outside: %s", e.Name())
+				}
+			}
+		})
+	}
+}
+
 func TestWriteBinary(t *testing.T) {
 	t.Parallel()
 	t.Run("create error", func(t *testing.T) {

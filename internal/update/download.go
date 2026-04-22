@@ -28,7 +28,7 @@ func httpGet(ctx context.Context, client HTTPDoer, url string) (io.ReadCloser, e
 	return resp.Body, nil
 }
 
-func downloadFile(ctx context.Context, client HTTPDoer, url, dst string) error {
+func downloadFile(ctx context.Context, client HTTPDoer, url, dst string) (err error) {
 	body, err := httpGet(ctx, client, url)
 	if err != nil {
 		return err
@@ -38,12 +38,25 @@ func downloadFile(ctx context.Context, client HTTPDoer, url, dst string) error {
 	if err != nil {
 		return fmt.Errorf("update: create %s: %w", dst, err)
 	}
-	defer f.Close()
+	// Capture Close error via named return: a failed flush on a buffered fs
+	// (NFS, disk full) can silently truncate the downloaded archive and then
+	// surface as a bogus checksum mismatch. Surface the real cause instead.
+	defer func() {
+		if cerr := f.Close(); err == nil {
+			err = cerr
+		}
+	}()
 	if _, err := io.Copy(f, body); err != nil {
 		return fmt.Errorf("update: write %s: %w", dst, err)
 	}
 	return nil
 }
+
+// maxChecksumsSize caps the checksums.txt buffer so a hostile / broken CDN
+// can't force us to allocate arbitrarily large memory. A goreleaser
+// checksums.txt for this project is well under 4 KB in practice; 1 MiB is
+// generous.
+const maxChecksumsSize = 1 << 20
 
 func downloadBody(ctx context.Context, client HTTPDoer, url string) ([]byte, error) {
 	body, err := httpGet(ctx, client, url)
@@ -51,16 +64,23 @@ func downloadBody(ctx context.Context, client HTTPDoer, url string) ([]byte, err
 		return nil, err
 	}
 	defer body.Close()
-	return io.ReadAll(body)
+	return io.ReadAll(io.LimitReader(body, maxChecksumsSize))
 }
 
 // verifyChecksum compares the sha256 of archivePath against the matching
 // entry in a goreleaser-format checksums.txt ("<hex>  <filename>").
 func verifyChecksum(archivePath, archiveName string, checksums []byte) error {
+	// goreleaser emits "<hex>  <filename>"; sha256sum's binary-mode format is
+	// "<hex> *<filename>". Accept either, and allow extra whitespace so any
+	// future format tweak that keeps hex-first/name-last keeps working.
 	want := ""
 	for _, line := range strings.Split(string(checksums), "\n") {
 		fields := strings.Fields(line)
-		if len(fields) == 2 && fields[1] == archiveName {
+		if len(fields) < 2 {
+			continue
+		}
+		name := strings.TrimPrefix(fields[len(fields)-1], "*")
+		if name == archiveName {
 			want = fields[0]
 			break
 		}

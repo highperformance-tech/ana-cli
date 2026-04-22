@@ -146,7 +146,7 @@ func TestSelfUpdate_SadPaths(t *testing.T) {
 }
 
 func TestSelfUpdate_WindowsAtomicReplace(t *testing.T) {
-	setup := func(t *testing.T) (string, UpdateDeps, func()) {
+	setup := func(t *testing.T) (string, Deps, func()) {
 		exePath, deps := stageUpdate(t, "windows", "amd64", "ana.exe")
 		r := &releaseServer{tag: "v2.0.0", archiveName: "ana_2.0.0_windows_amd64.zip"}
 		r.archiveBody = fakeArchive(t, "zip", "ana.exe", []byte("NEW_BINARY_BYTES"))
@@ -219,9 +219,32 @@ func TestSelfUpdate_WindowsAtomicReplace(t *testing.T) {
 	})
 }
 
+// TestSelfUpdate_CtxCancel asserts context cancellation mid-flow surfaces
+// as a ctx error and doesn't replace the executable. Guards against a future
+// regression that swaps ctx-aware helpers for context.Background().
+func TestSelfUpdate_CtxCancel(t *testing.T) {
+	exePath, deps := stageUpdate(t, "linux", "amd64", "ana")
+	r := &releaseServer{tag: "v1.2.3", archiveName: "ana_1.2.3_linux_amd64.tar.gz"}
+	r.archiveBody = fakeArchive(t, "tar.gz", "ana", []byte("NEW"))
+	srv := r.serve(t)
+	defer srv.Close()
+	withURLs(t, srv)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := SelfUpdate(ctx, deps, "1.0.0", io.Discard, false)
+	if err == nil {
+		t.Fatal("expected cancellation error")
+	}
+	if got, _ := os.ReadFile(exePath); string(got) != "old" {
+		t.Errorf("exe changed despite cancel: %q", got)
+	}
+}
+
 func TestSelfUpdate_EarlyErrors(t *testing.T) {
 	t.Run("exe path error", func(t *testing.T) {
-		deps := UpdateDeps{ExePath: func() (string, error) { return "", errors.New("no exe") }}
+		deps := Deps{ExePath: func() (string, error) { return "", errors.New("no exe") }}
 		wantErr(t, SelfUpdate(context.Background(), deps, "1.0.0", io.Discard, false), "no exe")
 	})
 	t.Run("latest release error", func(t *testing.T) {
@@ -251,10 +274,22 @@ func TestSelfUpdate_EarlyErrors(t *testing.T) {
 	})
 }
 
+// failingWriter errors on any Write call. Used to exercise emitStatus's
+// WriteString-error branch without wiring a whole SelfUpdate invocation.
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("write denied") }
+
+func TestEmitStatus_WriteError(t *testing.T) {
+	t.Parallel()
+	err := emitStatus(failingWriter{}, false, updateStatus{Status: "x"}, "line\n")
+	wantErr(t, err, "emit status")
+}
+
 func TestDeps(t *testing.T) {
 	t.Parallel()
-	t.Run("DefaultUpdateDeps populates everything", func(t *testing.T) {
-		d := DefaultUpdateDeps()
+	t.Run("DefaultDeps populates everything", func(t *testing.T) {
+		d := DefaultDeps()
 		if d.HTTP == nil || d.ExePath == nil || d.Rename == nil || d.TempDir == nil || d.GOOS == "" || d.GOARCH == "" {
 			t.Fatalf("missing field: %+v", d)
 		}
@@ -265,7 +300,7 @@ func TestDeps(t *testing.T) {
 		defer os.RemoveAll(p)
 	})
 	t.Run("resolveDeps zero fills and runs", func(t *testing.T) {
-		d := resolveDeps(UpdateDeps{})
+		d := resolveDeps(Deps{})
 		p, err := d.TempDir()
 		if err != nil {
 			t.Fatalf("tempdir: %v", err)
@@ -273,7 +308,7 @@ func TestDeps(t *testing.T) {
 		defer os.RemoveAll(p)
 	})
 	t.Run("resolveDeps preserves explicit", func(t *testing.T) {
-		d := resolveDeps(UpdateDeps{
+		d := resolveDeps(Deps{
 			HTTP: http.DefaultClient, GOOS: "plan9", GOARCH: "arm",
 			ExePath: func() (string, error) { return "/x", nil },
 			Rename:  func(string, string) error { return nil },

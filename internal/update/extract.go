@@ -70,12 +70,18 @@ func extractFromZip(archivePath, exeName, dst string) error {
 
 // writeBinary copies src to dst with 0755 so the extracted binary is
 // immediately executable.
-func writeBinary(dst string, src io.Reader) error {
+func writeBinary(dst string, src io.Reader) (err error) {
 	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o755)
 	if err != nil {
 		return fmt.Errorf("update: create %s: %w", dst, err)
 	}
-	defer out.Close()
+	// Capture Close error via named return so a failed flush doesn't leave a
+	// silently-truncated binary staged for atomicReplace.
+	defer func() {
+		if cerr := out.Close(); err == nil {
+			err = cerr
+		}
+	}()
 	if _, err := io.Copy(out, src); err != nil {
 		return fmt.Errorf("update: write %s: %w", dst, err)
 	}

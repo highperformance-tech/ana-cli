@@ -153,16 +153,16 @@ func (r *releaseServer) serve(t *testing.T) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-// stageUpdate seeds an exe + staging root and returns UpdateDeps wired at
+// stageUpdate seeds an exe + staging root and returns Deps wired at
 // those paths. Callers mutate the returned struct for per-test tweaks.
-func stageUpdate(t *testing.T, goos, goarch, exeName string) (string, UpdateDeps) {
+func stageUpdate(t *testing.T, goos, goarch, exeName string) (string, Deps) {
 	t.Helper()
 	tmp := t.TempDir()
 	exePath := filepath.Join(tmp, exeName)
 	if err := os.WriteFile(exePath, []byte("old"), 0o755); err != nil {
 		t.Fatalf("seed exe: %v", err)
 	}
-	return exePath, UpdateDeps{
+	return exePath, Deps{
 		GOOS:    goos,
 		GOARCH:  goarch,
 		ExePath: func() (string, error) { return exePath, nil },

@@ -13,9 +13,9 @@ import (
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
 
-// UpdateDeps is the injection boundary for SelfUpdate; zero fields fall
+// Deps is the injection boundary for SelfUpdate; zero fields fall
 // through to stdlib defaults via resolveDeps.
-type UpdateDeps struct {
+type Deps struct {
 	HTTP    HTTPDoer
 	GOOS    string
 	GOARCH  string
@@ -24,9 +24,9 @@ type UpdateDeps struct {
 	TempDir func() (string, error)
 }
 
-// DefaultUpdateDeps wires UpdateDeps against the process environment.
-func DefaultUpdateDeps() UpdateDeps {
-	return UpdateDeps{
+// DefaultDeps wires Deps against the process environment.
+func DefaultDeps() Deps {
+	return Deps{
 		HTTP:    http.DefaultClient,
 		GOOS:    runtime.GOOS,
 		GOARCH:  runtime.GOARCH,
@@ -37,7 +37,7 @@ func DefaultUpdateDeps() UpdateDeps {
 }
 
 // resolveDeps fills zero fields with stdlib defaults.
-func resolveDeps(d UpdateDeps) UpdateDeps {
+func resolveDeps(d Deps) Deps {
 	if d.HTTP == nil {
 		d.HTTP = http.DefaultClient
 	}
@@ -72,7 +72,7 @@ type updateStatus struct {
 // already current, else download + verify + extract + atomic replace. jsonOut
 // selects a single-object JSON summary on w; otherwise plain-text progress is
 // written line by line. "Already up to date" is success (nil error).
-func SelfUpdate(ctx context.Context, deps UpdateDeps, currentVersion string, w io.Writer, jsonOut bool) error {
+func SelfUpdate(ctx context.Context, deps Deps, currentVersion string, w io.Writer, jsonOut bool) error {
 	deps = resolveDeps(deps)
 
 	exe, err := deps.ExePath()
@@ -141,8 +141,10 @@ func emitStatus(w io.Writer, jsonOut bool, st updateStatus, plain string) error 
 	if jsonOut {
 		return cli.WriteJSON(w, st)
 	}
-	_, err := io.WriteString(w, plain)
-	return err
+	if _, err := io.WriteString(w, plain); err != nil {
+		return fmt.Errorf("update: emit status: %w", err)
+	}
+	return nil
 }
 
 // atomicReplace installs newPath over exePath. Unix: a single rename works
@@ -150,7 +152,7 @@ func emitStatus(w io.Writer, jsonOut bool, st updateStatus, plain string) error 
 // open .exe cannot be renamed over, so we rename it aside first (to .old)
 // and rename the replacement in. If the second rename fails, we roll the
 // .old back in place and surface an error that names the recovery path.
-func atomicReplace(deps UpdateDeps, exePath, newPath string) error {
+func atomicReplace(deps Deps, exePath, newPath string) error {
 	if deps.GOOS != "windows" {
 		if err := deps.Rename(newPath, exePath); err != nil {
 			return fmt.Errorf("update: replace %s: %w", exePath, err)

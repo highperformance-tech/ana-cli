@@ -14,7 +14,7 @@ import (
 // versionCmd's leaf shape — deps are pulled in via the package-level default
 // so cmd/ana keeps its "pure wiring" posture.
 type updateCmd struct {
-	deps update.UpdateDeps
+	deps update.Deps
 }
 
 func (updateCmd) Help() string {

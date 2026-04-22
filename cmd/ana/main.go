@@ -219,7 +219,7 @@ func buildVerbs(client *transport.Client, env func(string) string, cfgPath, prof
 		"feed":      feed.New(feed.Deps{Unary: client.Unary}),
 		"audit":     audit.New(audit.Deps{Unary: client.Unary, Now: time.Now}),
 		"version":   versionCmd{},
-		"update":    updateCmd{deps: update.DefaultUpdateDeps()},
+		"update":    updateCmd{deps: update.DefaultDeps()},
 	}
 }
 
