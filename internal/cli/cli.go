@@ -69,7 +69,7 @@ type Group struct {
 // before delegating so every descendant leaf can ApplyAncestorFlags and pick
 // up the group's declared flags.
 func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
-	if len(args) == 0 || isHelpArg(args[0]) {
+	if len(args) == 0 || IsHelpArg(args[0]) {
 		fmt.Fprintln(stdio.Stdout, g.Help())
 		return ErrHelp
 	}
@@ -207,8 +207,8 @@ func (g *Group) Help() string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
-// isHelpArg reports whether s is one of the recognized help tokens.
-func isHelpArg(s string) bool {
+// IsHelpArg reports whether s is one of the recognized help tokens.
+func IsHelpArg(s string) bool {
 	return s == "-h" || s == "--help" || s == "help"
 }
 

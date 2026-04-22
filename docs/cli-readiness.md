@@ -32,6 +32,7 @@ Confidence key: ✅ full CRUD verified · 🟡 partial / readonly verified · �
 | Packages | 🟡 | List only; what "install/uninstall" looks like is unknown. |
 | Notifications | 🟡 | Streaming envelope not captured (`StreamNotifications`). |
 | Feed | 🟡 | Same — `StreamFeed` not captured. |
+| Self-update | ✅ | Passive check after every verb (4h cache, `--json` suppresses); `ana update` downloads + sha256-verifies + atomically replaces the running binary from the matching GoReleaser archive. |
 
 ## Enum catalog (incomplete but useful)
 
@@ -135,6 +136,9 @@ ana dashboard list / get <id> / spawn <id> / health <id>
 ana ontology list / get <id>
 
 ana audit tail                              # poll ListAuditLogs
+
+ana update                                  # replace the running binary with latest release
+ana version                                  # banner + build metadata
 ```
 
 Anything beyond this (`ana dashboard create`, `ana playbook schedule`, etc.) needs a fresh probe — the RPCs exist but their request shapes are not in the catalog yet.

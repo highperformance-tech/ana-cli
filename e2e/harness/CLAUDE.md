@@ -4,7 +4,7 @@ Per-test scaffolding for live smoke tests against a real TextQL endpoint. Duplic
 
 ## Files
 
-- `harness.go` — `H`, `Begin`, `End`. Per-test lifecycle with temp config, auth env, verb map, and cleanup stack.
+- `harness.go` — `H`, `Begin`, `End`. Per-test lifecycle with temp config, auth env, verb map, and cleanup stack. Exposes `ExpectOrgID()` and `Endpoint()` so tests that assert endpoint/org-referencing stdout (e.g. OAuth callback URLs) read validated values instead of re-querying the env.
 - `client.go` — mirrors `cmd/ana/main.go`'s verb builder so harness and binary share the same wiring shape.
 - `guard.go` — wraps mutating RPCs: records them on the ledger before invoking, aborts if the pre-flight guard fails (wrong org, missing env, etc.).
 - `ledger.go` — `ManualRevertLog` + `Record`/`Close`. Writes any unreverted mutation using `e2e/testdata/manual-revert.template.md`.

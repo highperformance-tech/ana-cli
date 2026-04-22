@@ -287,7 +287,7 @@ func TestBuildVerbs_Shape(t *testing.T) {
 	t.Parallel()
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
 	verbs := buildVerbs(client, func(string) string { return "" }, "", "default", "https://example")
-	want := []string{"auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit", "version"}
+	want := []string{"auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit", "version", "update"}
 	for _, v := range want {
 		if _, ok := verbs[v]; !ok {
 			t.Errorf("missing verb: %q", v)
@@ -436,7 +436,7 @@ func TestVersionCmd_Help(t *testing.T) {
 	var out bytes.Buffer
 	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
 	err := (versionCmd{}).Run(context.Background(), []string{"--help"}, stdio)
-	if err != cli.ErrHelp {
+	if !errors.Is(err, cli.ErrHelp) {
 		t.Fatalf("err = %v, want ErrHelp", err)
 	}
 	if !strings.Contains(out.String(), "Print ana version") {
@@ -533,6 +533,108 @@ func TestRun_LeafUsageErrorReturned(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "show") {
 		t.Errorf("err missing leaf name: %v", err)
+	}
+}
+
+// TestStartNudge_SkipConditions covers every reason startNudge returns nil:
+// dev version, --json, interval disabled, no HOME/XDG. Each skip must short-
+// circuit before the goroutine spawns, which we assert by the returned ch
+// being nil.
+func TestStartNudge_SkipConditions(t *testing.T) {
+	// Mutates the package-level version var — must not run in parallel with
+	// TestVersionCmd_PrintsBanner or TestRun_VersionFlag, both of which read
+	// it concurrently under -race.
+	prev := version
+	t.Cleanup(func() { version = prev })
+	envNone := func(string) string { return "" }
+	envHome := func(k string) string {
+		if k == "HOME" {
+			return t.TempDir()
+		}
+		return ""
+	}
+	disable := "disable"
+	cases := []struct {
+		name    string
+		version string
+		env     func(string) string
+		cfg     config.Config
+		global  cli.Global
+	}{
+		{"dev build", "dev", envHome, config.Config{}, cli.Global{}},
+		{"json output", "1.0.0", envHome, config.Config{}, cli.Global{JSON: true}},
+		{"disabled", "1.0.0", envHome, config.Config{UpdateCheckInterval: &disable}, cli.Global{}},
+		{"no home", "1.0.0", envNone, config.Config{}, cli.Global{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			version = tc.version
+			if got := startNudge(tc.env, tc.cfg, tc.global); got != nil {
+				t.Fatalf("expected nil channel, got %v", got)
+			}
+		})
+	}
+}
+
+// TestDrainNudge covers the four branches: nil channel, help-err suppression,
+// non-empty message printed, and empty message (no print).
+func TestDrainNudge(t *testing.T) {
+	t.Parallel()
+	t.Run("nil channel is a no-op", func(t *testing.T) {
+		var buf bytes.Buffer
+		drainNudge(nil, time.Millisecond, nil, &buf)
+		if buf.Len() != 0 {
+			t.Fatalf("stderr: %q", buf.String())
+		}
+	})
+	t.Run("help err suppresses", func(t *testing.T) {
+		ch := make(chan string, 1)
+		ch <- "should not print"
+		var buf bytes.Buffer
+		drainNudge(ch, time.Millisecond, cli.ErrHelp, &buf)
+		if buf.Len() != 0 {
+			t.Fatalf("stderr: %q", buf.String())
+		}
+	})
+	t.Run("message printed", func(t *testing.T) {
+		ch := make(chan string, 1)
+		ch <- "hello"
+		var buf bytes.Buffer
+		drainNudge(ch, time.Millisecond, nil, &buf)
+		if !strings.Contains(buf.String(), "hello") {
+			t.Fatalf("stderr: %q", buf.String())
+		}
+	})
+	t.Run("empty message swallowed", func(t *testing.T) {
+		ch := make(chan string, 1)
+		ch <- ""
+		var buf bytes.Buffer
+		drainNudge(ch, time.Millisecond, nil, &buf)
+		if buf.Len() != 0 {
+			t.Fatalf("stderr: %q", buf.String())
+		}
+	})
+	t.Run("timeout", func(t *testing.T) {
+		ch := make(chan string) // no sender
+		var buf bytes.Buffer
+		drainNudge(ch, 10*time.Millisecond, nil, &buf)
+		if buf.Len() != 0 {
+			t.Fatalf("stderr: %q", buf.String())
+		}
+	})
+}
+
+// TestUpdateCmd_Help short-circuits on --help like every other leaf verb.
+func TestUpdateCmd_Help(t *testing.T) {
+	t.Parallel()
+	var out bytes.Buffer
+	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
+	err := (updateCmd{}).Run(context.Background(), []string{"--help"}, stdio)
+	if !errors.Is(err, cli.ErrHelp) {
+		t.Fatalf("err = %v, want ErrHelp", err)
+	}
+	if !strings.Contains(out.String(), "latest ana release") {
+		t.Fatalf("help body missing: %q", out.String())
 	}
 }
 

@@ -4,6 +4,7 @@ The `ana` binary's main package. Pure wiring: reads global flags + config, const
 
 ## Files
 
-- `main.go` — `main` + `run` (the testable entrypoint with injectable args/stdio/env) and the `buildVerbs`/`authDeps`/`profileDeps`/`chatDeps` adapters. Also owns `newUUID` (used for chat `cellId`s) and the projection `profileToAuthConfig` that keeps `internal/auth` from importing `internal/config`.
+- `main.go` — `main` + `run` (the testable entrypoint with injectable args/stdio/env) and the `buildVerbs`/`authDeps`/`profileDeps`/`chatDeps` adapters. Also owns `newUUID` (used for chat `cellId`s), the projection `profileToAuthConfig` that keeps `internal/auth` from importing `internal/config`, and the `startNudge`/`drainNudge` helpers that run the passive update-check goroutine in parallel with `cli.Dispatch`.
 - `version.go` — the `version` leaf command plus the `version`/`commit`/`date` package vars that goreleaser stamps via `-ldflags "-X main.version=..."`. `--version` / `-V` is rewritten to the `version` verb up front so flag and subcommand share one rendering path.
-- `main_test.go` — exercises `run` end-to-end with fakes (no live server) and asserts the verb-map shape, version banner, and all adapter closures.
+- `update.go` — the `update` leaf command (`ana update`) that delegates to `internal/update.SelfUpdate` to download, verify, and replace the running binary.
+- `main_test.go` — exercises `run` end-to-end with fakes (no live server) and asserts the verb-map shape, version banner, adapter closures, `startNudge` skip predicates, `drainNudge` branches, and the `update` help short-circuit.

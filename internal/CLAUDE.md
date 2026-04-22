@@ -24,3 +24,4 @@ Multi-file verb packages use one `<source>_test.go` per source file (e.g. `list.
 | `ontology/` | `ana ontology` — readonly list/get. |
 | `feed/` | `ana feed` — show + stats. |
 | `audit/` | `ana audit tail` — audit-log listing with `--since`. Injectable clock. |
+| `update/` | Passive update-check nudge + `ana update` self-update verb. Stdlib-only; 100% covered. |

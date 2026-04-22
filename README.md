@@ -50,9 +50,16 @@ ana auth login --endpoint https://app.textql.com
 ana org show
 ana connector list
 ana chat send "show me last month's revenue"
+ana update  # replace the running binary with the latest release
 ```
 
 Run `ana --help` or `ana <verb> --help` for command-specific flags.
+
+`ana` checks GitHub for a newer release after each verb and prints a one-line
+stderr nudge when one exists. The result is cached for 4 h by default; set
+`updateCheckInterval` in `config.json` (any `time.ParseDuration`-compatible
+value) to change the cadence, or `"0"` / `"disable"` to turn the check off.
+`--json` suppresses the nudge so automation pipelines aren't broken.
 
 ## Configuration
 
