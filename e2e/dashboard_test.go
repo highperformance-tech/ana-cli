@@ -142,6 +142,15 @@ func TestDashboardGetJSON(t *testing.T) {
 // dashboard. Requires ANA_E2E_DASHBOARD_ID because an arbitrary dashboard may
 // never have been spawned — in which case the server returns a non-contract
 // error rather than a health row — and we don't want a flaky assertion.
+//
+// TODO(e2e): create the dashboard ephemerally inside the test (chat with
+// dashboardMode=true + "publish a sin(x) dashboard" prompt + parse id from
+// the stream output), register a deferred delete, and drop the
+// ANA_E2E_DASHBOARD_ID env var entirely. Blocked on: CLI doesn't expose
+// `chat new --dashboard-mode`, and DashboardService/Delete* isn't captured
+// in api-catalog yet — need to identify the real delete endpoint so the
+// harness can cascade-clean the dashboard the chat publishes. Until that
+// lands, this test stays env-gated and skips when the var is unset.
 func TestDashboardHealth(t *testing.T) {
 	id := os.Getenv("ANA_E2E_DASHBOARD_ID")
 	if id == "" {
@@ -167,6 +176,11 @@ func TestDashboardHealth(t *testing.T) {
 // not create a new dashboard row — spawn just refreshes the runtime for an
 // existing dashboard — so no ledger cleanup is needed. Requires an explicit
 // env-gated id since spawning touches billed runtime quotas.
+//
+// TODO(e2e): same as TestDashboardHealth — replace the env-gated id with an
+// ephemeral chat-published dashboard + deferred delete once the delete
+// endpoint is captured. Leaving dashboards in the org is the wrong pattern;
+// every e2e resource should be fully self-contained.
 func TestDashboardSpawn(t *testing.T) {
 	id := os.Getenv("ANA_E2E_DASHBOARD_ID")
 	if id == "" {
