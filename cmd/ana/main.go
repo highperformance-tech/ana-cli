@@ -10,6 +10,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -27,6 +29,7 @@ import (
 	"github.com/highperformance-tech/ana-cli/internal/playbook"
 	"github.com/highperformance-tech/ana-cli/internal/profile"
 	"github.com/highperformance-tech/ana-cli/internal/transport"
+	"github.com/highperformance-tech/ana-cli/internal/update"
 )
 
 func main() {
@@ -120,7 +123,79 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	return cli.Dispatch(ctx, verbs, args, stdio)
+	// Kick the passive update-check goroutine BEFORE Dispatch so the HTTP
+	// round-trip overlaps the verb's work. drainNudge picks it up after
+	// Dispatch returns. nudgeCh is nil whenever we decide not to check at
+	// all (dev build, --json, disabled interval, or no cache path); that
+	// nil flows through drainNudge as a no-op.
+	nudgeCh := startNudge(env, loaded, global)
+	err = cli.Dispatch(ctx, verbs, args, stdio)
+	drainNudge(nudgeCh, 500*time.Millisecond, err, stdio.Stderr)
+	return err
+}
+
+// startNudge launches the passive update-check goroutine when enabled and
+// returns a buffered channel that drainNudge reads. Returns nil whenever the
+// check is skipped so drainNudge can short-circuit without touching the
+// channel.
+//
+// Skip predicates (any true disables the check):
+//   - version == "dev" — source checkout, no corresponding GitHub release.
+//   - global.JSON — automation pipeline, extra stderr line would break parsers.
+//   - ParseInterval reports disabled (config value "0" / "disable").
+//   - CachePath fails — no XDG_CACHE_HOME and no HOME means we have nowhere
+//     to stash freshness state, and we refuse to re-hit the network on every
+//     run.
+func startNudge(env func(string) string, loaded config.Config, global cli.Global) chan string {
+	if version == "dev" || global.JSON {
+		return nil
+	}
+	ttl, enabled := update.ParseInterval(loaded.UpdateCheckInterval)
+	if !enabled {
+		return nil
+	}
+	if _, err := update.CachePath(env); err != nil {
+		return nil
+	}
+	ch := make(chan string, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		tag, notify, _ := update.CachedCheck(ctx, update.CacheDeps{
+			Env:  env,
+			Now:  time.Now,
+			HTTP: http.DefaultClient,
+		}, ttl, version)
+		if notify {
+			ch <- fmt.Sprintf("A new version of ana-cli is available: v%s → %s  Run: ana update", version, tag)
+		} else {
+			ch <- ""
+		}
+	}()
+	return ch
+}
+
+// drainNudge waits up to timeout for startNudge's goroutine to report. When
+// it produces a non-empty message and the verb did not return a help/usage
+// error, the message is written to stderr — we intentionally suppress the
+// nudge on help/usage paths so help text doesn't get crowded by an upgrade
+// prompt. A nil ch (check was skipped) or a timeout is a clean no-op.
+func drainNudge(ch chan string, timeout time.Duration, verbErr error, stderr io.Writer) {
+	if ch == nil {
+		return
+	}
+	if errors.Is(verbErr, cli.ErrHelp) || errors.Is(verbErr, cli.ErrUsage) {
+		return
+	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case msg := <-ch:
+		if msg != "" {
+			fmt.Fprintln(stderr, msg)
+		}
+	case <-timer.C:
+	}
 }
 
 // buildVerbs wires every verb package's Deps against the shared transport
@@ -144,6 +219,7 @@ func buildVerbs(client *transport.Client, env func(string) string, cfgPath, prof
 		"feed":      feed.New(feed.Deps{Unary: client.Unary}),
 		"audit":     audit.New(audit.Deps{Unary: client.Unary, Now: time.Now}),
 		"version":   versionCmd{},
+		"update":    updateCmd{deps: update.DefaultUpdateDeps()},
 	}
 }
 

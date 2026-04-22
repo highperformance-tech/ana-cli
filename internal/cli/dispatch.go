@@ -14,7 +14,7 @@ import (
 func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdio IO) error {
 	// A bare help token anywhere up front short-circuits flag parsing so users
 	// can discover commands without first fixing any flag validation errors.
-	if len(args) > 0 && isHelpArg(args[0]) {
+	if len(args) > 0 && IsHelpArg(args[0]) {
 		RootHelp(stdio.Stdout, verbs)
 		return ErrHelp
 	}
@@ -33,7 +33,7 @@ func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdi
 		RootHelp(stdio.Stdout, verbs)
 		return ErrHelp
 	}
-	if isHelpArg(rest[0]) {
+	if IsHelpArg(rest[0]) {
 		RootHelp(stdio.Stdout, verbs)
 		return ErrHelp
 	}

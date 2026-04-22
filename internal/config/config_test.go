@@ -414,6 +414,49 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
+// TestRoundTrip_UpdateCheckInterval verifies the optional nudge-cadence
+// field survives Save/Load intact AND that omitting it keeps the on-disk
+// shape backward-compatible (no key written when nil).
+func TestRoundTrip_UpdateCheckInterval(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	// With value: round-trips.
+	path := filepath.Join(dir, "with.json")
+	interval := "2h"
+	want := Config{
+		Profiles:            map[string]Profile{"default": {Endpoint: "https://e", Token: "t"}},
+		Active:              "default",
+		UpdateCheckInterval: &interval,
+	}
+	if err := Save(path, want); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	got, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if got.UpdateCheckInterval == nil || *got.UpdateCheckInterval != "2h" {
+		t.Fatalf("interval not preserved: %+v", got.UpdateCheckInterval)
+	}
+
+	// Without value: key must be omitted, not serialised as "null".
+	nilPath := filepath.Join(dir, "without.json")
+	nilCfg := Config{
+		Profiles: map[string]Profile{"default": {Endpoint: "https://e", Token: "t"}},
+		Active:   "default",
+	}
+	if err := Save(nilPath, nilCfg); err != nil {
+		t.Fatalf("save nil: %v", err)
+	}
+	raw, err := os.ReadFile(nilPath)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if strings.Contains(string(raw), "updateCheckInterval") {
+		t.Errorf("nil field should be omitted, got: %s", raw)
+	}
+}
+
 func TestActiveProfile(t *testing.T) {
 	t.Parallel()
 	// Active set and present.

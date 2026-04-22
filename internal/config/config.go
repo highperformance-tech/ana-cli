@@ -38,9 +38,15 @@ type Profile struct {
 
 // Config is the persisted CLI configuration. Profiles maps profile name to
 // its Profile. Active names the profile selected by default.
+//
+// UpdateCheckInterval controls the passive self-update nudge cadence (see
+// internal/update.ParseInterval). A pointer + omitempty keeps the on-disk
+// shape backward-compatible: existing files never acquire the field and a
+// nil value means "use the built-in default".
 type Config struct {
-	Profiles map[string]Profile `json:"profiles"`
-	Active   string             `json:"active"`
+	Profiles            map[string]Profile `json:"profiles"`
+	Active              string             `json:"active"`
+	UpdateCheckInterval *string            `json:"updateCheckInterval,omitempty"`
 }
 
 // DefaultPath returns the default path for the config file.

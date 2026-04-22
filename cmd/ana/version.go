@@ -25,7 +25,7 @@ func (versionCmd) Help() string {
 }
 
 func (versionCmd) Run(_ context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 0 && (args[0] == "-h" || args[0] == "--help" || args[0] == "help") {
+	if len(args) > 0 && cli.IsHelpArg(args[0]) {
 		fmt.Fprintln(stdio.Stdout, versionCmd{}.Help())
 		return cli.ErrHelp
 	}
