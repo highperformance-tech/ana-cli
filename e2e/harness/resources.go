@@ -91,8 +91,12 @@ func (h *H) deleteConnectorByName(name string) {
 	if err := h.client.Unary(ctx, listPath, struct{}{}, &resp); err != nil {
 		// Non-fatal: the by-name cleanup is a safety net. A list failure here
 		// most likely means the test was already in trouble; surface but don't
-		// fail cleanup itself.
+		// fail cleanup itself. Ledger it so any orphan is visible to operators.
 		h.t.Logf("cleanup-by-name list connectors (%s): %v", name, err)
+		h.RecordManualRevert(
+			fmt.Sprintf("connector name=%s", name),
+			fmt.Sprintf("by-name cleanup list failed: %v", err),
+		)
 		return
 	}
 	for _, c := range resp.Connectors {
@@ -146,6 +150,10 @@ func (h *H) revokeAPIKeyByName(name string) {
 	const listPath = "/rpc/public/textql.rpc.public.rbac.RBACService/ListApiKeys"
 	if err := h.client.Unary(ctx, listPath, struct{}{}, &resp); err != nil {
 		h.t.Logf("cleanup-by-name list api keys (%s): %v", name, err)
+		h.RecordManualRevert(
+			fmt.Sprintf("api key name=%s", name),
+			fmt.Sprintf("by-name cleanup list failed: %v", err),
+		)
 		return
 	}
 	for _, k := range resp.APIKeys {
@@ -184,6 +192,10 @@ func (h *H) deleteServiceAccountByName(name string) {
 	const listPath = "/rpc/public/textql.rpc.public.rbac.RBACService/ListServiceAccounts"
 	if err := h.client.Unary(ctx, listPath, struct{}{}, &resp); err != nil {
 		h.t.Logf("cleanup-by-name list service accounts (%s): %v", name, err)
+		h.RecordManualRevert(
+			fmt.Sprintf("service account name=%s", name),
+			fmt.Sprintf("by-name cleanup list failed: %v", err),
+		)
 		return
 	}
 	for _, sa := range resp.ServiceAccounts {
