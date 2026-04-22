@@ -59,6 +59,74 @@ func (h *H) CreateConnector(suffix string, spec ConnSpec) int {
 	return id
 }
 
+// RegisterConnectorCleanup registers a LIFO cleanup that DeleteConnectors id.
+// Tests that create a connector via `h.Run("connector","create",…)` (rather
+// than the raw-RPC CreateConnector helper) call this after parsing the id
+// out of stdout so the ledger still owns the teardown. No-op under
+// ANA_E2E_DRYRUN and for invalid ids (<= 0) so the helper can't schedule a
+// real RPC when no mutation actually happened.
+func (h *H) RegisterConnectorCleanup(id int) {
+	if h.env.dryRun || id <= 0 {
+		return
+	}
+	h.Register(func() { h.deleteConnector(id) })
+}
+
+// RegisterConnectorCleanupByName registers a best-effort cleanup that, at End
+// time, lists connectors and deletes any whose name equals `name`. Tests that
+// drive `connector create` through the CLI register this BEFORE invoking the
+// command so an orphan can't escape if id-extraction from stdout fails after
+// the server has already created the row. The id-based cleanup registered
+// after a successful parse runs first (LIFO); this helper then no-ops on the
+// follow-up list because the row is already gone. No-op under ANA_E2E_DRYRUN
+// and for empty names so the helper can't schedule a real RPC when no
+// mutation actually happened.
+func (h *H) RegisterConnectorCleanupByName(name string) {
+	if h.env.dryRun || name == "" {
+		return
+	}
+	h.Register(func() { h.deleteConnectorByName(name) })
+}
+
+func (h *H) deleteConnectorByName(name string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	var resp struct {
+		Connectors []struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		} `json:"connectors"`
+	}
+	const listPath = "/rpc/public/textql.rpc.public.connector.ConnectorService/GetConnectors"
+	if err := h.client.Unary(ctx, listPath, struct{}{}, &resp); err != nil {
+		// Non-fatal: the by-name cleanup is a safety net. A list failure here
+		// most likely means the test was already in trouble; surface but don't
+		// fail cleanup itself. Ledger it so any orphan is visible to operators.
+		h.t.Logf("cleanup-by-name list connectors (%s): %v", name, err)
+		h.RecordManualRevert(
+			fmt.Sprintf("connector name=%s", name),
+			fmt.Sprintf("by-name cleanup list failed: %v", err),
+		)
+		return
+	}
+	for _, c := range resp.Connectors {
+		if c.Name != name {
+			continue
+		}
+		const delPath = "/rpc/public/textql.rpc.public.connector.ConnectorService/DeleteConnector"
+		// 404 is expected when the id-based cleanup (registered after a
+		// successful parse) ran first and already deleted the row — the
+		// by-name helper is just the safety net.
+		if err := h.client.Unary(ctx, delPath, map[string]any{"connectorId": c.ID}, nil); err != nil && !isNotFound(err) {
+			h.t.Errorf("cleanup-by-name DeleteConnector(%s id=%d): %v", name, c.ID, err)
+			h.RecordManualRevert(
+				fmt.Sprintf("connector id=%d name=%s", c.ID, name),
+				fmt.Sprintf("by-name auto-delete failed: %v", err),
+			)
+		}
+	}
+}
+
 func (h *H) deleteConnector(id int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -72,6 +140,97 @@ func (h *H) deleteConnector(id int) {
 			fmt.Sprintf("connector id=%d name=%s", id, h.Prefix),
 			fmt.Sprintf("auto-delete failed: %v", err),
 		)
+	}
+}
+
+// RegisterAPIKeyCleanupByName registers a best-effort cleanup that, at End
+// time, lists api keys and revokes any whose name equals `name`. Tests that
+// drive `auth keys create` through the CLI call this BEFORE the create so an
+// orphan key can't survive if the post-create lookup or assertion errors out.
+// No-op under ANA_E2E_DRYRUN and for empty names.
+func (h *H) RegisterAPIKeyCleanupByName(name string) {
+	if h.env.dryRun || name == "" {
+		return
+	}
+	h.Register(func() { h.revokeAPIKeyByName(name) })
+}
+
+func (h *H) revokeAPIKeyByName(name string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	var resp struct {
+		APIKeys []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"apiKeys"`
+	}
+	const listPath = "/rpc/public/textql.rpc.public.rbac.RBACService/ListApiKeys"
+	if err := h.client.Unary(ctx, listPath, struct{}{}, &resp); err != nil {
+		h.t.Logf("cleanup-by-name list api keys (%s): %v", name, err)
+		h.RecordManualRevert(
+			fmt.Sprintf("api key name=%s", name),
+			fmt.Sprintf("by-name cleanup list failed: %v", err),
+		)
+		return
+	}
+	for _, k := range resp.APIKeys {
+		if k.Name != name {
+			continue
+		}
+		const revPath = "/rpc/public/textql.rpc.public.rbac.RBACService/RevokeApiKey"
+		if err := h.client.Unary(ctx, revPath, map[string]any{"apiKeyId": k.ID}, nil); err != nil && !isNotFound(err) {
+			h.t.Errorf("cleanup-by-name RevokeApiKey(%s id=%s): %v", name, k.ID, err)
+			h.RecordManualRevert(
+				fmt.Sprintf("api key id=%s name=%s", k.ID, name),
+				fmt.Sprintf("by-name auto-revoke failed: %v", err),
+			)
+		}
+	}
+}
+
+// RegisterServiceAccountCleanupByName registers a best-effort cleanup that,
+// at End time, lists service accounts and deletes any whose displayName
+// equals `name`. CLI-driven create tests call this before the create so a
+// successful create followed by a failed post-create lookup cannot orphan
+// the SA. No-op under ANA_E2E_DRYRUN and for empty names so the helper
+// can't schedule a real RPC when no mutation actually happened.
+func (h *H) RegisterServiceAccountCleanupByName(name string) {
+	if h.env.dryRun || name == "" {
+		return
+	}
+	h.Register(func() { h.deleteServiceAccountByName(name) })
+}
+
+func (h *H) deleteServiceAccountByName(name string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	var resp struct {
+		ServiceAccounts []struct {
+			MemberID    string `json:"memberId"`
+			DisplayName string `json:"displayName"`
+		} `json:"serviceAccounts"`
+	}
+	const listPath = "/rpc/public/textql.rpc.public.rbac.RBACService/ListServiceAccounts"
+	if err := h.client.Unary(ctx, listPath, struct{}{}, &resp); err != nil {
+		h.t.Logf("cleanup-by-name list service accounts (%s): %v", name, err)
+		h.RecordManualRevert(
+			fmt.Sprintf("service account name=%s", name),
+			fmt.Sprintf("by-name cleanup list failed: %v", err),
+		)
+		return
+	}
+	for _, sa := range resp.ServiceAccounts {
+		if sa.DisplayName != name {
+			continue
+		}
+		const delPath = "/rpc/public/textql.rpc.public.rbac.RBACService/DeleteServiceAccount"
+		if err := h.client.Unary(ctx, delPath, map[string]any{"memberId": sa.MemberID}, nil); err != nil && !isNotFound(err) {
+			h.t.Errorf("cleanup-by-name DeleteServiceAccount(%s memberId=%s): %v", name, sa.MemberID, err)
+			h.RecordManualRevert(
+				fmt.Sprintf("service account memberId=%s name=%s", sa.MemberID, name),
+				fmt.Sprintf("by-name auto-delete failed: %v", err),
+			)
+		}
 	}
 }
 

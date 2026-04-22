@@ -62,7 +62,7 @@ func Begin(t *testing.T) *H {
 
 	client := buildTransport(env.endpoint, env.token)
 	envFn := makeEnv(dir)
-	verbs := buildVerbs(client, envFn, cfgPath)
+	verbs := buildVerbs(client, envFn, cfgPath, env.endpoint)
 
 	h := &H{
 		t:         t,
@@ -174,13 +174,21 @@ func (h *H) forbiddenCheck(resourceType string, id any) {
 // the intent and returns an empty result without calling the RPC.
 func (h *H) Run(args ...string) (string, string, error) {
 	h.t.Helper()
+	return h.RunStdin("", args...)
+}
+
+// RunStdin is Run with a stdin payload, used by leaves that accept secrets via
+// --*-stdin flags (e.g. connector create snowflake password
+// --password-stdin). An empty stdin is equivalent to Run.
+func (h *H) RunStdin(stdin string, args ...string) (string, string, error) {
+	h.t.Helper()
 	if h.env.dryRun {
 		h.t.Logf("dryrun: ana %s", strings.Join(args, " "))
 		return "", "", nil
 	}
 	var stdout, stderr bytes.Buffer
 	stdio := cli.IO{
-		Stdin:  strings.NewReader(""),
+		Stdin:  strings.NewReader(stdin),
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Env:    h.envFn,
