@@ -19,7 +19,7 @@ Confidence key: ✅ full CRUD verified · 🟡 partial / readonly verified · �
 | --- | --- | --- |
 | Auth (API key) | ✅ | None for personal keys. Service-account keys: untested end-to-end — we created an SA and then deleted it before creating a key scoped to it. |
 | Chats | ✅ | `CreateChat.paradigm` — only `universal` observed; unknown if other paradigms exist (SQL-only? notebook?). Tool-selection flags (`sqlEnabled`, `pythonEnabled`, `webSearchEnabled`) defaults undocumented — must inspect `CreateChat` sample. `UpdateChat` only verified to touch `summary`; other mutable fields unknown. |
-| Connectors | 🟡 | Three dialects fully probed: Postgres (password), Snowflake (password / key-pair / oauth-sso / oauth-individual — all four shipped), Databricks (access-token / client-credentials / oauth-sso / oauth-individual — probed, not yet shipped). See connector grid below. Remaining dialects (BigQuery, Redshift, MySQL, SQLServer, Supabase, MotherDuck, Tableau, PowerBI) still unverified. OAuth leaves POST the full create payload in a pending-OAuth state; user completes the browser handshake at `app.textql.com` to activate. |
+| Connectors | 🟡 | Three dialects fully shipped: Postgres (password), Snowflake (password / key-pair / oauth-sso / oauth-individual — all four shipped), Databricks (access-token / client-credentials / oauth-sso / oauth-individual — all four shipped). See connector grid below. Remaining dialects (BigQuery, Redshift, MySQL, SQLServer, Supabase, MotherDuck, Tableau, PowerBI) still unverified. OAuth leaves POST the full create payload in a pending-OAuth state; user completes the browser handshake at `app.textql.com` to activate. |
 | Service accounts | 🟡 | Created + deleted. NOT verified: creating an API key *on* a service account (the kebab menu has "Create API Key" — would need to confirm whether that uses `CreateApiKey` with a `memberId` override or a different RPC). |
 | Dashboards | 🟡 | List/get/spawn/health covered. Create/update/delete NOT probed. |
 | Playbooks | 🟡 | Get/list/reports/lineage covered. Create/update/delete/run-now NOT probed. |
@@ -65,7 +65,7 @@ Grading: ✅ Live-tested (probe + at least one real connector created) · 🟢 I
 | --- | --- | --- | --- | --- | --- | --- |
 | Postgres | 🟢 | — | — | — | — | — |
 | Snowflake | 🟢 | 🟢 | — | — | 🟢* | 🟢* |
-| Databricks | — | — | 🟦 | 🟦 | 🟦* | 🟦* |
+| Databricks | — | — | 🟢 | 🟢 | 🟢* | 🟢* |
 | BigQuery | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 | Redshift | ⚪ | — | — | — | — | — |
 | MySQL | ⚪ | — | — | — | — | — |
@@ -75,7 +75,7 @@ Grading: ✅ Live-tested (probe + at least one real connector created) · 🟢 I
 | Tableau | ⚪ | — | — | — | — | — |
 | PowerBI | ⚪ | — | — | — | — | — |
 
-*OAuth leaves POST the full `CreateConnector` payload (including `clientId` / `clientSecret`) through the normal wire shape; the server accepts the row in a pending-OAuth state. The user then completes the browser handshake at `app.textql.com/auth/<dialect>/callback` to activate the connector — the CLI prints a note to that effect on success. Databricks OAuth leaves (not yet shipped) will follow the same pattern once probed.
+*OAuth leaves POST the full `CreateConnector` payload (including `clientId` / `clientSecret`) through the normal wire shape; the server accepts the row in a pending-OAuth state. The user then completes the browser handshake at `app.textql.com/auth/<dialect>/callback` to activate the connector — the CLI prints a note to that effect on success.
 
 Cells that show `—` are auth modes the dialect doesn't expose in the webapp's UI.
 
