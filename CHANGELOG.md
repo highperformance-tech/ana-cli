@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.0](https://github.com/highperformance-tech/ana-cli/compare/v0.2.1...v0.3.0) (2026-04-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **connector:** dialect and auth-mode as subcommands (postgres) ([#15](https://github.com/highperformance-tech/ana-cli/issues/15))
+
+### Features
+
+* **cli:** groups can declare inheritable flags ([#11](https://github.com/highperformance-tech/ana-cli/issues/11)) ([bc374aa](https://github.com/highperformance-tech/ana-cli/commit/bc374aade1c849b824a988a1c9744f526ccfef45))
+* **connector:** Databricks create — 4 auth modes with unit + e2e coverage ([#21](https://github.com/highperformance-tech/ana-cli/issues/21)) ([ba9159d](https://github.com/highperformance-tech/ana-cli/commit/ba9159d741b5649f770b688e0ce9dda733e54d53))
+* **connector:** Snowflake create — password, key-pair, OAuth SSO, OAuth individual ([#17](https://github.com/highperformance-tech/ana-cli/issues/17)) ([c0f6494](https://github.com/highperformance-tech/ana-cli/commit/c0f6494d43200b308786a215d16ef2b508ed61b8))
+* **e2e:** comprehensive live-smoke coverage across all captured verbs ([#18](https://github.com/highperformance-tech/ana-cli/issues/18)) ([f739b38](https://github.com/highperformance-tech/ana-cli/commit/f739b3846df4b6a636cbb6c0190e1ab89cc94817))
+* **update:** update-check nudge + `ana update` self-update verb ([#23](https://github.com/highperformance-tech/ana-cli/issues/23)) ([8da2017](https://github.com/highperformance-tech/ana-cli/commit/8da2017aaa61a870c4501274f9b2156df44370e5))
+
+
+### Bug Fixes
+
+* **cli:** global flags visible, position-tolerant, and surface usage errors ([#10](https://github.com/highperformance-tech/ana-cli/issues/10)) ([33bb9c3](https://github.com/highperformance-tech/ana-cli/commit/33bb9c325be53b927d35619aaff561ae951ff2d1))
+* **connector:** test verb fetches config via GetConnector before probing ([#19](https://github.com/highperformance-tech/ana-cli/issues/19)) ([e9f3616](https://github.com/highperformance-tech/ana-cli/commit/e9f36160f6f380585654bfdbef918ad33d3b5654))
+
+
+### Code Refactoring
+
+* **connector:** dialect and auth-mode as subcommands (postgres) ([#15](https://github.com/highperformance-tech/ana-cli/issues/15)) ([6edf0bd](https://github.com/highperformance-tech/ana-cli/commit/6edf0bdd1571df753b1130f9236e5798174580e7))
+
 ## [0.2.1](https://github.com/highperformance-tech/ana-cli/compare/v0.2.0...v0.2.1) (2026-04-20)
 
 
