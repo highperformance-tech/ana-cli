@@ -94,15 +94,20 @@ func configFromGetConnector(raw map[string]any) (map[string]any, error) {
 		}
 		if block, ok := v.(map[string]any); ok {
 			dialectKey := strings.TrimSuffix(k, "Metadata")
+			// Shallow-copy so we never mutate the caller's map.
+			out := make(map[string]any, len(block)+1)
+			for bk, bv := range block {
+				out[bk] = bv
+			}
 			// GetConnector redacts secrets, so fill a placeholder for any
 			// required secret field. The server returns the driver's auth
 			// failure as a 200 `{error: ...}` which the CLI surfaces as FAIL:.
 			for _, secret := range []string{"password"} {
-				if _, present := block[secret]; !present {
-					block[secret] = "redacted"
+				if _, present := out[secret]; !present {
+					out[secret] = "redacted"
 				}
 			}
-			cfg[dialectKey] = block
+			cfg[dialectKey] = out
 		}
 	}
 	return cfg, nil
