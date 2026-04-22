@@ -59,8 +59,8 @@ func (c *databricksClientCredentialsCmd) Run(ctx context.Context, args []string,
 		*c.name, *c.host, *c.httpPath, *c.port, *c.catalog, *c.schema); err != nil {
 		return err
 	}
-	if c.clientID == "" {
-		return cli.UsageErrf("connector create databricks client-credentials: --client-id must not be empty")
+	if err := requireDatabricksClientID("connector create databricks client-credentials", c.clientID); err != nil {
+		return err
 	}
 	resolvedSecret, err := resolveSecret("client-secret", c.clientSecret, c.secretStdin, stdio.Stdin)
 	if err != nil {

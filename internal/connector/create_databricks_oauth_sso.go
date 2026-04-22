@@ -64,8 +64,8 @@ func (c *databricksOAuthSSOCmd) Run(ctx context.Context, args []string, stdio cl
 		*c.name, *c.host, *c.httpPath, *c.port, *c.catalog, *c.schema); err != nil {
 		return err
 	}
-	if c.clientID == "" {
-		return cli.UsageErrf("connector create databricks oauth-sso: --client-id must not be empty")
+	if err := requireDatabricksClientID("connector create databricks oauth-sso", c.clientID); err != nil {
+		return err
 	}
 	resolvedSecret, err := resolveSecret("client-secret", c.clientSecret, c.secretStdin, stdio.Stdin)
 	if err != nil {

@@ -99,3 +99,16 @@ func requireDatabricksCommon(prefix, name, host, httpPath string, port int, cata
 	}
 	return nil
 }
+
+// requireDatabricksClientID guards against `--client-id ""` on every Databricks
+// leaf that takes one (client-credentials, oauth-sso, oauth-individual).
+// cli.RequireFlags only checks that the flag was explicitly set, so a
+// deliberately empty value still slips through — this helper rejects it
+// consistently. Split from requireDatabricksCommon because the access-token
+// leaf doesn't use --client-id.
+func requireDatabricksClientID(prefix, clientID string) error {
+	if clientID == "" {
+		return cli.UsageErrf("%s: --client-id must not be empty", prefix)
+	}
+	return nil
+}
