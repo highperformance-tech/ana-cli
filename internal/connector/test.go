@@ -102,6 +102,12 @@ func configFromGetConnector(raw map[string]any) (map[string]any, error) {
 			// GetConnector redacts secrets, so fill a placeholder for any
 			// required secret field. The server returns the driver's auth
 			// failure as a 200 `{error: ...}` which the CLI surfaces as FAIL:.
+			// NOTE: only "password" is placeholdered today. Postgres uses it;
+			// Snowflake's non-password auth modes (keypair, oauth-sso,
+			// oauth-individual) use privateKey / oauthClientSecret and will
+			// still surface a driver-side auth error via the same FAIL: path
+			// — extend this slice when adding a dialect whose TestConnector
+			// body requires a different secret field name.
 			for _, secret := range []string{"password"} {
 				if _, present := out[secret]; !present {
 					out[secret] = "redacted"
