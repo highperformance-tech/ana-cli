@@ -316,6 +316,13 @@ func TestReadCache_Corrupt(t *testing.T) {
 
 func TestWriteCache_Errors(t *testing.T) {
 	t.Parallel()
+	t.Run("marshal (unsafe time)", func(t *testing.T) {
+		// time.Time.MarshalJSON rejects years outside [0, 9999] — the only
+		// realistic way to trip json.Marshal on our string+time shape.
+		path := filepath.Join(t.TempDir(), "c.json")
+		bad := cacheFile{CheckedAt: time.Date(10000, 1, 1, 0, 0, 0, 0, time.UTC)}
+		wantErr(t, writeCache(path, bad), "marshal cache")
+	})
 	t.Run("mkdir", func(t *testing.T) {
 		dir := t.TempDir()
 		blocker := filepath.Join(dir, "blocker")

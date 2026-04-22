@@ -436,7 +436,7 @@ func TestVersionCmd_Help(t *testing.T) {
 	var out bytes.Buffer
 	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
 	err := (versionCmd{}).Run(context.Background(), []string{"--help"}, stdio)
-	if err != cli.ErrHelp {
+	if !errors.Is(err, cli.ErrHelp) {
 		t.Fatalf("err = %v, want ErrHelp", err)
 	}
 	if !strings.Contains(out.String(), "Print ana version") {
@@ -630,7 +630,7 @@ func TestUpdateCmd_Help(t *testing.T) {
 	var out bytes.Buffer
 	stdio := cli.IO{Stdout: &out, Stderr: &bytes.Buffer{}}
 	err := (updateCmd{}).Run(context.Background(), []string{"--help"}, stdio)
-	if err != cli.ErrHelp {
+	if !errors.Is(err, cli.ErrHelp) {
 		t.Fatalf("err = %v, want ErrHelp", err)
 	}
 	if !strings.Contains(out.String(), "latest ana release") {

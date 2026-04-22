@@ -110,14 +110,15 @@ func SelfUpdate(ctx context.Context, deps Deps, currentVersion string, w io.Writ
 	defer os.RemoveAll(tmp)
 
 	archivePath := filepath.Join(tmp, archiveName)
-	if err := downloadFile(ctx, deps.HTTP, base+"/"+archiveName, archivePath); err != nil {
+	sum, err := downloadFile(ctx, deps.HTTP, base+"/"+archiveName, archivePath)
+	if err != nil {
 		return err
 	}
 	checksums, err := downloadBody(ctx, deps.HTTP, base+"/checksums.txt")
 	if err != nil {
 		return err
 	}
-	if err := verifyChecksum(archivePath, archiveName, checksums); err != nil {
+	if err := verifyChecksum(sum, archiveName, checksums); err != nil {
 		return err
 	}
 
@@ -167,7 +168,7 @@ func atomicReplace(deps Deps, exePath, newPath string) error {
 		// Roll the old binary back; if that also fails we can't fix it for
 		// the user so tell them where the last-known-good copy lives.
 		if rbErr := deps.Rename(oldPath, exePath); rbErr != nil {
-			return fmt.Errorf("update: replace %s failed (%w); rollback also failed (%v); recover from %s", exePath, err, rbErr, oldPath)
+			return fmt.Errorf("update: replace %s failed (%w); rollback also failed (%w); recover from %s", exePath, err, rbErr, oldPath)
 		}
 		return fmt.Errorf("update: replace %s: %w", exePath, err)
 	}

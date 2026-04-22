@@ -145,7 +145,13 @@ func writeCache(path string, c cacheFile) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("update: mkdir %s: %w", dir, err)
 	}
-	data, _ := json.Marshal(c)
+	// time.Time.MarshalJSON can error on years outside [0, 9999]; time.Now()
+	// won't trip that in practice, but handling it satisfies errchkjson and
+	// keeps future callers (e.g. a time-injected test) safe.
+	data, err := json.Marshal(c)
+	if err != nil {
+		return fmt.Errorf("update: marshal cache: %w", err)
+	}
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		return fmt.Errorf("update: write %s: %w", tmp, err)

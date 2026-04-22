@@ -28,28 +28,30 @@ func httpGet(ctx context.Context, client HTTPDoer, url string) (io.ReadCloser, e
 	return resp.Body, nil
 }
 
-func downloadFile(ctx context.Context, client HTTPDoer, url, dst string) (err error) {
+// downloadFile streams url into dst and returns the hex sha256 of the body
+// (computed via TeeReader so the archive doesn't need to be re-read for
+// verification). Close-on-error is wired via named return so a failed flush
+// surfaces the real cause instead of producing a silently-truncated archive.
+func downloadFile(ctx context.Context, client HTTPDoer, url, dst string) (sha string, err error) {
 	body, err := httpGet(ctx, client, url)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer body.Close()
 	f, err := os.Create(dst)
 	if err != nil {
-		return fmt.Errorf("update: create %s: %w", dst, err)
+		return "", fmt.Errorf("update: create %s: %w", dst, err)
 	}
-	// Capture Close error via named return: a failed flush on a buffered fs
-	// (NFS, disk full) can silently truncate the downloaded archive and then
-	// surface as a bogus checksum mismatch. Surface the real cause instead.
 	defer func() {
 		if cerr := f.Close(); err == nil {
 			err = cerr
 		}
 	}()
-	if _, err := io.Copy(f, body); err != nil {
-		return fmt.Errorf("update: write %s: %w", dst, err)
+	h := sha256.New()
+	if _, err = io.Copy(f, io.TeeReader(body, h)); err != nil {
+		return "", fmt.Errorf("update: write %s: %w", dst, err)
 	}
-	return nil
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // maxChecksumsSize caps the checksums.txt buffer so a hostile / broken CDN
@@ -67,12 +69,11 @@ func downloadBody(ctx context.Context, client HTTPDoer, url string) ([]byte, err
 	return io.ReadAll(io.LimitReader(body, maxChecksumsSize))
 }
 
-// verifyChecksum compares the sha256 of archivePath against the matching
-// entry in a goreleaser-format checksums.txt ("<hex>  <filename>").
-func verifyChecksum(archivePath, archiveName string, checksums []byte) error {
-	// goreleaser emits "<hex>  <filename>"; sha256sum's binary-mode format is
-	// "<hex> *<filename>". Accept either, and allow extra whitespace so any
-	// future format tweak that keeps hex-first/name-last keeps working.
+// verifyChecksum compares got against the entry for archiveName in a
+// goreleaser-format checksums.txt ("<hex>  <filename>" or sha256sum's
+// "<hex> *<filename>" binary-mode variant). Caller computes got — typically
+// via downloadFile's TeeReader output.
+func verifyChecksum(got, archiveName string, checksums []byte) error {
 	want := ""
 	for _, line := range strings.Split(string(checksums), "\n") {
 		fields := strings.Fields(line)
@@ -88,12 +89,6 @@ func verifyChecksum(archivePath, archiveName string, checksums []byte) error {
 	if want == "" {
 		return fmt.Errorf("update: no checksum entry for %s", archiveName)
 	}
-	data, err := os.ReadFile(archivePath)
-	if err != nil {
-		return fmt.Errorf("update: open %s: %w", archivePath, err)
-	}
-	sum := sha256.Sum256(data)
-	got := hex.EncodeToString(sum[:])
 	if got != want {
 		return fmt.Errorf("update: checksum mismatch for %s: expected %s, got %s", archiveName, want, got)
 	}
