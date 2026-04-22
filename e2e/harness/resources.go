@@ -62,8 +62,13 @@ func (h *H) CreateConnector(suffix string, spec ConnSpec) int {
 // RegisterConnectorCleanup registers a LIFO cleanup that DeleteConnectors id.
 // Tests that create a connector via `h.Run("connector","create",…)` (rather
 // than the raw-RPC CreateConnector helper) call this after parsing the id
-// out of stdout so the ledger still owns the teardown.
+// out of stdout so the ledger still owns the teardown. No-op under
+// ANA_E2E_DRYRUN and for invalid ids (<= 0) so the helper can't schedule a
+// real RPC when no mutation actually happened.
 func (h *H) RegisterConnectorCleanup(id int) {
+	if h.env.dryRun || id <= 0 {
+		return
+	}
 	h.Register(func() { h.deleteConnector(id) })
 }
 
@@ -73,8 +78,13 @@ func (h *H) RegisterConnectorCleanup(id int) {
 // command so an orphan can't escape if id-extraction from stdout fails after
 // the server has already created the row. The id-based cleanup registered
 // after a successful parse runs first (LIFO); this helper then no-ops on the
-// follow-up list because the row is already gone.
+// follow-up list because the row is already gone. No-op under ANA_E2E_DRYRUN
+// and for empty names so the helper can't schedule a real RPC when no
+// mutation actually happened.
 func (h *H) RegisterConnectorCleanupByName(name string) {
+	if h.env.dryRun || name == "" {
+		return
+	}
 	h.Register(func() { h.deleteConnectorByName(name) })
 }
 
@@ -137,7 +147,11 @@ func (h *H) deleteConnector(id int) {
 // time, lists api keys and revokes any whose name equals `name`. Tests that
 // drive `auth keys create` through the CLI call this BEFORE the create so an
 // orphan key can't survive if the post-create lookup or assertion errors out.
+// No-op under ANA_E2E_DRYRUN and for empty names.
 func (h *H) RegisterAPIKeyCleanupByName(name string) {
+	if h.env.dryRun || name == "" {
+		return
+	}
 	h.Register(func() { h.revokeAPIKeyByName(name) })
 }
 
@@ -178,8 +192,12 @@ func (h *H) revokeAPIKeyByName(name string) {
 // at End time, lists service accounts and deletes any whose displayName
 // equals `name`. CLI-driven create tests call this before the create so a
 // successful create followed by a failed post-create lookup cannot orphan
-// the SA.
+// the SA. No-op under ANA_E2E_DRYRUN and for empty names so the helper
+// can't schedule a real RPC when no mutation actually happened.
 func (h *H) RegisterServiceAccountCleanupByName(name string) {
+	if h.env.dryRun || name == "" {
+		return
+	}
 	h.Register(func() { h.deleteServiceAccountByName(name) })
 }
 
