@@ -1041,6 +1041,49 @@ func TestDeclareStringFreshDeclaration(t *testing.T) {
 	}
 }
 
+func TestDeclareIntGuardsAgainstRedeclare(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var leafT, ancT int
+	fs.IntVar(&leafT, "port", 1, "leaf usage")
+	DeclareInt(fs, &ancT, "port", 2, "anc usage")
+	if err := fs.Parse([]string{"--port", "7"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if leafT != 7 {
+		t.Errorf("leafT=%d want 7", leafT)
+	}
+	if ancT != 0 {
+		t.Errorf("ancT=%d want 0 (ancestor should not have been bound)", ancT)
+	}
+}
+
+func TestDeclareIntFreshDeclaration(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var target int
+	DeclareInt(fs, &target, "port", 443, "usage")
+	if err := fs.Parse([]string{"--port", "5432"}); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if target != 5432 {
+		t.Errorf("target=%d want 5432", target)
+	}
+}
+
+func TestDeclareIntDefault(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	var target int
+	DeclareInt(fs, &target, "port", 443, "usage")
+	if err := fs.Parse(nil); err != nil {
+		t.Fatalf("parse err=%v", err)
+	}
+	if target != 443 {
+		t.Errorf("target=%d want 443 default", target)
+	}
+}
+
 func TestRenderFlagsAsTextDefaultAndEmptyType(t *testing.T) {
 	t.Parallel()
 	fs := flag.NewFlagSet("t", flag.ContinueOnError)
