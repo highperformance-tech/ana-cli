@@ -50,8 +50,24 @@ ana auth login --endpoint https://app.textql.com
 ana org show
 ana connector list
 ana chat send "show me last month's revenue"
+ana api textql.rpc.public.auth.PublicAuthService/GetOrganization   # raw JSON passthrough
 ana update  # replace the running binary with the latest release
 ```
+
+### `ana api` — raw authenticated passthrough
+
+`ana api <path>` sends an authenticated HTTP request and prints the response.
+Two path forms:
+
+- `<service>/<Method>` — Connect-RPC short form, prefixed with `/rpc/public/`.
+- `/v1/...` (or any leading-slash path) — sent verbatim. Covers both the
+  documented REST API (`docs.textql.com/api-reference`) and pre-resolved RPC
+  paths.
+
+Body can be supplied with `--data '<json>'` or `--data-stdin`. Default method
+is `POST` with a `{}` body (so short-form RPC calls Just Work); GET/HEAD
+auto-omit the body. `--raw` passes the response through verbatim instead of
+pretty-printing.
 
 Run `ana --help` or `ana <verb> --help` for command-specific flags.
 

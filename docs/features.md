@@ -7,6 +7,7 @@ Per-endpoint request/response schemas live in `api-catalog/` (~95 endpoints as o
 ## API shape (global)
 
 - **Style:** Connect-RPC (buf-connect). All calls are `POST https://app.textql.com/rpc/public/<fully.qualified.Service>/<Method>`.
+- **CLI raw access:** `ana api <path>` is the untyped escape hatch. Short form (`<service>/<Method>`) maps to Connect-RPC; a leading-slash path (`/v1/...`) hits the documented REST API at `docs.textql.com/api-reference`. Both share host + bearer auth, so one verb covers both surfaces.
 - **Content-Type:** `application/json` request + response.
 - **Field casing:** protobuf JSON — **camelCase only**. Sending both `chatId` and `chat_id` → 400 `"duplicate field"`. CLI must emit camelCase.
 - **Error shape:** `{"code": "<lowercase_code>", "message": "<text>"}` (e.g. `invalid_argument`, `not_found`, `internal`).

@@ -313,10 +313,23 @@ func TestWithHTTPClient(t *testing.T) {
 
 func TestWithHTTPClientNilIgnored(t *testing.T) {
 	t.Parallel()
-	// A nil http.Client must not replace the default (guarded in WithHTTPClient).
+	// A nil http.Client must not crash or install a bad client; the
+	// bearerTransport middleware wraps http.DefaultTransport in that case
+	// (we clone DefaultClient so DefaultClient itself stays unmutated).
 	c := New("http://example.invalid", nil, WithHTTPClient(nil))
-	if c.httpClient != http.DefaultClient {
-		t.Fatalf("nil HTTP client replaced default")
+	if c.httpClient == http.DefaultClient {
+		t.Fatalf("expected a clone, not DefaultClient itself")
+	}
+	bt, ok := c.httpClient.Transport.(*bearerTransport)
+	if !ok {
+		t.Fatalf("expected bearerTransport wrap, got %T", c.httpClient.Transport)
+	}
+	if bt.next != http.DefaultTransport {
+		t.Fatalf("expected next == http.DefaultTransport, got %T", bt.next)
+	}
+	// DefaultClient's Transport must remain untouched (nil).
+	if http.DefaultClient.Transport != nil {
+		t.Fatalf("http.DefaultClient.Transport mutated")
 	}
 }
 
@@ -486,5 +499,244 @@ func TestUnaryTokenErrorNoServerCall(t *testing.T) {
 	}
 	if hit {
 		t.Fatalf("server hit despite token error")
+	}
+}
+
+// TestBearerTransportPreservesUserAgent verifies a caller-supplied User-Agent
+// is not clobbered by the middleware (existing header wins).
+func TestBearerTransportPreservesUserAgent(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("User-Agent"); got != "caller/1.0" {
+			t.Errorf("User-Agent = %q, want caller/1.0", got)
+		}
+		w.Write([]byte("{}"))
+	}, WithUserAgent("ana/0.0.1"))
+
+	// Drive a raw request with a pre-set User-Agent to prove the middleware
+	// doesn't overwrite it.
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.baseURL, nil)
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	req.Header.Set("User-Agent", "caller/1.0")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	resp.Body.Close()
+}
+
+// TestBearerTransportPreservesAuthorization verifies a caller-supplied
+// Authorization header is not clobbered by the middleware (existing header
+// wins).
+func TestBearerTransportPreservesAuthorization(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Authorization"); got != "Bearer caller-token" {
+			t.Errorf("Authorization = %q, want Bearer caller-token", got)
+		}
+		w.Write([]byte("{}"))
+	})
+	c.tokenFn = staticToken("middleware-token")
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.baseURL, nil)
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer caller-token")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+	resp.Body.Close()
+}
+
+// TestWithHTTPClientWrapsCallerTransport proves a caller-supplied
+// *http.Client with its own Transport still gets auth applied: the middleware
+// wraps the caller's Transport, it isn't swapped out.
+func TestWithHTTPClientWrapsCallerTransport(t *testing.T) {
+	t.Parallel()
+	rt := &recordingRT{}
+	c := New("http://example.invalid", staticToken("tok"),
+		WithHTTPClient(&http.Client{Transport: rt}))
+	if err := c.Unary(context.Background(), "/x", nil, nil); err != nil {
+		t.Fatalf("Unary: %v", err)
+	}
+	if rt.lastReq == nil {
+		t.Fatalf("caller's Transport was not reached")
+	}
+	if got := rt.lastReq.Header.Get("Authorization"); got != "Bearer tok" {
+		t.Fatalf("Authorization = %q, want Bearer tok", got)
+	}
+}
+
+// TestDoRawGET exercises the happy GET path: no body sent, method + path
+// preserved, response bytes returned verbatim.
+func TestDoRawGET(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %q, want GET", r.Method)
+		}
+		if r.URL.Path != "/v1/things" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		if _, ok := r.Header["Content-Type"]; ok {
+			t.Errorf("unexpected content-type on no-body request")
+		}
+		if r.ContentLength != 0 {
+			t.Errorf("ContentLength = %d, want 0 (nil body)", r.ContentLength)
+		}
+		w.Header().Set("content-type", "application/json")
+		w.Write([]byte(`{"ok":true}`))
+	})
+	status, body, err := c.DoRaw(context.Background(), http.MethodGet, "/v1/things", nil)
+	if err != nil {
+		t.Fatalf("DoRaw: %v", err)
+	}
+	if status != 200 {
+		t.Errorf("status = %d", status)
+	}
+	if string(body) != `{"ok":true}` {
+		t.Errorf("body = %q", body)
+	}
+}
+
+// TestDoRawPOSTWithBody covers a body-bearing POST: Content-Type is set and
+// the body bytes are round-tripped.
+func TestDoRawPOSTWithBody(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if ct := r.Header.Get("content-type"); ct != "application/json" {
+			t.Errorf("content-type = %q", ct)
+		}
+		got := drainBody(t, r)
+		if string(got) != `{"x":1}` {
+			t.Errorf("body = %q", got)
+		}
+		w.WriteHeader(200)
+		w.Write(got) // echo
+	})
+	status, body, err := c.DoRaw(context.Background(), http.MethodPost, "/rpc/foo", []byte(`{"x":1}`))
+	if err != nil {
+		t.Fatalf("DoRaw: %v", err)
+	}
+	if status != 200 || string(body) != `{"x":1}` {
+		t.Fatalf("status=%d body=%q", status, body)
+	}
+}
+
+// TestDoRawNon2xxPassthrough: the body is returned intact on a 4xx/5xx; no
+// error-envelope parsing happens at this layer (DoRaw's whole job).
+func TestDoRawNon2xxPassthrough(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"code":"not_found","message":"gone"}`))
+	})
+	status, body, err := c.DoRaw(context.Background(), http.MethodGet, "/missing", nil)
+	if err != nil {
+		t.Fatalf("DoRaw: %v", err)
+	}
+	if status != 404 {
+		t.Errorf("status = %d", status)
+	}
+	if string(body) != `{"code":"not_found","message":"gone"}` {
+		t.Errorf("body = %q", body)
+	}
+}
+
+// TestDoRawAuthApplied: proves the middleware attaches bearer auth to DoRaw
+// requests too — the whole point of the refactor.
+func TestDoRawAuthApplied(t *testing.T) {
+	t.Parallel()
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Authorization"); got != "Bearer tok" {
+			t.Errorf("Authorization = %q", got)
+		}
+		w.Write([]byte("{}"))
+	})
+	c.tokenFn = staticToken("tok")
+	if _, _, err := c.DoRaw(context.Background(), http.MethodGet, "/", nil); err != nil {
+		t.Fatalf("DoRaw: %v", err)
+	}
+}
+
+// TestDoRawBuildRequestError covers the http.NewRequestWithContext failure
+// branch — a control-byte URL is rejected by stdlib.
+func TestDoRawBuildRequestError(t *testing.T) {
+	t.Parallel()
+	c := New("http://\x7f/bad", nil)
+	_, _, err := c.DoRaw(context.Background(), http.MethodGet, "/x", nil)
+	if err == nil || !strings.Contains(err.Error(), "build request") {
+		t.Fatalf("want build request error, got %v", err)
+	}
+}
+
+// TestDoRawTransportError covers the non-context transport error branch.
+func TestDoRawTransportError(t *testing.T) {
+	t.Parallel()
+	want := errors.New("dial fail")
+	c := New("http://example.invalid", nil,
+		WithHTTPClient(&http.Client{Transport: doErrRT{err: want}}))
+	_, _, err := c.DoRaw(context.Background(), http.MethodGet, "/", nil)
+	if err == nil || !errors.Is(err, want) {
+		t.Fatalf("want wrapped %v, got %v", want, err)
+	}
+}
+
+// TestDoRawContextCancel covers the ctx-cancelled branch of DoRaw.
+func TestDoRawContextCancel(t *testing.T) {
+	t.Parallel()
+	block := make(chan struct{})
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		<-block
+	})
+	t.Cleanup(func() { close(block) })
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := c.DoRaw(ctx, http.MethodGet, "/", nil)
+		done <- err
+	}()
+	time.Sleep(20 * time.Millisecond)
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("want context.Canceled, got %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("DoRaw did not return after cancel")
+	}
+}
+
+// TestDoRawReadBodyError covers the io.ReadAll failure path on a 200 body.
+func TestDoRawReadBodyError(t *testing.T) {
+	t.Parallel()
+	c := New("http://example.invalid", nil,
+		WithHTTPClient(&http.Client{Transport: readErrRT{}}))
+	status, _, err := c.DoRaw(context.Background(), http.MethodGet, "/", nil)
+	if err == nil || !strings.Contains(err.Error(), "read response") {
+		t.Fatalf("want read response error, got %v", err)
+	}
+	if status != 200 {
+		t.Errorf("status = %d, want 200 (surfaced even on read err)", status)
+	}
+}
+
+// TestDoRawTokenError covers the tokenFn-error branch propagating through the
+// middleware → http.Client.Do → DoRaw wrap.
+func TestDoRawTokenError(t *testing.T) {
+	t.Parallel()
+	tokenErr := errors.New("no creds")
+	_, c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server should not have been called")
+	})
+	c.tokenFn = func(context.Context) (string, error) { return "", tokenErr }
+	_, _, err := c.DoRaw(context.Background(), http.MethodGet, "/", nil)
+	if err == nil || !errors.Is(err, tokenErr) {
+		t.Fatalf("want wrapped %v, got %v", tokenErr, err)
 	}
 }
