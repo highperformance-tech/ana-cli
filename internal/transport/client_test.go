@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -276,6 +277,23 @@ func TestUnaryUserAgent(t *testing.T) {
 	}
 }
 
+// roundTripFn adapts a function into an http.RoundTripper. Used by tests that
+// need to inspect the forwarded request without maintaining a named type.
+type roundTripFn func(*http.Request) (*http.Response, error)
+
+func (f roundTripFn) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// mustParseURL parses raw or t.Fatals — collapses the noise in tests that
+// hand-construct an *http.Request.
+func mustParseURL(t *testing.T, raw string) *url.URL {
+	t.Helper()
+	u, err := url.Parse(raw)
+	if err != nil {
+		t.Fatalf("parse %q: %v", raw, err)
+	}
+	return u
+}
+
 // recordingRT captures the last outbound request and returns a canned 200.
 type recordingRT struct {
 	lastReq *http.Request
@@ -525,6 +543,38 @@ func TestBearerTransportPreservesUserAgent(t *testing.T) {
 		t.Fatalf("Do: %v", err)
 	}
 	resp.Body.Close()
+}
+
+// TestBearerTransportNilHeader covers the defensive nil-Header init in
+// RoundTrip. http.Client.Do pre-initializes nil Headers before calling a
+// RoundTripper, so the branch is only reachable by invoking the middleware
+// directly — which is exactly what would happen if a test harness stacked
+// our transport inside another RoundTripper and handed it a hand-built
+// request.
+func TestBearerTransportNilHeader(t *testing.T) {
+	t.Parallel()
+	var saw http.Header
+	c := New("http://example.invalid", staticToken("tok"),
+		WithHTTPClient(&http.Client{Transport: roundTripFn(func(r *http.Request) (*http.Response, error) {
+			saw = r.Header
+			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader("{}")), Header: make(http.Header), Request: r}, nil
+		})}))
+	bt, ok := c.httpClient.Transport.(*bearerTransport)
+	if !ok {
+		t.Fatalf("expected bearerTransport, got %T", c.httpClient.Transport)
+	}
+	req := &http.Request{Method: http.MethodGet, URL: mustParseURL(t, "http://example.invalid/x"), Header: nil}
+	resp, err := bt.RoundTrip(req)
+	if err != nil {
+		t.Fatalf("RoundTrip: %v", err)
+	}
+	resp.Body.Close()
+	if got := saw.Get("Authorization"); got != "Bearer tok" {
+		t.Fatalf("Authorization = %q on forwarded request", got)
+	}
+	if req.Header != nil {
+		t.Fatalf("incoming request was mutated (Header set); RoundTripper contract broken")
+	}
 }
 
 // TestBearerTransportPreservesAuthorization verifies a caller-supplied

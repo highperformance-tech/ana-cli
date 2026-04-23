@@ -76,25 +76,31 @@ type bearerTransport struct {
 	c    *Client
 }
 
-// RoundTrip injects auth + User-Agent then delegates to next. A tokenFn error
-// is wrapped with "token: %w" so callers can still errors.Is the underlying
-// cause (http.Client.Do wraps this in *url.Error, which preserves %w).
-// Existing Authorization / User-Agent headers are never overwritten — lets a
-// caller that pre-sets them (e.g. a future --header flag) opt out.
+// RoundTrip injects auth + User-Agent then delegates to next. Per the
+// net/http RoundTripper contract the incoming *http.Request must not be
+// mutated, so we clone before touching headers. A tokenFn error is wrapped
+// with "token: %w" so callers can still errors.Is the underlying cause
+// (http.Client.Do wraps this in *url.Error, which preserves %w). Existing
+// Authorization / User-Agent headers on the clone are never overwritten —
+// lets a caller that pre-sets them (e.g. a future --header flag) opt out.
 func (b *bearerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if b.c.userAgent != "" && req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", b.c.userAgent)
+	cloned := req.Clone(req.Context())
+	if cloned.Header == nil {
+		cloned.Header = make(http.Header)
+	}
+	if b.c.userAgent != "" && cloned.Header.Get("User-Agent") == "" {
+		cloned.Header.Set("User-Agent", b.c.userAgent)
 	}
 	if b.c.tokenFn != nil {
-		token, err := b.c.tokenFn(req.Context())
+		token, err := b.c.tokenFn(cloned.Context())
 		if err != nil {
 			return nil, fmt.Errorf("token: %w", err)
 		}
-		if token != "" && req.Header.Get("Authorization") == "" {
-			req.Header.Set("Authorization", "Bearer "+token)
+		if token != "" && cloned.Header.Get("Authorization") == "" {
+			cloned.Header.Set("Authorization", "Bearer "+token)
 		}
 	}
-	return b.next.RoundTrip(req)
+	return b.next.RoundTrip(cloned)
 }
 
 // joinURL concatenates baseURL and path, collapsing at most one pair of

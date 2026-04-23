@@ -63,6 +63,9 @@ func (c *callCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if fs.NArg() == 0 || strings.TrimSpace(fs.Arg(0)) == "" {
 		return cli.UsageErrf("api: <path> positional argument required")
 	}
+	if fs.NArg() > 1 {
+		return cli.UsageErrf("api: unexpected positional arguments: %v", fs.Args()[1:])
+	}
 	path := fs.Arg(0)
 
 	if c.method == "" {

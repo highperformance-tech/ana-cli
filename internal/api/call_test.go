@@ -109,6 +109,26 @@ func TestDataFlagUsedAsBody(t *testing.T) {
 	}
 }
 
+// TestDataEmptyStringSkipsDefaultBody pins the "explicit empty body" contract:
+// `--data ""` must hand DoRaw an empty slice (which DoRaw then treats like
+// nil), NOT the POST default `{}`. Guards against the body-resolution
+// refactor silently drifting back to using `c.data != ""` as the presence
+// check.
+func TestDataEmptyStringSkipsDefaultBody(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := New(f.deps())
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(),
+		[]string{"--data", "", "foo/Bar"}, stdio)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if string(f.lastBody) != "" {
+		t.Errorf("body = %q, want empty (explicit --data \"\" wins over the POST default {})", f.lastBody)
+	}
+}
+
 func TestDataStdinUsedAsBody(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
@@ -178,6 +198,23 @@ func TestBlankPathIsUsageError(t *testing.T) {
 	err := cmd.Run(context.Background(), []string{"   "}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err = %v, want ErrUsage", err)
+	}
+}
+
+// TestExtraPositionalsRejected — silently dropping extras masks typos like
+// `ana api /v1/things stray` (user probably meant a flag). Exactly one
+// non-blank positional is required.
+func TestExtraPositionalsRejected(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := New(f.deps())
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"/v1/things", "stray"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err = %v, want ErrUsage", err)
+	}
+	if !strings.Contains(err.Error(), "stray") {
+		t.Errorf("err should name the unexpected arg: %v", err)
 	}
 }
 
