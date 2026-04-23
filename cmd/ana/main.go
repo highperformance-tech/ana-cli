@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/highperformance-tech/ana-cli/internal/api"
 	"github.com/highperformance-tech/ana-cli/internal/audit"
 	"github.com/highperformance-tech/ana-cli/internal/auth"
 	"github.com/highperformance-tech/ana-cli/internal/chat"
@@ -208,6 +209,7 @@ func drainNudge(ch chan string, timeout time.Duration, verbErr error, stderr io.
 // self-hosted and non-prod profiles at the right place.
 func buildVerbs(client *transport.Client, env func(string) string, cfgPath, profileName, endpoint string) map[string]cli.Command {
 	return map[string]cli.Command{
+		"api":       api.New(api.Deps{DoRaw: client.DoRaw}),
 		"auth":      auth.New(authDeps(client, env, cfgPath, profileName)),
 		"profile":   profile.New(profileDeps(env, cfgPath)),
 		"org":       org.New(org.Deps{Unary: client.Unary}),

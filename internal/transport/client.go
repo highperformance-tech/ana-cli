@@ -43,6 +43,10 @@ type Client struct {
 // call; tokenFn supplies a bearer token per request (return "" to skip the
 // Authorization header). Options may override the default http.Client and set
 // a User-Agent.
+//
+// After options run, the resolved http.Client's Transport is wrapped with
+// bearerTransport so auth + User-Agent attach at the transport layer. Unary,
+// Stream, and DoRaw all inherit this — no per-call-site header plumbing.
 func New(baseURL string, tokenFn func(context.Context) (string, error), opts ...Option) *Client {
 	c := &Client{
 		httpClient: http.DefaultClient,
@@ -52,7 +56,51 @@ func New(baseURL string, tokenFn func(context.Context) (string, error), opts ...
 	for _, opt := range opts {
 		opt(c)
 	}
+	// Clone so we don't mutate the caller's *http.Client (or http.DefaultClient).
+	clone := *c.httpClient
+	base := clone.Transport
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	clone.Transport = &bearerTransport{next: base, c: c}
+	c.httpClient = &clone
 	return c
+}
+
+// bearerTransport is an http.RoundTripper middleware that attaches the bearer
+// token + User-Agent to every outbound request. It reads tokenFn and userAgent
+// off the parent Client on each call, so post-construction mutation (test
+// harnesses that tweak tokenFn after New) still takes effect.
+type bearerTransport struct {
+	next http.RoundTripper
+	c    *Client
+}
+
+// RoundTrip injects auth + User-Agent then delegates to next. Per the
+// net/http RoundTripper contract the incoming *http.Request must not be
+// mutated, so we clone before touching headers. A tokenFn error is wrapped
+// with "token: %w" so callers can still errors.Is the underlying cause
+// (http.Client.Do wraps this in *url.Error, which preserves %w). Existing
+// Authorization / User-Agent headers on the clone are never overwritten —
+// lets a caller that pre-sets them (e.g. a future --header flag) opt out.
+func (b *bearerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	cloned := req.Clone(req.Context())
+	if cloned.Header == nil {
+		cloned.Header = make(http.Header)
+	}
+	if b.c.userAgent != "" && cloned.Header.Get("User-Agent") == "" {
+		cloned.Header.Set("User-Agent", b.c.userAgent)
+	}
+	if b.c.tokenFn != nil {
+		token, err := b.c.tokenFn(cloned.Context())
+		if err != nil {
+			return nil, fmt.Errorf("token: %w", err)
+		}
+		if token != "" && cloned.Header.Get("Authorization") == "" {
+			cloned.Header.Set("Authorization", "Bearer "+token)
+		}
+	}
+	return b.next.RoundTrip(cloned)
 }
 
 // joinURL concatenates baseURL and path, collapsing at most one pair of
@@ -65,9 +113,9 @@ func joinURL(baseURL, path string) string {
 	return baseURL + path
 }
 
-// buildRequest marshals req to JSON and constructs a POST request with all
-// standard Connect-over-JSON headers applied. It is shared by Unary and
-// Stream so header/body behavior stays in lockstep.
+// buildRequest marshals req to JSON and constructs a POST request with the
+// Connect-over-JSON content/accept headers. Auth + User-Agent are attached by
+// bearerTransport at round-trip time.
 func (c *Client) buildRequest(ctx context.Context, path string, req any) (*http.Request, error) {
 	var body []byte
 	if req == nil {
@@ -87,18 +135,6 @@ func (c *Client) buildRequest(ctx context.Context, path string, req any) (*http.
 	}
 	httpReq.Header.Set("content-type", "application/json")
 	httpReq.Header.Set("accept", "application/json")
-	if c.userAgent != "" {
-		httpReq.Header.Set("User-Agent", c.userAgent)
-	}
-	if c.tokenFn != nil {
-		token, err := c.tokenFn(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("token: %w", err)
-		}
-		if token != "" {
-			httpReq.Header.Set("Authorization", "Bearer "+token)
-		}
-	}
 	return httpReq, nil
 }
 
@@ -235,18 +271,6 @@ func (c *Client) Stream(ctx context.Context, path string, req any) (*StreamReade
 	httpReq.Header.Set("content-type", "application/connect+json")
 	httpReq.Header.Set("accept", "application/connect+json")
 	httpReq.Header.Set("connect-protocol-version", "1")
-	if c.userAgent != "" {
-		httpReq.Header.Set("User-Agent", c.userAgent)
-	}
-	if c.tokenFn != nil {
-		token, err := c.tokenFn(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("token: %w", err)
-		}
-		if token != "" {
-			httpReq.Header.Set("Authorization", "Bearer "+token)
-		}
-	}
 	httpResp, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -260,4 +284,40 @@ func (c *Client) Stream(ctx context.Context, path string, req any) (*StreamReade
 		return nil, parseErrorBody(httpResp.StatusCode, body)
 	}
 	return newStreamReader(httpResp.Body), nil
+}
+
+// DoRaw performs an authenticated HTTP request and returns the raw response
+// status + body. An empty or nil body is treated uniformly: no request body
+// is sent and Content-Type is omitted (so `--data ""` at the verb layer
+// behaves like "no --data" rather than "zero-byte JSON"). Auth + User-Agent
+// are applied by the client's bearerTransport middleware. No status-code
+// interpretation — the caller decides how to handle non-2xx. Intended for
+// the `ana api` raw verb; typed verbs should keep using Unary.
+func (c *Client) DoRaw(ctx context.Context, method, path string, body []byte) (int, []byte, error) {
+	url := joinURL(c.baseURL, path)
+	var r io.Reader
+	if len(body) > 0 {
+		r = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, url, r)
+	if err != nil {
+		return 0, nil, fmt.Errorf("build request: %w", err)
+	}
+	if len(body) > 0 {
+		req.Header.Set("content-type", "application/json")
+	}
+	req.Header.Set("accept", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return 0, nil, fmt.Errorf("doraw: %w", ctxErr)
+		}
+		return 0, nil, fmt.Errorf("doraw: %w", err)
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return resp.StatusCode, nil, fmt.Errorf("read response: %w", err)
+	}
+	return resp.StatusCode, b, nil
 }

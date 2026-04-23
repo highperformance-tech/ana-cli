@@ -287,7 +287,7 @@ func TestBuildVerbs_Shape(t *testing.T) {
 	t.Parallel()
 	client := transport.New("https://example", func(context.Context) (string, error) { return "", nil })
 	verbs := buildVerbs(client, func(string) string { return "" }, "", "default", "https://example")
-	want := []string{"auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit", "version", "update"}
+	want := []string{"api", "auth", "profile", "org", "connector", "chat", "dashboard", "playbook", "ontology", "feed", "audit", "version", "update"}
 	for _, v := range want {
 		if _, ok := verbs[v]; !ok {
 			t.Errorf("missing verb: %q", v)
