@@ -2,8 +2,10 @@ package update
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -156,21 +158,42 @@ func emitStatus(w io.Writer, jsonOut bool, st updateStatus, plain string) error 
 func atomicReplace(deps Deps, exePath, newPath string) error {
 	if deps.GOOS != "windows" {
 		if err := deps.Rename(newPath, exePath); err != nil {
-			return fmt.Errorf("update: replace %s: %w", exePath, err)
+			return formatReplaceErr(deps.GOOS, exePath, err)
 		}
 		return nil
 	}
 	oldPath := exePath + ".old"
 	if err := deps.Rename(exePath, oldPath); err != nil {
-		return fmt.Errorf("update: rename %s -> %s: %w", exePath, oldPath, err)
+		// No .old exists yet, so no rollback wording; route through the
+		// permission-aware formatter for the EACCES-equivalent case.
+		return formatReplaceErr(deps.GOOS, exePath, err)
 	}
 	if err := deps.Rename(newPath, exePath); err != nil {
-		// Roll the old binary back; if that also fails we can't fix it for
-		// the user so tell them where the last-known-good copy lives.
+		// Roll the old binary back; if that also fails and the root cause
+		// is a permission denial, the `.old` we'd name in the recovery
+		// message sits in the same admin-only directory — point the user
+		// at elevation instead of a path they also can't touch.
 		if rbErr := deps.Rename(oldPath, exePath); rbErr != nil {
+			if errors.Is(err, fs.ErrPermission) {
+				return formatReplaceErr(deps.GOOS, exePath, err)
+			}
 			return fmt.Errorf("update: replace %s failed (%w); rollback also failed (%w); recover from %s", exePath, err, rbErr, oldPath)
 		}
-		return fmt.Errorf("update: replace %s: %w", exePath, err)
+		return formatReplaceErr(deps.GOOS, exePath, err)
 	}
 	return nil
+}
+
+// formatReplaceErr turns an os.Rename failure into an actionable message.
+// On fs.ErrPermission we tell the user exactly how to retry (sudo on Unix,
+// Administrator on Windows) instead of leaking the tempdir path the user
+// never picked. Every other error falls through to the plain wrapped form.
+func formatReplaceErr(goos, exePath string, err error) error {
+	if errors.Is(err, fs.ErrPermission) {
+		if goos == "windows" {
+			return fmt.Errorf("update: cannot write to %s: permission denied. Re-run from an elevated (Administrator) shell, or reinstall ana into a user-writable directory (e.g. %%LOCALAPPDATA%%)", exePath)
+		}
+		return fmt.Errorf("update: cannot write to %s: permission denied. Re-run with sudo, or reinstall ana into a user-writable directory", exePath)
+	}
+	return fmt.Errorf("update: replace %s: %w", exePath, err)
 }
