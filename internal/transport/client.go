@@ -281,21 +281,23 @@ func (c *Client) Stream(ctx context.Context, path string, req any) (*StreamReade
 }
 
 // DoRaw performs an authenticated HTTP request and returns the raw response
-// status + body. body may be nil. Auth + User-Agent are applied by the
-// client's bearerTransport middleware. No status-code interpretation — the
-// caller decides how to handle non-2xx. Intended for the `ana api` raw verb;
-// typed verbs should keep using Unary.
+// status + body. An empty or nil body is treated uniformly: no request body
+// is sent and Content-Type is omitted (so `--data ""` at the verb layer
+// behaves like "no --data" rather than "zero-byte JSON"). Auth + User-Agent
+// are applied by the client's bearerTransport middleware. No status-code
+// interpretation — the caller decides how to handle non-2xx. Intended for
+// the `ana api` raw verb; typed verbs should keep using Unary.
 func (c *Client) DoRaw(ctx context.Context, method, path string, body []byte) (int, []byte, error) {
 	url := joinURL(c.baseURL, path)
 	var r io.Reader
-	if body != nil {
+	if len(body) > 0 {
 		r = bytes.NewReader(body)
 	}
 	req, err := http.NewRequestWithContext(ctx, method, url, r)
 	if err != nil {
 		return 0, nil, fmt.Errorf("build request: %w", err)
 	}
-	if body != nil {
+	if len(body) > 0 {
 		req.Header.Set("content-type", "application/json")
 	}
 	req.Header.Set("accept", "application/json")
