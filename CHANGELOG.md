@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/highperformance-tech/ana-cli/compare/v0.3.1...v0.3.2) (2026-04-23)
+
+
+### Bug Fixes
+
+* **update:** actionable EACCES + suppress stale nudge after self-update ([#29](https://github.com/highperformance-tech/ana-cli/issues/29)) ([9ab198c](https://github.com/highperformance-tech/ana-cli/commit/9ab198c1f9e983b26e24d6b62277d931c83e9e1d)), closes [#28](https://github.com/highperformance-tech/ana-cli/issues/28)
+
 ## [0.3.1](https://github.com/highperformance-tech/ana-cli/compare/v0.3.0...v0.3.1) (2026-04-23)
 
 
