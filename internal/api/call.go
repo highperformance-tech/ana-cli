@@ -60,13 +60,19 @@ func (c *callCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return err
 	}
 
-	if fs.NArg() == 0 || strings.TrimSpace(fs.Arg(0)) == "" {
+	if fs.NArg() == 0 {
 		return cli.UsageErrf("api: <path> positional argument required")
 	}
 	if fs.NArg() > 1 {
 		return cli.UsageErrf("api: unexpected positional arguments: %v", fs.Args()[1:])
 	}
-	path := fs.Arg(0)
+	// Trim once and reuse — otherwise a whitespace-padded arg like
+	// `" /v1/things "` passes the blank check but gets forwarded to the
+	// transport verbatim, which joinURL would then stitch into a malformed URL.
+	path := strings.TrimSpace(fs.Arg(0))
+	if path == "" {
+		return cli.UsageErrf("api: <path> positional argument required")
+	}
 
 	if c.method == "" {
 		return cli.UsageErrf("api: --method must not be empty")

@@ -201,6 +201,24 @@ func TestBlankPathIsUsageError(t *testing.T) {
 	}
 }
 
+// TestPathIsTrimmedBeforeDispatch pins the contract that a
+// whitespace-padded path is trimmed before being forwarded. Without this,
+// `ana api " /v1/things "` would pass the blank-check and then hit a
+// malformed URL downstream.
+func TestPathIsTrimmedBeforeDispatch(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := New(f.deps())
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"  /v1/things\t"}, stdio)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if f.lastPath != "/v1/things" {
+		t.Errorf("path = %q, want %q (trimmed)", f.lastPath, "/v1/things")
+	}
+}
+
 // TestExtraPositionalsRejected — silently dropping extras masks typos like
 // `ana api /v1/things stray` (user probably meant a flag). Exactly one
 // non-blank positional is required.
