@@ -67,7 +67,7 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	// can place `--profile`/`--endpoint`/`--token-file` after the verb and
 	// still have config resolution honour them — ParseGlobal stops at the
 	// first positional, which would leave those flags invisible here.
-	global, _, err := cli.StripGlobals(args)
+	global, verbArgs, err := cli.StripGlobals(args)
 	if err != nil {
 		// Don't return here — let Dispatch produce the canonical usage error
 		// (it prints root help + err to stderr). Fall through with zero
@@ -131,8 +131,17 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	// nil flows through drainNudge as a no-op.
 	nudgeCh := startNudge(env, loaded, global)
 	err = cli.Dispatch(ctx, verbs, args, stdio)
-	drainNudge(nudgeCh, 500*time.Millisecond, err, stdio.Stderr)
+	drainNudge(nudgeCh, 500*time.Millisecond, err, firstVerb(verbArgs), stdio.Stderr)
 	return err
+}
+
+// firstVerb returns the leading positional from StripGlobals' verb-args slice,
+// or "" for an empty slice. Keeps the drainNudge call site readable.
+func firstVerb(verbArgs []string) string {
+	if len(verbArgs) == 0 {
+		return ""
+	}
+	return verbArgs[0]
 }
 
 // startNudge launches the passive update-check goroutine when enabled and
@@ -180,12 +189,19 @@ func startNudge(env func(string) string, loaded config.Config, global cli.Global
 // it produces a non-empty message and the verb did not return a help/usage
 // error, the message is written to stderr — we intentionally suppress the
 // nudge on help/usage paths so help text doesn't get crowded by an upgrade
-// prompt. A nil ch (check was skipped) or a timeout is a clean no-op.
-func drainNudge(ch chan string, timeout time.Duration, verbErr error, stderr io.Writer) {
+// prompt. A successful `ana update` is also suppressed: the goroutine captured
+// the pre-swap version at process start and can't know the binary was just
+// replaced, so its "new version available" line would contradict the verb's
+// own success output. A failed `ana update` still nudges — the user needs the
+// retry hint. A nil ch (check was skipped) or a timeout is a clean no-op.
+func drainNudge(ch chan string, timeout time.Duration, verbErr error, verb string, stderr io.Writer) {
 	if ch == nil {
 		return
 	}
 	if errors.Is(verbErr, cli.ErrHelp) || errors.Is(verbErr, cli.ErrUsage) {
+		return
+	}
+	if verb == "update" && verbErr == nil {
 		return
 	}
 	timer := time.NewTimer(timeout)

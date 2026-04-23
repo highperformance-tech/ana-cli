@@ -576,13 +576,14 @@ func TestStartNudge_SkipConditions(t *testing.T) {
 	}
 }
 
-// TestDrainNudge covers the four branches: nil channel, help-err suppression,
-// non-empty message printed, and empty message (no print).
+// TestDrainNudge covers every branch: nil channel, help-err suppression,
+// successful `ana update` suppression, failed `ana update` still nudges,
+// non-empty message printed, empty message (no print), and the timeout.
 func TestDrainNudge(t *testing.T) {
 	t.Parallel()
 	t.Run("nil channel is a no-op", func(t *testing.T) {
 		var buf bytes.Buffer
-		drainNudge(nil, time.Millisecond, nil, &buf)
+		drainNudge(nil, time.Millisecond, nil, "", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -591,8 +592,26 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- "should not print"
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, cli.ErrHelp, &buf)
+		drainNudge(ch, time.Millisecond, cli.ErrHelp, "", &buf)
 		if buf.Len() != 0 {
+			t.Fatalf("stderr: %q", buf.String())
+		}
+	})
+	t.Run("update success suppresses", func(t *testing.T) {
+		ch := make(chan string, 1)
+		ch <- "stale nudge from pre-swap version"
+		var buf bytes.Buffer
+		drainNudge(ch, time.Millisecond, nil, "update", &buf)
+		if buf.Len() != 0 {
+			t.Fatalf("stderr: %q", buf.String())
+		}
+	})
+	t.Run("update failure still nudges", func(t *testing.T) {
+		ch := make(chan string, 1)
+		ch <- "retry hint"
+		var buf bytes.Buffer
+		drainNudge(ch, time.Millisecond, errors.New("permission denied"), "update", &buf)
+		if !strings.Contains(buf.String(), "retry hint") {
 			t.Fatalf("stderr: %q", buf.String())
 		}
 	})
@@ -600,7 +619,7 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- "hello"
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, nil, &buf)
+		drainNudge(ch, time.Millisecond, nil, "", &buf)
 		if !strings.Contains(buf.String(), "hello") {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -609,7 +628,7 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- ""
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, nil, &buf)
+		drainNudge(ch, time.Millisecond, nil, "", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -617,11 +636,25 @@ func TestDrainNudge(t *testing.T) {
 	t.Run("timeout", func(t *testing.T) {
 		ch := make(chan string) // no sender
 		var buf bytes.Buffer
-		drainNudge(ch, 10*time.Millisecond, nil, &buf)
+		drainNudge(ch, 10*time.Millisecond, nil, "", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}
 	})
+}
+
+// TestFirstVerb covers the empty-slice branch and the typical case.
+func TestFirstVerb(t *testing.T) {
+	t.Parallel()
+	if got := firstVerb(nil); got != "" {
+		t.Errorf("nil slice: got %q, want empty", got)
+	}
+	if got := firstVerb([]string{}); got != "" {
+		t.Errorf("empty slice: got %q, want empty", got)
+	}
+	if got := firstVerb([]string{"update", "--json"}); got != "update" {
+		t.Errorf("got %q, want update", got)
+	}
 }
 
 // TestUpdateCmd_Help short-circuits on --help like every other leaf verb.

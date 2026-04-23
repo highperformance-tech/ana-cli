@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"strings"
@@ -284,6 +285,130 @@ func TestEmitStatus_WriteError(t *testing.T) {
 	t.Parallel()
 	err := emitStatus(failingWriter{}, false, updateStatus{Status: "x"}, "line\n")
 	wantErr(t, err, "emit status")
+}
+
+// TestFormatReplaceErr_PermissionGuidance pins the user-facing wording for the
+// EACCES branch on Unix and Windows. The strings are what users will see on
+// perm-denied paths (e.g. /usr/local/bin/ana, C:\Program Files\ana), and the
+// plan commits to exactly this copy — a silent wording change would erase the
+// actionable hint that motivated this fix.
+func TestFormatReplaceErr_PermissionGuidance(t *testing.T) {
+	t.Parallel()
+	t.Run("unix permission denied", func(t *testing.T) {
+		err := formatReplaceErr("linux", "/usr/local/bin/ana", fs.ErrPermission)
+		got := err.Error()
+		if !strings.Contains(got, "cannot write to /usr/local/bin/ana") {
+			t.Errorf("missing path: %q", got)
+		}
+		if !strings.Contains(got, "sudo") {
+			t.Errorf("missing sudo hint: %q", got)
+		}
+		if strings.Contains(got, "/tmp") || strings.Contains(got, "ana-update-") {
+			t.Errorf("leaked tempdir path: %q", got)
+		}
+	})
+	t.Run("windows permission denied", func(t *testing.T) {
+		err := formatReplaceErr("windows", `C:\Program Files\ana\ana.exe`, fs.ErrPermission)
+		got := err.Error()
+		if !strings.Contains(got, "Administrator") {
+			t.Errorf("missing Administrator hint: %q", got)
+		}
+		if !strings.Contains(got, "LOCALAPPDATA") {
+			t.Errorf("missing LOCALAPPDATA hint: %q", got)
+		}
+	})
+	t.Run("non-permission error falls through", func(t *testing.T) {
+		err := formatReplaceErr("linux", "/x/ana", errors.New("disk full"))
+		got := err.Error()
+		if !strings.Contains(got, "disk full") {
+			t.Errorf("should preserve cause: %q", got)
+		}
+		if strings.Contains(got, "sudo") {
+			t.Errorf("should not suggest sudo for non-permission errors: %q", got)
+		}
+	})
+}
+
+// permDeniedErr wraps a *PathError around fs.ErrPermission so errors.Is
+// matches both the stdlib rename error shape (PathError) and the sentinel.
+func permDeniedErr() error {
+	return &fs.PathError{Op: "rename", Path: "x", Err: fs.ErrPermission}
+}
+
+// TestSelfUpdate_UnixEACCES drives the unix rename-permission branch end to end
+// and asserts the user-facing message includes the sudo hint rather than the
+// raw tempdir path.
+func TestSelfUpdate_UnixEACCES(t *testing.T) {
+	exePath, deps := stageUpdate(t, "linux", "amd64", "ana")
+	deps.Rename = func(string, string) error { return permDeniedErr() }
+	r := &releaseServer{tag: "v2.0.0", archiveName: "ana_2.0.0_linux_amd64.tar.gz"}
+	r.archiveBody = fakeArchive(t, "tar.gz", "ana", []byte("NEW"))
+	srv := r.serve(t)
+	defer srv.Close()
+	withURLs(t, srv)
+
+	err := SelfUpdate(context.Background(), deps, "1.0.0", io.Discard, false)
+	wantErr(t, err, "cannot write to "+exePath)
+	if !strings.Contains(err.Error(), "sudo") {
+		t.Errorf("missing sudo hint: %v", err)
+	}
+	if got, _ := os.ReadFile(exePath); string(got) != "old" {
+		t.Errorf("exe must not change on EACCES: %q", got)
+	}
+}
+
+// TestSelfUpdate_WindowsEACCES_AsideFails covers the first-rename permission
+// denial on Windows (no .old yet, no rollback) and pins the Administrator hint.
+func TestSelfUpdate_WindowsEACCES_AsideFails(t *testing.T) {
+	exePath, deps := stageUpdate(t, "windows", "amd64", "ana.exe")
+	deps.Rename = func(string, string) error { return permDeniedErr() }
+	r := &releaseServer{tag: "v2.0.0", archiveName: "ana_2.0.0_windows_amd64.zip"}
+	r.archiveBody = fakeArchive(t, "zip", "ana.exe", []byte("NEW"))
+	srv := r.serve(t)
+	defer srv.Close()
+	withURLs(t, srv)
+
+	err := SelfUpdate(context.Background(), deps, "1.0.0", io.Discard, false)
+	wantErr(t, err, "cannot write to "+exePath)
+	if !strings.Contains(err.Error(), "Administrator") {
+		t.Errorf("missing Administrator hint: %v", err)
+	}
+	// No ".old" recovery wording — the aside rename never succeeded.
+	if strings.Contains(err.Error(), "recover from") {
+		t.Errorf("should not reference .old recovery when aside failed: %v", err)
+	}
+}
+
+// TestSelfUpdate_WindowsEACCES_SecondFailsRollbackFails covers the pathological
+// case: aside succeeded, rename-in failed with EACCES, rollback also failed.
+// The old "recover from <.old>" wording is misleading there — .old sits in the
+// same admin-only directory — so the message must point at elevation.
+func TestSelfUpdate_WindowsEACCES_SecondFailsRollbackFails(t *testing.T) {
+	exePath, deps := stageUpdate(t, "windows", "amd64", "ana.exe")
+	var n int
+	deps.Rename = func(o, np string) error {
+		n++
+		switch n {
+		case 1:
+			return os.Rename(o, np) // aside succeeds
+		default:
+			return permDeniedErr() // rename-in + rollback both fail EACCES
+		}
+	}
+	r := &releaseServer{tag: "v2.0.0", archiveName: "ana_2.0.0_windows_amd64.zip"}
+	r.archiveBody = fakeArchive(t, "zip", "ana.exe", []byte("NEW"))
+	srv := r.serve(t)
+	defer srv.Close()
+	withURLs(t, srv)
+
+	err := SelfUpdate(context.Background(), deps, "1.0.0", io.Discard, false)
+	wantErr(t, err, "cannot write to "+exePath)
+	if !strings.Contains(err.Error(), "Administrator") {
+		t.Errorf("missing Administrator hint: %v", err)
+	}
+	if strings.Contains(err.Error(), "recover from") {
+		t.Errorf("should not point at .old when both sides are admin-only: %v", err)
+	}
 }
 
 func TestDeps(t *testing.T) {
