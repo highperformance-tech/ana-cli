@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/highperformance-tech/ana-cli/compare/v0.3.0...v0.3.1) (2026-04-23)
+
+
+### Features
+
+* **api:** ana api raw-JSON passthrough verb ([#25](https://github.com/highperformance-tech/ana-cli/issues/25)) ([#26](https://github.com/highperformance-tech/ana-cli/issues/26)) ([b16cadf](https://github.com/highperformance-tech/ana-cli/commit/b16cadfc89925209bbe9f0549302978d5ad3345c))
+
 ## [0.3.0](https://github.com/highperformance-tech/ana-cli/compare/v0.2.1...v0.3.0) (2026-04-22)
 
 
