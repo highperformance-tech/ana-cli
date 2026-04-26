@@ -411,6 +411,32 @@ func TestStartNudge_SkipConditions(t *testing.T) {
 			}
 		})
 	}
+
+	// Disabled interval — config writes UpdateCheckInterval="0" so
+	// ParseInterval returns enabled=false and startNudge returns nil
+	// before launching the goroutine.
+	t.Run("disabled interval", func(t *testing.T) {
+		version = "1.0.0"
+		dir := t.TempDir()
+		off := "0"
+		cfg := config.Config{UpdateCheckInterval: &off}
+		path := filepath.Join(dir, "ana", "config.json")
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := config.Save(path, cfg); err != nil {
+			t.Fatal(err)
+		}
+		env := func(k string) string {
+			if k == "XDG_CONFIG_HOME" {
+				return dir
+			}
+			return ""
+		}
+		if got := startNudge(env, cli.Global{}); got != nil {
+			t.Fatalf("expected nil channel for disabled interval, got %v", got)
+		}
+	})
 }
 
 // TestDrainNudge covers every branch.

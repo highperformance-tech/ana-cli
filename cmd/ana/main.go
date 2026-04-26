@@ -185,15 +185,22 @@ func isKnownValueGlobal(tok string) bool {
 //   - update.ParseInterval reports disabled.
 //   - update.CachePath errors — no place to stash freshness state.
 //
-// Note: this used to also peek loaded config for the user's preferred
-// interval; with lazy config-load that file is no longer touched here.
-// ParseInterval(nil) defaults to 4h enabled, which matches the prior
-// "no override" behavior.
+// Best-effort peek at config.UpdateCheckInterval so explicit "0"/"disable"
+// or custom durations are honored. Both DefaultPath and Load errors are
+// swallowed here (unlike lazyState.initConfig) — the nudge is best-effort
+// background work, and a missing/unreadable config simply falls back to
+// ParseInterval(nil) → (4h, true).
 func startNudge(env func(string) string, global cli.Global) chan string {
 	if version == "dev" || global.JSON {
 		return nil
 	}
-	ttl, enabled := update.ParseInterval(nil)
+	var interval *string
+	if path, err := config.DefaultPath(env); err == nil {
+		if cfg, err := config.Load(path); err == nil {
+			interval = cfg.UpdateCheckInterval
+		}
+	}
+	ttl, enabled := update.ParseInterval(interval)
 	if !enabled {
 		return nil
 	}

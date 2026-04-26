@@ -16,8 +16,9 @@ import (
 )
 
 // H is the per-test live-smoke harness. Construct via Begin; the returned H
-// holds a transport.Client plus a verb map bound to a temp config. Every
-// mutation registered with the helpers gets reverted in LIFO order by End.
+// holds a transport.Client plus a root *cli.Group (the verb tree) bound to
+// a temp config. Every mutation registered with the helpers gets reverted
+// in LIFO order by End.
 type H struct {
 	t        *testing.T
 	env      envSpec
