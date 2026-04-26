@@ -131,11 +131,15 @@ func TestHealthEmptyDashboards(t *testing.T) {
 // tokens beyond the single <id> must yield ErrUsage before the RPC fires.
 func TestHealthRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	cmd := &healthCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
+	cmd := &healthCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 

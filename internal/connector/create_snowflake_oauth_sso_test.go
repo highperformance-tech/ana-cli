@@ -248,12 +248,19 @@ func TestCreateSnowflakeOAuthSSORenderWriteErr(t *testing.T) {
 
 // TestCreateSnowflakeOAuthSSORejectsExtraPositionals pins the no-positional
 // contract for the deeply-nested leaf: trailing tokens after the verb path
-// must yield ErrUsage before RequireFlags or any RPC fires.
+// must yield ErrUsage before RequireFlags or any RPC fires. Use the
+// happy-path argv plus a trailing positional so the assertion would fail
+// loudly if the leaf's positional check ever moved AFTER RequireFlags.
 func TestCreateSnowflakeOAuthSSORejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	_, err := runSnowflakeOAuthSSO(t, (&fakeDeps{}).deps(), []string{"snowflake", "oauth-sso", "extra"}, "")
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	f := &fakeDeps{}
+	args := append(snowflakeOAuthSSOArgs(), "extra")
+	_, err := runSnowflakeOAuthSSO(t, f.deps(), args, "")
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 

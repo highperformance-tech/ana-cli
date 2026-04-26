@@ -87,11 +87,15 @@ func TestShareJSON(t *testing.T) {
 // tokens beyond the single <id> must yield ErrUsage before the RPC fires.
 func TestShareRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	cmd := &shareCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
+	cmd := &shareCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 

@@ -61,6 +61,28 @@ func RequireFlags(fs *flag.FlagSet, verb string, names ...string) error {
 	return UsageErrf("%s: missing required flags: %s", verb, strings.Join(missing, ", "))
 }
 
+// RequireNoPositionals returns a UsageErr when args is non-empty. Verb leaves
+// that take no positional arguments call this at the top of Run so the
+// "unexpected positional arguments" message is identical across the CLI.
+// The verb prefix appears in the error so callers can grep for it.
+func RequireNoPositionals(verb string, args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+	return UsageErrf("%s: unexpected positional arguments: %v", verb, args)
+}
+
+// RequireMaxPositionals returns a UsageErr when args has more than max
+// elements. Verb leaves with bounded positional arity (e.g. `[<id>]` or
+// `<id> [<title>]`) call this at the top of Run so the error wording stays
+// consistent.
+func RequireMaxPositionals(verb string, max int, args []string) error {
+	if len(args) <= max {
+		return nil
+	}
+	return UsageErrf("%s: unexpected positional arguments: %v", verb, args[max:])
+}
+
 // EnumFlag returns a flag.Value that validates against a fixed allow-list at
 // parse time: unknown values yield a UsageErr before the verb body runs, so
 // downstream code can trust *target. The allowed values show up in the Set

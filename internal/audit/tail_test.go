@@ -408,8 +408,11 @@ func TestTailRejectsExtraPositionals(t *testing.T) {
 	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := New(f.deps()).Run(context.Background(), []string{"tail", "unexpected"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" || f.lastRawReq != nil {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q raw=%s", f.lastPath, f.lastRawReq)
 	}
 }
 

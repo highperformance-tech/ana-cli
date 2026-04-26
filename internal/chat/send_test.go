@@ -220,11 +220,15 @@ func TestSendNoMessage(t *testing.T) {
 // operator quotes multi-word messages instead of having them silently dropped.
 func TestSendRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
+	cmd := &sendCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "msg1", "extra-msg"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one positional <message>") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" || f.streamPth != "" {
+		t.Errorf("Unary/Stream should not be called on positional-arity failure: path=%q stream=%q", f.lastPath, f.streamPth)
 	}
 }
 

@@ -102,8 +102,11 @@ func TestKeysListRejectsExtraPositionals(t *testing.T) {
 	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := New(f.deps()).Run(context.Background(), []string{"keys", "list", "unexpected"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 
@@ -203,21 +206,29 @@ func TestKeysCreateRejectsExtraPositionals(t *testing.T) {
 	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", "n", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 
 // TestKeysCreateRejectsEmptyName covers the explicit empty-name guard that
 // fires AFTER RequireFlags (which only checks "was the flag set"): supplying
-// `--name ""` must still yield ErrUsage.
+// `--name ""` or whitespace-only must still yield ErrUsage.
 func TestKeysCreateRejectsEmptyName(t *testing.T) {
 	t.Parallel()
-	f := &fakeDeps{}
-	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", ""}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	for _, name := range []string{"", "   ", "\t\n"} {
+		f := &fakeDeps{}
+		stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+		err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", name}, stdio)
+		if !errors.Is(err, cli.ErrUsage) {
+			t.Errorf("name=%q err=%v want ErrUsage", name, err)
+		}
+		if f.lastPath != "" {
+			t.Errorf("name=%q Unary should not be called: path=%q", name, f.lastPath)
+		}
 	}
 }
 
@@ -235,9 +246,11 @@ func TestKeysCreateBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include --name so missing-required-flag isn't the failure path; this
+	// isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", "n", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 
@@ -294,9 +307,11 @@ func TestKeysRotateBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := New(f.deps()).Run(context.Background(), []string{"keys", "rotate", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "rotate", "k-id", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 
@@ -362,9 +377,11 @@ func TestKeysRevokeBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := New(f.deps()).Run(context.Background(), []string{"keys", "revoke", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "revoke", "k-id", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 

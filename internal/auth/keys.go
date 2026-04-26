@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
 )
@@ -106,11 +107,12 @@ func (c *keysCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) er
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "auth keys create", "name"); err != nil {
 		return err
 	}
-	if c.name == "" {
+	name := strings.TrimSpace(c.name)
+	if name == "" {
 		return cli.UsageErrf("auth keys create: --name must not be empty")
 	}
 
-	req := createApiKeyReq{Name: c.name, ServiceAccountID: c.sa}
+	req := createApiKeyReq{Name: name, ServiceAccountID: c.sa}
 	var resp createApiKeyResp
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/CreateApiKey", req, &resp); err != nil {
 		return fmt.Errorf("auth keys create: %w", translateErr(err))

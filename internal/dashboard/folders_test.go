@@ -77,10 +77,14 @@ func TestFoldersListUnaryErr(t *testing.T) {
 // trailing tokens after the verb path must yield ErrUsage before the RPC fires.
 func TestFoldersListRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"folders", "list", "unexpected"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	err := New(f.deps()).Run(context.Background(), []string{"folders", "list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 

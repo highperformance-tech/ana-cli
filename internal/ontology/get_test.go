@@ -79,8 +79,11 @@ func TestGetRejectsExtraPositionals(t *testing.T) {
 	cmd := &getCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"5476", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 

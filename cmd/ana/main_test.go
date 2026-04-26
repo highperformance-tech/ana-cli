@@ -421,7 +421,7 @@ func TestStartNudge_SkipConditions(t *testing.T) {
 		off := "0"
 		cfg := config.Config{UpdateCheckInterval: &off}
 		path := filepath.Join(dir, "ana", "config.json")
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 			t.Fatal(err)
 		}
 		if err := config.Save(path, cfg); err != nil {

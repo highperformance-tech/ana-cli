@@ -65,9 +65,11 @@ func TestRenameEmptyTitle(t *testing.T) {
 func TestRenameBadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"rename", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include the required <id> <title> positionals so missing-arg isn't the
+	// failure path; this isolates the unknown-flag (--nope) parse error.
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"rename", "chat-x", "new title", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 
@@ -107,11 +109,15 @@ func TestRenameJSON(t *testing.T) {
 // quotes multi-word titles instead of having them silently dropped.
 func TestRenameRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	cmd := &renameCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
+	cmd := &renameCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "title", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly two") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 
@@ -148,20 +154,26 @@ func TestBookmarkMissingID(t *testing.T) {
 // simpleAck's `len(args) > 1` rejection path for both verbs.
 func TestBookmarkRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	cmd := &bookmarkCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
+	cmd := &bookmarkCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 
 func TestBookmarkBadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"bookmark", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"bookmark", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 
@@ -222,9 +234,11 @@ func TestUnbookmarkMissingID(t *testing.T) {
 func TestUnbookmarkBadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"unbookmark", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"unbookmark", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 
@@ -291,20 +305,26 @@ func TestDeleteMissingID(t *testing.T) {
 // `chat delete`: trailing tokens beyond the single <id> must yield ErrUsage.
 func TestDeleteRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	cmd := &deleteCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
+	cmd := &deleteCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 
 func TestDeleteBadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"delete", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"delete", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 
@@ -378,20 +398,26 @@ func TestDuplicateMissingID(t *testing.T) {
 // ErrUsage.
 func TestDuplicateRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	cmd := &duplicateCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
+	cmd := &duplicateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 
 func TestDuplicateBadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"duplicate", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"duplicate", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
+		t.Errorf("err=%v want unknown-flag ErrUsage", err)
 	}
 }
 

@@ -157,10 +157,20 @@ func TestList_BadFlag(t *testing.T) {
 // tokens after the verb path must yield ErrUsage before the config is loaded.
 func TestList_RejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
+	cfgPath := tmpCfg(t)
+	loaded := 0
+	d := Deps{
+		LoadCfg:    func() (config.Config, error) { loaded++; return config.Load(cfgPath) },
+		SaveCfg:    func(c config.Config) error { return config.Save(cfgPath, c) },
+		ConfigPath: func() (string, error) { return cfgPath, nil },
+	}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := New(newDeps(tmpCfg(t))).Run(context.Background(), []string{"list", "unexpected"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Fatalf("err=%v want ErrUsage", err)
+	err := New(d).Run(context.Background(), []string{"list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Fatalf("err=%v want positional ErrUsage", err)
+	}
+	if loaded != 0 {
+		t.Errorf("LoadCfg should not be called on positional-arity failure: loaded=%d", loaded)
 	}
 }
 
@@ -526,10 +536,20 @@ func TestUse_EmptyArg(t *testing.T) {
 // `profile use`: any token after the single <name> must yield ErrUsage.
 func TestUse_RejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
+	cfgPath := tmpCfg(t)
+	saved := 0
+	d := Deps{
+		LoadCfg:    func() (config.Config, error) { return config.Load(cfgPath) },
+		SaveCfg:    func(c config.Config) error { saved++; return config.Save(cfgPath, c) },
+		ConfigPath: func() (string, error) { return cfgPath, nil },
+	}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := (&useCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"name1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Fatalf("err=%v want ErrUsage", err)
+	err := (&useCmd{deps: d}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Fatalf("err=%v want positional ErrUsage", err)
+	}
+	if saved != 0 {
+		t.Errorf("SaveCfg should not be called on positional-arity failure: saved=%d", saved)
 	}
 }
 
@@ -657,10 +677,20 @@ func TestRemove_EmptyArg(t *testing.T) {
 // `profile remove`: any token after the single <name> must yield ErrUsage.
 func TestRemove_RejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
+	cfgPath := tmpCfg(t)
+	saved := 0
+	d := Deps{
+		LoadCfg:    func() (config.Config, error) { return config.Load(cfgPath) },
+		SaveCfg:    func(c config.Config) error { saved++; return config.Save(cfgPath, c) },
+		ConfigPath: func() (string, error) { return cfgPath, nil },
+	}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := (&removeCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"name1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Fatalf("err=%v want ErrUsage", err)
+	err := (&removeCmd{deps: d}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Fatalf("err=%v want positional ErrUsage", err)
+	}
+	if saved != 0 {
+		t.Errorf("SaveCfg should not be called on positional-arity failure: saved=%d", saved)
 	}
 }
 
@@ -845,15 +875,17 @@ func TestShow_EmptyArgFallsBackToActive(t *testing.T) {
 
 // TestShow_RejectsExtraPositionals pins the strict-arity contract for
 // `profile show`: any trailing token beyond the optional <name> must yield
-// ErrUsage.
+// ErrUsage. show is read-only so there's no save side-effect to assert; we
+// pin the precise error message instead so missing-config or other unrelated
+// failures can't satisfy this test.
 func TestShow_RejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
 	stdio, _, _ := testcli.NewIO(nil)
 	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"name1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) {
-		t.Fatalf("err=%v want ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "accepts at most one optional") {
+		t.Fatalf("err=%v want strict-arity ErrUsage", err)
 	}
 }
 
