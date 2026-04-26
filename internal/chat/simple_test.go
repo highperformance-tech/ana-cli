@@ -102,6 +102,19 @@ func TestRenameJSON(t *testing.T) {
 	}
 }
 
+// TestRenameRejectsExtraPositionals exercises the `len(args) > 2` branch:
+// trailing tokens beyond `<id> <title>` must yield ErrUsage so the operator
+// quotes multi-word titles instead of having them silently dropped.
+func TestRenameRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &renameCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "title", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 // --- bookmark / unbookmark -----------------------------------------------
 
 func TestBookmarkHappy(t *testing.T) {
@@ -127,6 +140,19 @@ func TestBookmarkMissingID(t *testing.T) {
 	err := cmd.Run(context.Background(), nil, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+}
+
+// TestBookmarkRejectsExtraPositionals exercises the simpleAck strict-arity
+// branch: bookmark/unbookmark share a helper, so this also covers
+// simpleAck's `len(args) > 1` rejection path for both verbs.
+func TestBookmarkRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &bookmarkCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
 	}
 }
 
@@ -261,6 +287,18 @@ func TestDeleteMissingID(t *testing.T) {
 	}
 }
 
+// TestDeleteRejectsExtraPositionals pins the strict-arity contract for
+// `chat delete`: trailing tokens beyond the single <id> must yield ErrUsage.
+func TestDeleteRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &deleteCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestDeleteBadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
@@ -332,6 +370,19 @@ func TestDuplicateMissingID(t *testing.T) {
 	err := cmd.Run(context.Background(), nil, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+}
+
+// TestDuplicateRejectsExtraPositionals pins the strict-arity contract for
+// `chat duplicate`: trailing tokens beyond the single <id> must yield
+// ErrUsage.
+func TestDuplicateRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &duplicateCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
 	}
 }
 

@@ -1,6 +1,6 @@
 # cmd/ana
 
-The `ana` binary's main package. Pure wiring: reads global flags + config, constructs a `transport.Client`, assembles the verb map by injecting adapted `Deps` into each `internal/<verb>` package, and hands off to `cli.Dispatch`. All domain logic lives under `internal/`.
+The `ana` binary's main package. Pure wiring: declares the root `*cli.Group` with persistent flags (`--json`, `--endpoint`, `--token-file`, `--profile`), assembles the verb tree by injecting lazy `transport.Client` + config closures into each `internal/<verb>`'s `Deps`, then runs `cli.Resolve` + `Resolved.Execute`. All domain logic lives under `internal/`.
 
 ## Files
 

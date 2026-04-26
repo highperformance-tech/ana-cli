@@ -184,6 +184,17 @@ func TestCreateDatabricksOAuthIndividualRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateDatabricksOAuthIndividualRejectsExtraPositionals pins the
+// no-positional contract for the deeply-nested leaf: trailing tokens after
+// the verb path must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateDatabricksOAuthIndividualRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runDatabricksOAuthIndividual(t, (&fakeDeps{}).deps(), []string{"databricks", "oauth-individual", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateDatabricksOAuthIndividualBadFlag(t *testing.T) {
 	t.Parallel()
 	_, err := runDatabricksOAuthIndividual(t, (&fakeDeps{}).deps(), []string{"databricks", "oauth-individual", "--nope"}, "")

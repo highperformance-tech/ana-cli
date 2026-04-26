@@ -108,6 +108,18 @@ func TestShowUnaryErr(t *testing.T) {
 	}
 }
 
+// TestShowRejectsExtraPositionals pins the no-positional contract: trailing
+// tokens after the verb path must yield ErrUsage before the RPC fires.
+func TestShowRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(f.deps()).Run(context.Background(), []string{"show", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestShowBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}

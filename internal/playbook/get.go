@@ -46,6 +46,9 @@ type getResp struct {
 }
 
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) > 1 {
+		return cli.UsageErrf("playbook get: exactly one <id> positional argument required")
+	}
 	id, err := cli.RequireStringID("playbook get", args)
 	if err != nil {
 		return err

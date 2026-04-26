@@ -35,6 +35,9 @@ type getResp struct {
 // JSON (--json) or renders a compact key:value summary. The fallback (no
 // `dashboard` key) prints raw JSON so we never silently swallow a response.
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) > 1 {
+		return cli.UsageErrf("dashboard get: exactly one <id> positional argument required")
+	}
 	id, err := cli.RequireStringID("dashboard get", args)
 	if err != nil {
 		return err

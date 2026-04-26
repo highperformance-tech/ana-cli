@@ -122,6 +122,19 @@ func TestLoginConfigPathError(t *testing.T) {
 	}
 }
 
+// TestLoginRejectsExtraPositionals pins the no-positional contract: any
+// trailing token after the verb path must yield ErrUsage before stdin is
+// consulted.
+func TestLoginRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(strings.NewReader("tok\n"))
+	err := New(f.deps()).Run(context.Background(), []string{"login", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestLoginBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
@@ -140,9 +153,8 @@ func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 func TestLoginStdinReadError_TokenStdin(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &loginCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(errReader{err: errors.New("read fail")})
-	err := cmd.Run(context.Background(), []string{"--token-stdin"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"login", "--token-stdin"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "read fail") {
 		t.Errorf("err=%v", err)
 	}

@@ -36,6 +36,9 @@ type getResp struct {
 }
 
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) > 1 {
+		return cli.UsageErrf("ontology get: exactly one <id> positional argument required")
+	}
 	raw, err := cli.RequireStringID("ontology get", args)
 	if err != nil {
 		return err

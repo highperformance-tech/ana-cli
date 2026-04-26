@@ -215,6 +215,19 @@ func TestSendNoMessage(t *testing.T) {
 	}
 }
 
+// TestSendRejectsExtraPositionals exercises the `len(args) > 2` branch:
+// extra trailing tokens beyond `<id> <message>` must yield ErrUsage so the
+// operator quotes multi-word messages instead of having them silently dropped.
+func TestSendRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "msg1", "extra-msg"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestSendMessageFilePath(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

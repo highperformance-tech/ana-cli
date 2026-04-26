@@ -48,6 +48,9 @@ type foldersResp struct {
 // Run issues ListDashboardFolders, then either dumps raw JSON or renders an
 // ID/NAME table sorted by name for determinism.
 func (c *foldersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("dashboard folders list: unexpected positional arguments: %v", args)
+	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/ListDashboardFolders", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("dashboard folders list: %w", err)

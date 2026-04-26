@@ -47,6 +47,9 @@ type healthResp struct {
 // contains no matching entry we surface an error rather than silently
 // succeeding.
 func (c *healthCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) > 1 {
+		return cli.UsageErrf("dashboard health: exactly one <id> positional argument required")
+	}
 	id, err := cli.RequireStringID("dashboard health", args)
 	if err != nil {
 		return err

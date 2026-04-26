@@ -86,6 +86,19 @@ func TestGetJSON(t *testing.T) {
 	}
 }
 
+// TestGetRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestGetRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &getCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"pb1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestGetMissingID(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}

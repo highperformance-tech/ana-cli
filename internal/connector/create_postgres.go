@@ -65,6 +65,9 @@ func (c *postgresPasswordCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *postgresPasswordCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("connector create postgres password: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create postgres password",
 		"name", "host", "port", "user", "database"); err != nil {
 		return err

@@ -186,6 +186,17 @@ func TestCreateDatabricksClientCredentialsRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateDatabricksClientCredentialsRejectsExtraPositionals pins the
+// no-positional contract for the deeply-nested leaf: trailing tokens after
+// the verb path must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateDatabricksClientCredentialsRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runDatabricksClientCredentials(t, (&fakeDeps{}).deps(), []string{"databricks", "client-credentials", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateDatabricksClientCredentialsBadFlag(t *testing.T) {
 	t.Parallel()
 	_, err := runDatabricksClientCredentials(t, (&fakeDeps{}).deps(), []string{"databricks", "client-credentials", "--nope"}, "")

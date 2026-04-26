@@ -50,6 +50,9 @@ func (c *snowflakeKeypairCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *snowflakeKeypairCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("connector create snowflake keypair: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create snowflake keypair",
 		"name", "locator", "database", "user", "private-key-file"); err != nil {
 		return err

@@ -83,6 +83,18 @@ func TestShareJSON(t *testing.T) {
 	}
 }
 
+// TestShareRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestShareRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &shareCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestShareMissingID(t *testing.T) {
 	t.Parallel()
 	cmd := &shareCmd{deps: (&fakeDeps{}).deps()}

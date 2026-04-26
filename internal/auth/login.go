@@ -33,6 +33,9 @@ func (c *loginCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("auth login: unexpected positional arguments: %v", args)
+	}
 	token, err := cli.ReadToken(stdio.Stdin, c.tokenStdin)
 	if err != nil {
 		return fmt.Errorf("auth login: %w", err)

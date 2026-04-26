@@ -31,6 +31,9 @@ type listResp struct {
 
 // Run issues GetOntologies and prints either a table or the raw payload.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("ontology list: unexpected positional arguments: %v", args)
+	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, ontologyServicePath+"/GetOntologies", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("ontology list: %w", err)

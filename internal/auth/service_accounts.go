@@ -40,6 +40,9 @@ type listServiceAccountsResp struct {
 }
 
 func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("auth service-accounts list: unexpected positional arguments: %v", args)
+	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListServiceAccounts", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("auth service-accounts list: %w", translateErr(err))
@@ -92,6 +95,9 @@ type createServiceAccountResp struct {
 }
 
 func (c *saCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("auth service-accounts create: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "auth service-accounts create", "name"); err != nil {
 		return err
 	}

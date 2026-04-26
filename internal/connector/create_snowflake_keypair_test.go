@@ -268,6 +268,17 @@ func TestCreateSnowflakeKeypairRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateSnowflakeKeypairRejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateSnowflakeKeypairRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runSnowflakeKeypair(t, (&fakeDeps{}).deps(), []string{"snowflake", "keypair", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateSnowflakeKeypairBadFlag(t *testing.T) {
 	t.Parallel()
 	_, err := runSnowflakeKeypair(t, (&fakeDeps{}).deps(), []string{"snowflake", "keypair", "--nope"}, "")

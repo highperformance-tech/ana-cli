@@ -228,6 +228,17 @@ func TestCreateDatabricksAccessTokenRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateDatabricksAccessTokenRejectsExtraPositionals pins the
+// no-positional contract for the deeply-nested leaf: trailing tokens after
+// the verb path must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateDatabricksAccessTokenRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runDatabricksAccessToken(t, (&fakeDeps{}).deps(), []string{"databricks", "access-token", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateDatabricksAccessTokenBadFlag(t *testing.T) {
 	t.Parallel()
 	args := []string{"databricks", "access-token", "--nope"}

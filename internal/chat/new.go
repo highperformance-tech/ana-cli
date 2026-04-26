@@ -77,6 +77,9 @@ type newResp struct {
 }
 
 func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("chat new: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "chat new", "connector"); err != nil {
 		return err
 	}

@@ -30,6 +30,9 @@ type listResp struct {
 // Run issues GetConnectors then either dumps raw JSON or prints a fixed-width
 // ID/NAME/TYPE table.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("connector list: unexpected positional arguments: %v", args)
+	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/GetConnectors", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("connector list: %w", err)

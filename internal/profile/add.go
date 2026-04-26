@@ -41,6 +41,9 @@ func (c *addCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if len(args) == 0 || args[0] == "" {
 		return cli.UsageErrf("profile add: name is required")
 	}
+	if len(args) > 1 {
+		return cli.UsageErrf("profile add: unexpected positional arguments: %v", args[1:])
+	}
 	name := args[0]
 
 	token, err := cli.ReadToken(stdio.Stdin, c.tokenStdin)

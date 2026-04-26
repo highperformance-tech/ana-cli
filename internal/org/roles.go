@@ -41,6 +41,9 @@ type listRolesResp struct {
 // Run issues ListRoles with an empty body and renders a two-column table or
 // the raw JSON payload under --json.
 func (c *rolesListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("org roles list: unexpected positional arguments: %v", args)
+	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListRoles", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("org roles list: %w", err)

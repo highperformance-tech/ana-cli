@@ -35,8 +35,11 @@ func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		return fmt.Errorf("profile show: %w", err)
 	}
 
+	if len(args) > 1 {
+		return cli.UsageErrf("profile show: accepts at most one optional <name> argument")
+	}
 	var name string
-	if len(args) > 0 && args[0] != "" {
+	if len(args) == 1 && args[0] != "" {
 		name = args[0]
 	} else {
 		name = cfg.Active

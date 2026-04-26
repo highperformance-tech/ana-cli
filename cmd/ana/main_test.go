@@ -342,9 +342,16 @@ func TestRun_EndToEnd_ConnectorList(t *testing.T) {
 	defer srv.Close()
 
 	var out, errb bytes.Buffer
-	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: func(string) string { return "" }, Now: time.Now}
+	home := t.TempDir()
+	envFn := func(k string) string {
+		if k == "HOME" {
+			return home
+		}
+		return ""
+	}
+	stdio := cli.IO{Stdin: strings.NewReader(""), Stdout: &out, Stderr: &errb, Env: envFn, Now: time.Now}
 	args := []string{"--endpoint", srv.URL, "--json", "connector", "list"}
-	err := run(args, stdio, func(string) string { return "" })
+	err := run(args, stdio, envFn)
 	if err != nil {
 		t.Fatalf("run: %v\nstderr: %s", err, errb.String())
 	}

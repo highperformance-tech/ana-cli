@@ -145,6 +145,18 @@ func TestMembersListCallErr(t *testing.T) {
 	}
 }
 
+// TestMembersListRejectsExtraPositionals pins the no-positional contract:
+// trailing tokens after the verb path must yield ErrUsage before the RPC fires.
+func TestMembersListRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(f.deps()).Run(context.Background(), []string{"members", "list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestMembersListBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}

@@ -400,6 +400,19 @@ func TestTailRemarshalErr(t *testing.T) {
 	}
 }
 
+// TestTailRejectsExtraPositionals pins the strict-arity contract: this verb
+// takes no positional arguments, so any extra token must yield ErrUsage before
+// the RPC fires.
+func TestTailRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(f.deps()).Run(context.Background(), []string{"tail", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestTailJSONEncodeErr(t *testing.T) {
 	t.Parallel()
 	// Entries must be non-empty: encoding now happens per-record, so a zero-

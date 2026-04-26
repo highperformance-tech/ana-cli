@@ -217,6 +217,17 @@ func TestCreateDatabricksOAuthSSORenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateDatabricksOAuthSSORejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateDatabricksOAuthSSORejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runDatabricksOAuthSSO(t, (&fakeDeps{}).deps(), []string{"databricks", "oauth-sso", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateDatabricksOAuthSSOBadFlag(t *testing.T) {
 	t.Parallel()
 	_, err := runDatabricksOAuthSSO(t, (&fakeDeps{}).deps(), []string{"databricks", "oauth-sso", "--nope"}, "")

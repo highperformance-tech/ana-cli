@@ -38,6 +38,9 @@ type shareResp struct {
 }
 
 func (c *shareCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) > 1 {
+		return cli.UsageErrf("chat share: exactly one <id> positional argument required")
+	}
 	id, err := cli.RequireStringID("chat share", args)
 	if err != nil {
 		return err

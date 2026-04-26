@@ -246,6 +246,17 @@ func TestCreateSnowflakeOAuthSSORenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateSnowflakeOAuthSSORejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateSnowflakeOAuthSSORejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runSnowflakeOAuthSSO(t, (&fakeDeps{}).deps(), []string{"snowflake", "oauth-sso", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateSnowflakeOAuthSSOBadFlag(t *testing.T) {
 	t.Parallel()
 	_, err := runSnowflakeOAuthSSO(t, (&fakeDeps{}).deps(), []string{"snowflake", "oauth-sso", "--nope"}, "")

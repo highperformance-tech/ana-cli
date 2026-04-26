@@ -88,6 +88,18 @@ func TestPermissionsListUnaryErr(t *testing.T) {
 	}
 }
 
+// TestPermissionsListRejectsExtraPositionals pins the no-positional contract:
+// trailing tokens after the verb path must yield ErrUsage before the RPC fires.
+func TestPermissionsListRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(f.deps()).Run(context.Background(), []string{"permissions", "list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestPermissionsListBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}

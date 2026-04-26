@@ -263,6 +263,17 @@ func TestCreatePostgresPasswordRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreatePostgresPasswordRejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreatePostgresPasswordRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runCreate(t, (&fakeDeps{}).deps(), []string{"postgres", "password", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreatePostgresPasswordBadFlag(t *testing.T) {
 	t.Parallel()
 	args := []string{"postgres", "password", "--nope"}

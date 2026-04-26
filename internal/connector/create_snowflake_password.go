@@ -42,6 +42,9 @@ func (c *snowflakePasswordCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *snowflakePasswordCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("connector create snowflake password: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create snowflake password",
 		"name", "locator", "database", "user"); err != nil {
 		return err

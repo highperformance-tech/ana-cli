@@ -21,6 +21,9 @@ func (c *removeCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if len(args) == 0 || args[0] == "" {
 		return cli.UsageErrf("profile remove: name is required")
 	}
+	if len(args) > 1 {
+		return cli.UsageErrf("profile remove: unexpected positional arguments: %v", args[1:])
+	}
 	name := args[0]
 
 	cfg, err := c.deps.LoadCfg()

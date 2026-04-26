@@ -153,6 +153,17 @@ func TestList_BadFlag(t *testing.T) {
 	}
 }
 
+// TestList_RejectsExtraPositionals pins the no-positional contract: trailing
+// tokens after the verb path must yield ErrUsage before the config is loaded.
+func TestList_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(newDeps(tmpCfg(t))).Run(context.Background(), []string{"list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestList_LoadError(t *testing.T) {
 	t.Parallel()
 	cfgPath := tmpCfg(t)
@@ -511,6 +522,17 @@ func TestUse_EmptyArg(t *testing.T) {
 	}
 }
 
+// TestUse_RejectsExtraPositionals pins the strict-arity contract for
+// `profile use`: any token after the single <name> must yield ErrUsage.
+func TestUse_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
+	err := (&useCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestUse_BadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
@@ -628,6 +650,17 @@ func TestRemove_EmptyArg(t *testing.T) {
 	err := (&removeCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{""}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+// TestRemove_RejectsExtraPositionals pins the strict-arity contract for
+// `profile remove`: any token after the single <name> must yield ErrUsage.
+func TestRemove_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	stdio, _, _ := testcli.NewIO(nil)
+	err := (&removeCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
 	}
 }
 
@@ -807,6 +840,20 @@ func TestShow_EmptyArgFallsBackToActive(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "default") {
 		t.Fatalf("stdout: %q", out.String())
+	}
+}
+
+// TestShow_RejectsExtraPositionals pins the strict-arity contract for
+// `profile show`: any trailing token beyond the optional <name> must yield
+// ErrUsage.
+func TestShow_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cfgPath := tmpCfg(t)
+	seed(t, cfgPath)
+	stdio, _, _ := testcli.NewIO(nil)
+	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
 	}
 }
 

@@ -127,6 +127,18 @@ func TestHealthEmptyDashboards(t *testing.T) {
 	}
 }
 
+// TestHealthRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestHealthRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &healthCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestHealthMissingPositional(t *testing.T) {
 	t.Parallel()
 	cmd := &healthCmd{deps: (&fakeDeps{}).deps()}

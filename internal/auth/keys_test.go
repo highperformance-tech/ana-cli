@@ -95,6 +95,18 @@ func TestKeysListBadFlag(t *testing.T) {
 	}
 }
 
+// TestKeysListRejectsExtraPositionals pins the no-positional contract for the
+// list verb: trailing tokens must yield ErrUsage before the RPC fires.
+func TestKeysListRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 // TestKeysListRemarshalErr exercises the remarshal error path: the fixture is
 // syntactically valid JSON but the `apiKeys` field is a string rather than
 // the expected array, so Unmarshal into listApiKeysResp.APIKeys fails with a
@@ -178,6 +190,32 @@ func TestKeysCreateMissingName(t *testing.T) {
 	cmd := &keysCreateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), nil, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
+// TestKeysCreateRejectsExtraPositionals pins the no-positional contract: any
+// trailing token after the verb path must yield ErrUsage before RequireFlags
+// or any RPC fires.
+func TestKeysCreateRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", "n", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
+// TestKeysCreateRejectsEmptyName covers the explicit empty-name guard that
+// fires AFTER RequireFlags (which only checks "was the flag set"): supplying
+// `--name ""` must still yield ErrUsage.
+func TestKeysCreateRejectsEmptyName(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", ""}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
 	}

@@ -48,6 +48,9 @@ type tailReq struct {
 }
 
 func (c *tailCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("audit tail: unexpected positional arguments: %v", args)
+	}
 	if c.limit < 0 {
 		return cli.UsageErrf("audit tail: --limit must be >= 0 (got %d)", c.limit)
 	}

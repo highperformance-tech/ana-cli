@@ -46,6 +46,9 @@ func (c *snowflakeOAuthSSOCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *snowflakeOAuthSSOCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("connector create snowflake oauth-sso: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create snowflake oauth-sso",
 		"name", "locator", "database", "oauth-client-id"); err != nil {
 		return err

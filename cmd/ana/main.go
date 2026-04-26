@@ -64,11 +64,16 @@ func main() {
 // closures so verbs like `ana profile add` never load existing config or
 // open a transport for an org they're about to create.
 func run(args []string, stdio cli.IO, env func(string) string) error {
-	// Short-circuit --version / -V: rewrite to the `version` verb so the
-	// same code path renders the banner whether the user typed the flag or
-	// the subcommand.
-	if len(args) == 1 && (args[0] == "--version" || args[0] == "-V") {
-		args = []string{"version"}
+	// Short-circuit --version / -V anywhere in argv: rewrite to the
+	// `version` verb so the same code path renders the banner whether the
+	// user typed the flag or the subcommand. Scanning all args (rather than
+	// only args[0]) lets `ana --json --version`, `ana --version --endpoint X`,
+	// etc. short-circuit before falling into normal resolution.
+	for _, a := range args {
+		if a == "--version" || a == "-V" {
+			args = []string{"version"}
+			break
+		}
 	}
 
 	var global cli.Global
@@ -298,15 +303,21 @@ func (s *lazyState) initConfig() error {
 	s.cfgOnce.Do(func() {
 		s.cfgPath = s.global.TokenFile
 		if s.cfgPath == "" {
-			if p, err := config.DefaultPath(s.env); err == nil {
-				s.cfgPath = p
+			p, err := config.DefaultPath(s.env)
+			if err != nil {
+				s.cfgErr = err
+				return
 			}
+			s.cfgPath = p
 		}
 		var loaded config.Config
 		if s.cfgPath != "" {
-			if c, err := config.Load(s.cfgPath); err == nil {
-				loaded = c
+			c, err := config.Load(s.cfgPath)
+			if err != nil {
+				s.cfgErr = err
+				return
 			}
+			loaded = c
 		}
 		resolved, name, rerr := config.Resolve(s.env, loaded, s.global.Profile)
 		if rerr != nil {

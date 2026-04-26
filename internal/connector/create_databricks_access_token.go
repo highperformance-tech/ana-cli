@@ -46,6 +46,9 @@ func (c *databricksAccessTokenCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *databricksAccessTokenCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("connector create databricks access-token: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create databricks access-token",
 		"name", "host", "http-path", "catalog", "schema"); err != nil {
 		return err

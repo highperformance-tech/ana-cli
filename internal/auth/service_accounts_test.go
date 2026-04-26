@@ -61,6 +61,18 @@ func TestSAListJSON(t *testing.T) {
 	}
 }
 
+// TestSAListRejectsExtraPositionals pins the no-positional contract: trailing
+// tokens after the verb path must yield ErrUsage before the RPC fires.
+func TestSAListRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestSAListUnaryErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
@@ -164,6 +176,19 @@ func TestSACreateEmptyName(t *testing.T) {
 	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--name", ""}, stdio)
 	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "empty") {
 		t.Errorf("err=%v", err)
+	}
+}
+
+// TestSACreateRejectsExtraPositionals pins the no-positional contract for
+// `auth service-accounts create`: any trailing token must yield ErrUsage
+// before RequireFlags or any RPC fires.
+func TestSACreateRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--name", "n", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
 	}
 }
 

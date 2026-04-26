@@ -202,6 +202,17 @@ func TestCreateSnowflakeOAuthIndividualRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateSnowflakeOAuthIndividualRejectsExtraPositionals pins the
+// no-positional contract for the deeply-nested leaf: trailing tokens after
+// the verb path must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateSnowflakeOAuthIndividualRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runSnowflakeOAuthIndividual(t, (&fakeDeps{}).deps(), []string{"snowflake", "oauth-individual", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateSnowflakeOAuthIndividualBadFlag(t *testing.T) {
 	t.Parallel()
 	_, err := runSnowflakeOAuthIndividual(t, (&fakeDeps{}).deps(), []string{"snowflake", "oauth-individual", "--nope"}, "")

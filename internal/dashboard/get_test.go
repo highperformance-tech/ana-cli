@@ -85,6 +85,18 @@ func TestGetNoDashboardKeyFallback(t *testing.T) {
 	}
 }
 
+// TestGetRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestGetRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &getCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestGetMissingPositional(t *testing.T) {
 	t.Parallel()
 	cmd := &getCmd{deps: (&fakeDeps{}).deps()}

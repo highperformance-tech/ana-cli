@@ -74,6 +74,18 @@ func TestSpawnNoRefreshedAtFallback(t *testing.T) {
 	}
 }
 
+// TestSpawnRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestSpawnRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cmd := &spawnCmd{deps: (&fakeDeps{}).deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestSpawnMissingPositional(t *testing.T) {
 	t.Parallel()
 	cmd := &spawnCmd{deps: (&fakeDeps{}).deps()}

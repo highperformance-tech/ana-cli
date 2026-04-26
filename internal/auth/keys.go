@@ -43,6 +43,9 @@ type listApiKeysResp struct {
 }
 
 func (c *keysListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("auth keys list: unexpected positional arguments: %v", args)
+	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListApiKeys", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("auth keys list: %w", translateErr(err))
@@ -97,8 +100,14 @@ type createApiKeyResp struct {
 }
 
 func (c *keysCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("auth keys create: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "auth keys create", "name"); err != nil {
 		return err
+	}
+	if c.name == "" {
+		return cli.UsageErrf("auth keys create: --name must not be empty")
 	}
 
 	req := createApiKeyReq{Name: c.name, ServiceAccountID: c.sa}

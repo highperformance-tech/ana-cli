@@ -45,6 +45,9 @@ func (c *databricksClientCredentialsCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *databricksClientCredentialsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
+	if len(args) != 0 {
+		return cli.UsageErrf("connector create databricks client-credentials: unexpected positional arguments: %v", args)
+	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create databricks client-credentials",
 		"name", "host", "http-path", "catalog", "schema", "client-id"); err != nil {
 		return err

@@ -225,6 +225,17 @@ func TestCreateSnowflakePasswordRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateSnowflakePasswordRejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires.
+func TestCreateSnowflakePasswordRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	_, err := runSnowflakePassword(t, (&fakeDeps{}).deps(), []string{"snowflake", "password", "extra"}, "")
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+}
+
 func TestCreateSnowflakePasswordBadFlag(t *testing.T) {
 	t.Parallel()
 	args := []string{"snowflake", "password", "--nope"}
