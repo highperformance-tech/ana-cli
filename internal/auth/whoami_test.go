@@ -374,9 +374,8 @@ func TestWhoamiMissingOrgName(t *testing.T) {
 func TestWhoamiBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &whoamiCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"whoami", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

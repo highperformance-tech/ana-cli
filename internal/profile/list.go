@@ -33,10 +33,6 @@ type listPayload struct {
 }
 
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("profile list")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {
 		return fmt.Errorf("profile list: %w", err)

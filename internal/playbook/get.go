@@ -46,11 +46,7 @@ type getResp struct {
 }
 
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("playbook get")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	id, err := cli.RequireStringID("playbook get", fs.Args())
+	id, err := cli.RequireStringID("playbook get", args)
 	if err != nil {
 		return err
 	}

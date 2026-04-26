@@ -86,9 +86,8 @@ func TestShowUnaryErr(t *testing.T) {
 func TestShowBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &showCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"show", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
 	}

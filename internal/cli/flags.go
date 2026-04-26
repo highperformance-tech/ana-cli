@@ -45,7 +45,8 @@ func ParseFlags(fs *flag.FlagSet, args []string) error {
 // explicitly set on fs. Built on FlagWasSet, so "explicit zero value"
 // (e.g. --port 0) still counts as supplied — callers that care about the
 // value's content validate it themselves. The verb prefix is prepended so
-// the error reads `verb: missing required flags: --a, --b`.
+// the error reads `verb: missing required flags: --a, --b`. A nil fs (leaf
+// reached without going through the resolver) reports every name as missing.
 func RequireFlags(fs *flag.FlagSet, verb string, names ...string) error {
 	var missing []string
 	for _, n := range names {
@@ -177,8 +178,13 @@ func (s *sinceFlag) Set(raw string) error {
 // current value) from "user passed the zero value on purpose". Uses the
 // stdlib-documented `fs.Visit` idiom, which only traverses flags that were
 // actually set; an unknown name is reported as not-set rather than
-// panicking.
+// panicking. A nil fs (e.g. a leaf invoked outside the resolver) is treated
+// as "no flags set" so leaves migrating to the resolver pipeline don't have
+// to guard the call site themselves.
 func FlagWasSet(fs *flag.FlagSet, name string) bool {
+	if fs == nil {
+		return false
+	}
 	set := false
 	fs.Visit(func(f *flag.Flag) {
 		if f.Name == name {

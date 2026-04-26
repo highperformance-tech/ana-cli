@@ -95,9 +95,8 @@ func TestTailSinceSetsRFC3339(t *testing.T) {
 	// A fixed non-UTC instant. The code converts to UTC before formatting so
 	// we can assert the exact wire string regardless of the local zone.
 	f := &fakeDeps{now: time.Date(2026, 4, 17, 10, 0, 0, 0, time.FixedZone("EST", -5*3600))}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"--since", "1h"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"tail", "--since", "1h"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	wantSince := f.now.Add(-time.Hour).UTC().Format(time.RFC3339)
@@ -120,9 +119,8 @@ func TestTailSinceSetsRFC3339(t *testing.T) {
 func TestTailRejectsNegativeSince(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--since", "-1h"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"tail", "--since", "-1h"}, stdio)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -140,9 +138,8 @@ func TestTailRejectsNegativeSince(t *testing.T) {
 func TestTailSinceInvalid(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--since", "nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"tail", "--since", "nope"}, stdio)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -164,10 +161,9 @@ func TestTailSinceRFC3339(t *testing.T) {
 	// Now should NOT be consulted for the absolute path; using the zero
 	// time would surface any mistaken `Now().Add(...)` arithmetic.
 	f := &fakeDeps{now: time.Time{}}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	in := "2026-04-18T05:30:00-04:00"
-	if err := cmd.Run(context.Background(), []string{"--since", in}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"tail", "--since", in}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	var got map[string]any
@@ -188,10 +184,9 @@ func TestTailSinceRFC3339(t *testing.T) {
 func TestTailSinceFractional(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	in := "2026-04-18T09:30:00.123456789Z"
-	if err := cmd.Run(context.Background(), []string{"--since", in}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"tail", "--since", in}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	var got map[string]any
@@ -209,9 +204,8 @@ func TestTailSinceFractional(t *testing.T) {
 func TestTailLimitZeroOmitted(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"--limit", "0"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"tail", "--limit", "0"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if string(f.lastRawReq) != "{}" {
@@ -226,9 +220,8 @@ func TestTailLimitZeroOmitted(t *testing.T) {
 func TestTailRejectsNegativeLimit(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--limit", "-1"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"tail", "--limit", "-1"}, stdio)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -247,9 +240,8 @@ func TestTailRejectsNegativeLimit(t *testing.T) {
 func TestTailLimitSet(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"--limit", "50"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"tail", "--limit", "50"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	var got map[string]any
@@ -384,9 +376,8 @@ func TestTailUnaryErr(t *testing.T) {
 func TestTailBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &tailCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"tail", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
 	}

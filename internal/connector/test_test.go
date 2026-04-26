@@ -130,9 +130,8 @@ func TestTestUnaryErr(t *testing.T) {
 
 func TestTestBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &testCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"test", "1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

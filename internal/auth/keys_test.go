@@ -88,9 +88,8 @@ func TestKeysListUnaryErr(t *testing.T) {
 func TestKeysListBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &keysListCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "list", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -130,9 +129,8 @@ func TestKeysCreateHappy(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &keysCreateCmd{deps: f.deps()}
 	stdio, out, errb := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "n", "--service-account", "sa-1"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", "n", "--service-account", "sa-1"}, stdio)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
@@ -165,9 +163,8 @@ func TestKeysCreateOmitsEmptyServiceAccount(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &keysCreateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	if err := cmd.Run(context.Background(), []string{"--name", "n"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", "n"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if strings.Contains(string(f.lastRawReq), "serviceAccountId") {
@@ -189,9 +186,8 @@ func TestKeysCreateMissingName(t *testing.T) {
 func TestKeysCreateUnaryErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
-	cmd := &keysCreateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "n"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", "n"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v", err)
 	}
@@ -200,9 +196,8 @@ func TestKeysCreateUnaryErr(t *testing.T) {
 func TestKeysCreateBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &keysCreateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -260,9 +255,8 @@ func TestKeysRotateUnaryErr(t *testing.T) {
 func TestKeysRotateBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &keysRotateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "rotate", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -329,9 +323,8 @@ func TestKeysRevokeUnaryErr(t *testing.T) {
 func TestKeysRevokeBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &keysRevokeCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"keys", "revoke", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

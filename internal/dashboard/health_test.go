@@ -162,9 +162,8 @@ func TestHealthUnaryErr(t *testing.T) {
 
 func TestHealthBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &healthCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"health", "d-1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

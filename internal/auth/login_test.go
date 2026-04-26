@@ -33,11 +33,10 @@ func TestLoginLineMode(t *testing.T) {
 func TestLoginTokenStdinFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &loginCmd{deps: f.deps()}
 	// Multi-line token (JWT style) + trailing newline. --token-stdin should
 	// consume the whole stream and trim.
 	stdio, _, _ := testcli.NewIO(strings.NewReader("line1\nline2\n  \n"))
-	err := cmd.Run(context.Background(), []string{"--token-stdin"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"login", "--token-stdin"}, stdio)
 	if err != nil {
 		t.Fatalf("unexpected: %v", err)
 	}
@@ -126,9 +125,8 @@ func TestLoginConfigPathError(t *testing.T) {
 func TestLoginBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &loginCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--no-such"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"login", "--no-such"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
 	}

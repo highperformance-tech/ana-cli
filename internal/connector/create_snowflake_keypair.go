@@ -50,13 +50,7 @@ func (c *snowflakeKeypairCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *snowflakeKeypairCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector create snowflake keypair")
-	c.Flags(fs)
-	cli.ApplyAncestorFlags(ctx, fs)
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	if err := cli.RequireFlags(fs, "connector create snowflake keypair",
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create snowflake keypair",
 		"name", "locator", "database", "user", "private-key-file"); err != nil {
 		return err
 	}

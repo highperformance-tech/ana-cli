@@ -30,10 +30,6 @@ type listResp struct {
 }
 
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat list")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/GetChats", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("chat list: %w", err)

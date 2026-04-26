@@ -97,9 +97,8 @@ func TestSpawnUnaryErr(t *testing.T) {
 
 func TestSpawnBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &spawnCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"spawn", "d-1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

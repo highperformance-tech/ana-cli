@@ -1,7 +1,9 @@
-// Command ana is the TextQL platform CLI. This file is pure wiring: it reads
-// global flags + config, constructs a transport.Client, assembles the verb map
-// by injecting adapted Deps into each internal/<verb> package, then hands off
-// to cli.Dispatch. All domain logic lives under internal/.
+// Command ana is the TextQL platform CLI. This file is pure wiring: it
+// declares the root verb tree (whose persistent flags own --json /
+// --endpoint / --token-file / --profile), constructs lazy transport.Client +
+// config closures that initialize on first use, and hands off to
+// cli.Resolve + cli.Resolved.Execute. All domain logic lives under
+// internal/.
 package main
 
 import (
@@ -9,11 +11,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/highperformance-tech/ana-cli/internal/api"
@@ -48,119 +52,143 @@ func main() {
 	os.Exit(cli.ExitCode(err))
 }
 
-// run is the testable entrypoint: same signature as main() but with args,
-// stdio, and env injected. Returns the error that main() feeds to ExitCode.
+// run is the testable entrypoint. Returns the error main() feeds to ExitCode.
+//
+// The flow is resolve-then-execute: build a root *cli.Group whose persistent
+// Flags closure binds &global (mutated in place by cli.Resolve), then call
+// Resolve to walk argv + parse every flag. After Resolve the global struct
+// holds the user-supplied values; we use that to decide whether to spawn the
+// passive update-check goroutine, then Execute the resolved leaf.
+//
+// Transport client + config state are computed lazily inside the verb-Deps
+// closures so verbs like `ana profile add` never load existing config or
+// open a transport for an org they're about to create.
 func run(args []string, stdio cli.IO, env func(string) string) error {
 	// Short-circuit --version / -V: rewrite to the `version` verb so the
 	// same code path renders the banner whether the user typed the flag or
-	// the subcommand. Done before global-flag parsing so the flag doesn't
-	// need to be declared in cli.Global (which would ripple into every test
-	// that constructs a Global).
+	// the subcommand.
 	if len(args) == 1 && (args[0] == "--version" || args[0] == "-V") {
 		args = []string{"version"}
 	}
 
-	// Parse global flags up front so the token-file/endpoint/profile
-	// overrides are available before we touch config on disk. cli.Dispatch
-	// re-parses globals, but doing it here lets us wire deps correctly
-	// before dispatch. StripGlobals (rather than ParseGlobal) so operators
-	// can place `--profile`/`--endpoint`/`--token-file` after the verb and
-	// still have config resolution honour them — ParseGlobal stops at the
-	// first positional, which would leave those flags invisible here.
-	global, verbArgs, err := cli.StripGlobals(args)
+	var global cli.Global
+	state := newLazyState(env, &global, stdio)
+
+	root := &cli.Group{
+		Summary: "Manage TextQL via the public Connect-RPC API.",
+		Flags: func(fs *flag.FlagSet) {
+			fs.BoolVar(&global.JSON, "json", false, "emit JSON output")
+			fs.StringVar(&global.Endpoint, "endpoint", "", "override API endpoint URL")
+			fs.StringVar(&global.TokenFile, "token-file", "", "path to bearer-token file")
+			fs.StringVar(&global.Profile, "profile", "", "config profile to use")
+		},
+		Children: buildVerbs(state),
+	}
+
+	// Empty / explicit-help-token at the front: render root help, exit 0.
+	if len(args) == 0 || cli.IsHelpArg(args[0]) {
+		fmt.Fprintln(stdio.Stdout, cli.RootHelp(root))
+		return cli.ErrHelp
+	}
+
+	res, err := cli.Resolve(root, args)
 	if err != nil {
-		// Don't return here — let Dispatch produce the canonical usage error
-		// (it prints root help + err to stderr). Fall through with zero
-		// global; Dispatch will hit the same parse error and handle it.
-		global = cli.Global{}
-	}
-
-	cfgPath := global.TokenFile
-	if cfgPath == "" {
-		p, err := config.DefaultPath(env)
-		if err != nil {
-			// No XDG_CONFIG_HOME or HOME set: treat as unconfigured rather
-			// than fatal — commands that need a token will fail informatively
-			// at call time via auth.ErrNotLoggedIn.
-			cfgPath = ""
-		} else {
-			cfgPath = p
+		if errors.Is(err, cli.ErrHelp) {
+			cli.RenderResolvedHelp(res, root, stdio.Stdout)
+			return cli.ErrHelp
 		}
+		fmt.Fprintln(stdio.Stderr, err)
+		fmt.Fprintln(stdio.Stderr, cli.RootHelp(root))
+		return errors.Join(err, cli.ErrReported)
 	}
 
-	var loaded config.Config
-	if cfgPath != "" {
-		if c, lerr := config.Load(cfgPath); lerr == nil {
-			loaded = c
-		}
-		// A load error (malformed JSON, permission denied) is intentionally
-		// swallowed here; the resolved endpoint still defaults correctly and
-		// auth commands will surface a clearer message downstream.
-	}
-
-	resolved, profileName, rerr := config.Resolve(env, loaded, global.Profile)
-	if rerr != nil {
-		// The only documented error from Resolve is ErrUnknownProfile — a
-		// user-visible mistake. Print it on stderr and map to exit 1 (usage)
-		// by wrapping cli.ErrUsage.
-		if errors.Is(rerr, config.ErrUnknownProfile) {
-			fmt.Fprintf(stdio.Stderr, "ana: unknown profile %q\n", global.Profile)
-			return errors.Join(fmt.Errorf("%w: %w", cli.ErrUsage, rerr), cli.ErrReported)
-		}
-		return rerr
-	}
-	if global.Endpoint != "" {
-		resolved.Endpoint = global.Endpoint
-	}
-
-	token := resolved.Token
-	tokenFn := func(ctx context.Context) (string, error) {
-		return token.Value(), nil
-	}
-	client := transport.New(resolved.Endpoint, tokenFn)
-
-	verbs := buildVerbs(client, env, cfgPath, profileName, resolved.Endpoint)
-
+	// Stash global on ctx so leaves' GlobalFrom(ctx) reads return it. Also
+	// stash the merged FlagSet so leaves can use FlagSetFrom for RequireFlags
+	// / FlagWasSet.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+	ctx = cli.WithGlobal(ctx, global)
+	ctx = cli.WithFlagSet(ctx, res.MergedFS)
 
-	// Kick the passive update-check goroutine BEFORE Dispatch so the HTTP
-	// round-trip overlaps the verb's work. drainNudge picks it up after
-	// Dispatch returns. nudgeCh is nil whenever we decide not to check at
-	// all (dev build, --json, disabled interval, or no cache path); that
-	// nil flows through drainNudge as a no-op.
-	nudgeCh := startNudge(env, loaded, global)
-	err = cli.Dispatch(ctx, verbs, args, stdio)
-	drainNudge(nudgeCh, 500*time.Millisecond, err, firstVerb(verbArgs), stdio.Stderr)
-	return err
+	// Kick the passive update-check BEFORE the verb runs so the HTTP
+	// round-trip overlaps the verb's work. drainNudge picks it up after.
+	nudgeCh := startNudge(env, global)
+	runErr := res.Execute(ctx, stdio)
+	drainNudge(nudgeCh, 500*time.Millisecond, runErr, firstVerb(args), stdio.Stderr)
+	return runErr
 }
 
-// firstVerb returns the leading positional from StripGlobals' verb-args slice,
-// or "" for an empty slice. Keeps the drainNudge call site readable.
-func firstVerb(verbArgs []string) string {
-	if len(verbArgs) == 0 {
-		return ""
+// firstVerb returns the leading positional from args (skipping flag tokens
+// at the front) so drainNudge can suppress nudges for `ana update` success.
+func firstVerb(args []string) string {
+	for i := 0; i < len(args); i++ {
+		tok := args[i]
+		if len(tok) >= 2 && tok[0] == '-' {
+			// Flag token. If it consumes the next argv entry as its value,
+			// skip both. We don't know shapes here so heuristic: if no `=`
+			// and next exists and isn't a flag, skip both.
+			if !contains(tok, '=') && i+1 < len(args) && (len(args[i+1]) == 0 || args[i+1][0] != '-') {
+				// Bool globals would mis-skip; in practice the only
+				// post-skip token is the verb name itself. Accept the small
+				// error margin for nudge suppression.
+				if isKnownValueGlobal(tok) {
+					i++
+				}
+			}
+			continue
+		}
+		return tok
 	}
-	return verbArgs[0]
+	return ""
 }
 
-// startNudge launches the passive update-check goroutine when enabled and
-// returns a buffered channel that drainNudge reads. Returns nil whenever the
-// check is skipped so drainNudge can short-circuit without touching the
-// channel.
+// contains is a tiny strings.IndexByte == >= 0 with no import.
+func contains(s string, b byte) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			return true
+		}
+	}
+	return false
+}
+
+// isKnownValueGlobal reports whether tok is `-name`/`--name` for one of the
+// value-bearing root persistent flags. Bool --json doesn't match.
+func isKnownValueGlobal(tok string) bool {
+	body := tok
+	if len(body) >= 2 && body[0] == '-' {
+		body = body[1:]
+	}
+	if len(body) >= 1 && body[0] == '-' {
+		body = body[1:]
+	}
+	switch body {
+	case "endpoint", "token-file", "profile":
+		return true
+	}
+	return false
+}
+
+// startNudge launches the passive update-check goroutine when enabled. The
+// returned channel fires once with either an upgrade message or the empty
+// string. Returns nil whenever the check is skipped so drainNudge can short-
+// circuit without touching the channel.
 //
-// Skip predicates (any true disables the check):
+// Skip predicates:
 //   - version == "dev" — source checkout, no corresponding GitHub release.
-//   - global.JSON — automation pipeline, extra stderr line would break parsers.
-//   - ParseInterval reports disabled (config value "0" / "disable").
-//   - CachePath fails — no XDG_CACHE_HOME and no HOME means we have nowhere
-//     to stash freshness state, and we refuse to re-hit the network on every
-//     run.
-func startNudge(env func(string) string, loaded config.Config, global cli.Global) chan string {
+//   - global.JSON — automation pipeline; extra stderr would break parsers.
+//   - update.ParseInterval reports disabled.
+//   - update.CachePath errors — no place to stash freshness state.
+//
+// Note: this used to also peek loaded config for the user's preferred
+// interval; with lazy config-load that file is no longer touched here.
+// ParseInterval(nil) defaults to 4h enabled, which matches the prior
+// "no override" behavior.
+func startNudge(env func(string) string, global cli.Global) chan string {
 	if version == "dev" || global.JSON {
 		return nil
 	}
-	ttl, enabled := update.ParseInterval(loaded.UpdateCheckInterval)
+	ttl, enabled := update.ParseInterval(nil)
 	if !enabled {
 		return nil
 	}
@@ -189,11 +217,10 @@ func startNudge(env func(string) string, loaded config.Config, global cli.Global
 // it produces a non-empty message and the verb did not return a help/usage
 // error, the message is written to stderr — we intentionally suppress the
 // nudge on help/usage paths so help text doesn't get crowded by an upgrade
-// prompt. A successful `ana update` is also suppressed: the goroutine captured
-// the pre-swap version at process start and can't know the binary was just
-// replaced, so its "new version available" line would contradict the verb's
-// own success output. A failed `ana update` still nudges — the user needs the
-// retry hint. A nil ch (check was skipped) or a timeout is a clean no-op.
+// prompt. A successful `ana update` is also suppressed: the goroutine
+// captured the pre-swap version at process start and can't know the binary
+// was just replaced. A failed `ana update` still nudges. A nil ch (check
+// was skipped) or a timeout is a clean no-op.
 func drainNudge(ch chan string, timeout time.Duration, verbErr error, verb string, stderr io.Writer) {
 	if ch == nil {
 		return
@@ -215,77 +242,191 @@ func drainNudge(ch chan string, timeout time.Duration, verbErr error, verb strin
 	}
 }
 
-// buildVerbs wires every verb package's Deps against the shared transport
-// client and config path. Pulled out of run() so main_test can exercise it in
-// isolation. profileName is the slot that auth.Load/SaveCfg should read from
-// and write into — resolved upstream so login/logout always target the same
-// profile the rest of the invocation used. endpoint is the resolved API base
-// URL (not just the --endpoint override), so verbs whose user-facing output
-// references the web app — e.g. connector OAuth success notes — can point
-// self-hosted and non-prod profiles at the right place.
-func buildVerbs(client *transport.Client, env func(string) string, cfgPath, profileName, endpoint string) map[string]cli.Command {
+// buildVerbs wires every verb package's Deps. Heavy state (config load,
+// transport client) lives in lazyState; Deps closures fetch it on first call
+// so non-RPC verbs (profile, update, version) never trigger client
+// construction. profileName is supplied to the auth package so login/logout
+// always target the same profile the rest of the invocation uses.
+func buildVerbs(s *lazyState) map[string]cli.Command {
 	return map[string]cli.Command{
-		"api":       api.New(api.Deps{DoRaw: client.DoRaw}),
-		"auth":      auth.New(authDeps(client, env, cfgPath, profileName)),
-		"profile":   profile.New(profileDeps(env, cfgPath)),
-		"org":       org.New(org.Deps{Unary: client.Unary}),
-		"connector": connector.New(connector.Deps{Unary: client.Unary, Endpoint: endpoint}),
-		"chat":      chat.New(chatDeps(client)),
-		"dashboard": dashboard.New(dashboard.Deps{Unary: client.Unary}),
-		"playbook":  playbook.New(playbook.Deps{Unary: client.Unary}),
-		"ontology":  ontology.New(ontology.Deps{Unary: client.Unary}),
-		"feed":      feed.New(feed.Deps{Unary: client.Unary}),
-		"audit":     audit.New(audit.Deps{Unary: client.Unary, Now: time.Now}),
+		"api":       api.New(api.Deps{DoRaw: s.DoRaw}),
+		"auth":      auth.New(s.AuthDeps()),
+		"profile":   profile.New(s.ProfileDeps()),
+		"org":       org.New(org.Deps{Unary: s.Unary}),
+		"connector": connector.New(connector.Deps{Unary: s.Unary, Endpoint: s.EndpointFn}),
+		"chat":      chat.New(s.ChatDeps()),
+		"dashboard": dashboard.New(dashboard.Deps{Unary: s.Unary}),
+		"playbook":  playbook.New(playbook.Deps{Unary: s.Unary}),
+		"ontology":  ontology.New(ontology.Deps{Unary: s.Unary}),
+		"feed":      feed.New(feed.Deps{Unary: s.Unary}),
+		"audit":     audit.New(audit.Deps{Unary: s.Unary, Now: time.Now}),
 		"version":   versionCmd{},
 		"update":    updateCmd{deps: update.DefaultDeps()},
 	}
 }
 
-// authDeps adapts the process-level config.Config <-> auth.Config boundary and
-// wraps config.DefaultPath/Load/Save with closures that capture env + cfgPath
-// + the selected profile name. LoadCfg/SaveCfg operate on the active profile
-// slot: on Save we read the whole file, upsert the profile, and write it
-// back, preserving every other profile (and any existing OrgName on the
-// target profile — login is not responsible for clobbering that label).
-func authDeps(client *transport.Client, env func(string) string, cfgPath, profileName string) auth.Deps {
-	// Fallback to "default" if no profile was resolved (e.g. first-run login
-	// with no config file on disk). The resolver already supplies this in
-	// practice, but we keep the defense so SaveCfg never writes into "".
-	if profileName == "" {
-		profileName = "default"
+// lazyState centralises every "needs config or transport" computation that
+// historically ran eagerly in run(). Each accessor below uses sync.Once so
+// the work happens at most once per invocation.
+type lazyState struct {
+	env    func(string) string
+	global *cli.Global
+	stdio  cli.IO
+
+	cfgOnce     sync.Once
+	cfgPath     string
+	profileName string
+	resolved    config.Profile
+	cfgErr      error
+
+	clientOnce sync.Once
+	client     *transport.Client
+}
+
+// newLazyState builds a lazyState bound to env, the &global pointer that
+// cli.Resolve will populate, and the stdio used to print the unknown-profile
+// error before returning ErrReported.
+func newLazyState(env func(string) string, global *cli.Global, stdio cli.IO) *lazyState {
+	return &lazyState{env: env, global: global, stdio: stdio}
+}
+
+// initConfig resolves config state on first call. Subsequent calls return
+// the cached error (if any). Unknown-profile is the canonical user mistake;
+// we print the diagnostic ourselves and return an ErrUsage + ErrReported
+// pair so main()'s fallback printer doesn't double-emit.
+func (s *lazyState) initConfig() error {
+	s.cfgOnce.Do(func() {
+		s.cfgPath = s.global.TokenFile
+		if s.cfgPath == "" {
+			if p, err := config.DefaultPath(s.env); err == nil {
+				s.cfgPath = p
+			}
+		}
+		var loaded config.Config
+		if s.cfgPath != "" {
+			if c, err := config.Load(s.cfgPath); err == nil {
+				loaded = c
+			}
+		}
+		resolved, name, rerr := config.Resolve(s.env, loaded, s.global.Profile)
+		if rerr != nil {
+			if errors.Is(rerr, config.ErrUnknownProfile) {
+				fmt.Fprintf(s.stdio.Stderr, "ana: unknown profile %q\n", s.global.Profile)
+				s.cfgErr = errors.Join(fmt.Errorf("%w: %w", cli.ErrUsage, rerr), cli.ErrReported)
+				return
+			}
+			s.cfgErr = rerr
+			return
+		}
+		if s.global.Endpoint != "" {
+			resolved.Endpoint = s.global.Endpoint
+		}
+		s.resolved = resolved
+		s.profileName = name
+		if s.profileName == "" {
+			s.profileName = "default"
+		}
+	})
+	return s.cfgErr
+}
+
+// transportClient returns the shared transport.Client built from the resolved
+// config; the build runs at most once per invocation.
+func (s *lazyState) transportClient() (*transport.Client, error) {
+	if err := s.initConfig(); err != nil {
+		return nil, err
 	}
+	s.clientOnce.Do(func() {
+		tokenFn := func(_ context.Context) (string, error) {
+			return s.resolved.Token.Value(), nil
+		}
+		s.client = transport.New(s.resolved.Endpoint, tokenFn)
+	})
+	return s.client, nil
+}
+
+// Unary forwards to the lazily-built transport.Client. Used as the Deps.Unary
+// closure for every RPC verb package.
+func (s *lazyState) Unary(ctx context.Context, path string, req, resp any) error {
+	c, err := s.transportClient()
+	if err != nil {
+		return err
+	}
+	return c.Unary(ctx, path, req, resp)
+}
+
+// DoRaw forwards to the lazily-built transport.Client. Used by api.Deps.
+func (s *lazyState) DoRaw(ctx context.Context, method, path string, body []byte) (int, []byte, error) {
+	c, err := s.transportClient()
+	if err != nil {
+		return 0, nil, err
+	}
+	return c.DoRaw(ctx, method, path, body)
+}
+
+// Stream forwards to the lazily-built transport.Client wrapped in a
+// chat.StreamSession adapter (so the chat package never imports
+// internal/transport).
+func (s *lazyState) Stream(ctx context.Context, path string, req any) (chat.StreamSession, error) {
+	c, err := s.transportClient()
+	if err != nil {
+		return nil, err
+	}
+	sr, serr := c.Stream(ctx, path, req)
+	if serr != nil {
+		return nil, serr
+	}
+	return &boundStream{ctx: ctx, sr: sr}, nil
+}
+
+// EndpointFn returns the resolved API base URL for connector OAuth notes.
+// Returns "" on init failure — connector only consults this in already-
+// successful create-leaf paths, so a fallback isn't structurally needed.
+func (s *lazyState) EndpointFn() string {
+	if err := s.initConfig(); err != nil {
+		return ""
+	}
+	return s.resolved.Endpoint
+}
+
+// AuthDeps builds the auth.Deps with closures targeting the profile slot
+// resolved by initConfig. SaveCfg is read-modify-write so it preserves every
+// other profile and any existing OrgName on the target.
+func (s *lazyState) AuthDeps() auth.Deps {
 	return auth.Deps{
-		Unary: client.Unary,
+		Unary: s.Unary,
 		LoadCfg: func() (auth.Config, error) {
-			if cfgPath == "" {
+			if err := s.initConfig(); err != nil {
+				return auth.Config{}, err
+			}
+			if s.cfgPath == "" {
 				return auth.Config{}, nil
 			}
-			c, err := config.Load(cfgPath)
+			c, err := config.Load(s.cfgPath)
 			if err != nil {
 				return auth.Config{}, err
 			}
-			p := c.Profiles[profileName]
+			p := c.Profiles[s.profileName]
 			return profileToAuthConfig(p), nil
 		},
 		SaveCfg: func(ac auth.Config) error {
-			path := cfgPath
+			if err := s.initConfig(); err != nil {
+				return err
+			}
+			path := s.cfgPath
 			if path == "" {
-				p, err := config.DefaultPath(env)
+				p, err := config.DefaultPath(s.env)
 				if err != nil {
 					return err
 				}
 				path = p
 			}
-			// Read-modify-write: preserve every other profile and any
-			// existing OrgName on the target. Load errors (malformed file,
-			// permissions) propagate so the user sees them rather than
-			// silently overwriting their config.
 			existing, err := config.Load(path)
 			if err != nil {
 				return err
 			}
-			prev := existing.Profiles[profileName]
-			existing.Upsert(profileName, config.Profile{
+			prev := existing.Profiles[s.profileName]
+			existing.Upsert(s.profileName, config.Profile{
 				Endpoint: ac.Endpoint,
 				Token:    ac.Token,
 				OrgName:  prev.OrgName,
@@ -293,24 +434,29 @@ func authDeps(client *transport.Client, env func(string) string, cfgPath, profil
 			return config.Save(path, existing)
 		},
 		ConfigPath: func() (string, error) {
-			if cfgPath != "" {
-				return cfgPath, nil
+			if s.cfgPath != "" {
+				return s.cfgPath, nil
 			}
-			return config.DefaultPath(env)
+			// Don't invoke initConfig here — ConfigPath should work even when
+			// the user has --token-file pointing at an empty path.
+			path := s.global.TokenFile
+			if path != "" {
+				return path, nil
+			}
+			return config.DefaultPath(s.env)
 		},
 	}
 }
 
-// profileDeps wires profile.Deps. Unlike authDeps there is no adapter between
-// config.Config and a narrower type: the profile verb package imports
-// internal/config directly because managing profiles IS the whole config
-// surface. LoadCfg/SaveCfg therefore pass config.Config through as-is.
-func profileDeps(env func(string) string, cfgPath string) profile.Deps {
+// ProfileDeps wires profile.Deps. Unlike auth there's no projection: the
+// profile verb owns the whole config.Config surface. We do NOT call
+// initConfig here — profile commands manage the file directly.
+func (s *lazyState) ProfileDeps() profile.Deps {
 	return profile.Deps{
 		LoadCfg: func() (config.Config, error) {
-			path := cfgPath
+			path := s.global.TokenFile
 			if path == "" {
-				p, err := config.DefaultPath(env)
+				p, err := config.DefaultPath(s.env)
 				if err != nil {
 					return config.Config{}, err
 				}
@@ -319,9 +465,9 @@ func profileDeps(env func(string) string, cfgPath string) profile.Deps {
 			return config.Load(path)
 		},
 		SaveCfg: func(c config.Config) error {
-			path := cfgPath
+			path := s.global.TokenFile
 			if path == "" {
-				p, err := config.DefaultPath(env)
+				p, err := config.DefaultPath(s.env)
 				if err != nil {
 					return err
 				}
@@ -330,33 +476,22 @@ func profileDeps(env func(string) string, cfgPath string) profile.Deps {
 			return config.Save(path, c)
 		},
 		ConfigPath: func() (string, error) {
-			if cfgPath != "" {
-				return cfgPath, nil
+			if s.global.TokenFile != "" {
+				return s.global.TokenFile, nil
 			}
-			return config.DefaultPath(env)
+			return config.DefaultPath(s.env)
 		},
 	}
 }
 
-// chatDeps wires chat.Deps. The stream adapter exists to narrow the return
-// type from *transport.StreamReader to chat.StreamSession so the chat package
-// (which must not import transport) can type-check against its own interface.
-func chatDeps(client *transport.Client) chat.Deps {
+// ChatDeps wires chat.Deps. Stream uses the lazy transport adapter; UUIDFn
+// is the local newUUID so chat sends are deterministic in tests via
+// dependency injection.
+func (s *lazyState) ChatDeps() chat.Deps {
 	return chat.Deps{
-		Unary:  client.Unary,
-		Stream: streamAdapter(client),
+		Unary:  s.Unary,
+		Stream: s.Stream,
 		UUIDFn: newUUID,
-	}
-}
-
-// streamAdapter exposes client.Stream through chat.StreamSession.
-func streamAdapter(client *transport.Client) func(ctx context.Context, path string, req any) (chat.StreamSession, error) {
-	return func(ctx context.Context, path string, req any) (chat.StreamSession, error) {
-		sr, err := client.Stream(ctx, path, req)
-		if err != nil {
-			return nil, err
-		}
-		return &boundStream{ctx: ctx, sr: sr}, nil
 	}
 }
 
@@ -378,24 +513,20 @@ func profileToAuthConfig(p config.Profile) auth.Config {
 }
 
 // newUUID returns a canonical RFC 4122 version-4 UUID string. It draws 16
-// random bytes from crypto/rand; if the source fails (e.g. the kernel pool is
-// unavailable) it falls back to a time-based hex blob so callers never block
-// or panic. The fallback is deterministic-enough for cellIds in chat sends,
-// which is the only place we mint UUIDs from the CLI today.
+// random bytes from crypto/rand; if the source fails (e.g. the kernel pool
+// is unavailable) it falls back to a time-based hex blob so callers never
+// block or panic. The fallback is deterministic-enough for cellIds in chat
+// sends, which is the only place we mint UUIDs from the CLI today.
 func newUUID() string {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		// Fallback: 16 bytes derived from the wall clock. Not cryptographic,
-		// but good enough to avoid a hard failure in a chat send loop.
 		now := time.Now().UnixNano()
 		for i := range 16 {
 			b[i] = byte(now >> (uint(i%8) * 8))
 		}
 	}
-	// Apply the v4 version + RFC 4122 variant bits.
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
-	// Format as 8-4-4-4-12 hex with dashes.
 	var buf [36]byte
 	hex.Encode(buf[0:8], b[0:4])
 	buf[8] = '-'

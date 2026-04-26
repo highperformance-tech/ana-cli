@@ -90,9 +90,8 @@ func TestShowMissingPositional(t *testing.T) {
 
 func TestShowBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &showCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"show", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

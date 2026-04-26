@@ -95,9 +95,8 @@ func TestShareMissingID(t *testing.T) {
 
 func TestShareBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &shareCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"share", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

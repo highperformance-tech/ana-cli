@@ -77,7 +77,7 @@ func TestCreateSnowflakeOAuthSSOCustomEndpoint(t *testing.T) {
 		},
 	}
 	deps := f.deps()
-	deps.Endpoint = "https://staging.example.com"
+	deps.Endpoint = func() string { return "https://staging.example.com" }
 	g := newCreateGroup(deps)
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
 	if err := g.Run(context.Background(), snowflakeOAuthSSOArgs(), stdio); err != nil {

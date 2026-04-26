@@ -50,13 +50,7 @@ func (c *databricksOAuthSSOCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *databricksOAuthSSOCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector create databricks oauth-sso")
-	c.Flags(fs)
-	cli.ApplyAncestorFlags(ctx, fs)
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	if err := cli.RequireFlags(fs, "connector create databricks oauth-sso",
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create databricks oauth-sso",
 		"name", "host", "http-path", "catalog", "schema", "client-id"); err != nil {
 		return err
 	}

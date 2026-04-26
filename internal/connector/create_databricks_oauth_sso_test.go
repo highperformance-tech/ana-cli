@@ -82,7 +82,7 @@ func TestCreateDatabricksOAuthSSOCustomEndpoint(t *testing.T) {
 		},
 	}
 	deps := f.deps()
-	deps.Endpoint = "https://staging.example.com"
+	deps.Endpoint = func() string { return "https://staging.example.com" }
 	g := newCreateGroup(deps)
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
 	if err := g.Run(context.Background(), databricksOAuthSSOArgs(), stdio); err != nil {

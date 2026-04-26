@@ -138,9 +138,8 @@ func TestGetWriteErr(t *testing.T) {
 
 func TestGetBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &getCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"get", "1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

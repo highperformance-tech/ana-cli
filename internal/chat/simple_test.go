@@ -64,9 +64,8 @@ func TestRenameEmptyTitle(t *testing.T) {
 
 func TestRenameBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &renameCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"rename", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -133,9 +132,8 @@ func TestBookmarkMissingID(t *testing.T) {
 
 func TestBookmarkBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &bookmarkCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"bookmark", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -197,9 +195,8 @@ func TestUnbookmarkMissingID(t *testing.T) {
 
 func TestUnbookmarkBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &unbookmarkCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"unbookmark", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -266,9 +263,8 @@ func TestDeleteMissingID(t *testing.T) {
 
 func TestDeleteBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &deleteCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"delete", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -341,9 +337,8 @@ func TestDuplicateMissingID(t *testing.T) {
 
 func TestDuplicateBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &duplicateCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"duplicate", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

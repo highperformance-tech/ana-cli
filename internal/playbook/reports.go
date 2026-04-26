@@ -36,11 +36,7 @@ type reportsResp struct {
 }
 
 func (c *reportsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("playbook reports")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	id, err := cli.RequireStringID("playbook reports", fs.Args())
+	id, err := cli.RequireStringID("playbook reports", args)
 	if err != nil {
 		return err
 	}

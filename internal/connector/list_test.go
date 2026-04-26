@@ -82,9 +82,8 @@ func TestListUnaryErr(t *testing.T) {
 
 func TestListBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &listCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"list", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

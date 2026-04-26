@@ -30,10 +30,6 @@ type showResp struct {
 }
 
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("feed show")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, feedServicePath+"/GetFeed", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("feed show: %w", err)

@@ -9,10 +9,9 @@ import (
 )
 
 // This file gathers the small single-RPC verbs — rename / bookmark /
-// unbookmark / duplicate / delete. Each follows the same shape: parse flags,
-// read one positional id, build a typed request, Unary, print a one-liner.
-// They live together so the package has one file per conceptual area instead
-// of a dozen near-identical files.
+// unbookmark / duplicate / delete. Each follows the same shape: read one
+// positional id, build a typed request, Unary, print a one-liner. None
+// declare flags, so none implement Flagger.
 
 // renameReq matches UpdateChat's wire shape. The field is `summary` — the
 // catalog shows no `title` key; the brief's `title` is a user-facing alias.
@@ -30,19 +29,14 @@ func (c *renameCmd) Help() string {
 }
 
 func (c *renameCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat rename")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	rest := fs.Args()
-	id, err := cli.RequireStringID("chat rename", rest)
+	id, err := cli.RequireStringID("chat rename", args)
 	if err != nil {
 		return err
 	}
-	if len(rest) < 2 || rest[1] == "" {
+	if len(args) < 2 || args[1] == "" {
 		return cli.UsageErrf("chat rename: <title> positional argument required")
 	}
-	title := rest[1]
+	title := args[1]
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/UpdateChat",
 		renameReq{ChatID: id, Summary: title}, &raw); err != nil {
@@ -99,11 +93,7 @@ func (c *deleteCmd) Help() string {
 }
 
 func (c *deleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat delete")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	id, err := cli.RequireStringID("chat delete", fs.Args())
+	id, err := cli.RequireStringID("chat delete", args)
 	if err != nil {
 		return err
 	}
@@ -129,8 +119,6 @@ func (c *duplicateCmd) Help() string {
 		"Usage: ana chat duplicate <id>"
 }
 
-// duplicateResp carries only what we print. Full chat envelope available via
-// --json for anyone who wants to script against it.
 type duplicateResp struct {
 	Chat struct {
 		ID string `json:"id"`
@@ -138,11 +126,7 @@ type duplicateResp struct {
 }
 
 func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat duplicate")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	id, err := cli.RequireStringID("chat duplicate", fs.Args())
+	id, err := cli.RequireStringID("chat duplicate", args)
 	if err != nil {
 		return err
 	}
@@ -163,11 +147,7 @@ func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 // simpleAck is the bookmark/unbookmark path — positional id, no-body
 // response, prints `ok`. Extracted so the two verbs aren't literal copies.
 func simpleAck(ctx context.Context, args []string, stdio cli.IO, deps Deps, verb, suffix string) error {
-	fs := cli.NewFlagSet(verb)
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	id, err := cli.RequireStringID(verb, fs.Args())
+	id, err := cli.RequireStringID(verb, args)
 	if err != nil {
 		return err
 	}

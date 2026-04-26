@@ -46,13 +46,7 @@ func (c *snowflakeOAuthSSOCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *snowflakeOAuthSSOCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector create snowflake oauth-sso")
-	c.Flags(fs)
-	cli.ApplyAncestorFlags(ctx, fs)
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	if err := cli.RequireFlags(fs, "connector create snowflake oauth-sso",
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create snowflake oauth-sso",
 		"name", "locator", "database", "oauth-client-id"); err != nil {
 		return err
 	}

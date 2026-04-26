@@ -48,10 +48,6 @@ type foldersResp struct {
 // Run issues ListDashboardFolders, then either dumps raw JSON or renders an
 // ID/NAME table sorted by name for determinism.
 func (c *foldersListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("dashboard folders list")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/ListDashboardFolders", struct{}{}, &raw); err != nil {
 		return fmt.Errorf("dashboard folders list: %w", err)

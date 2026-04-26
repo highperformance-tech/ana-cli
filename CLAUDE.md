@@ -4,7 +4,7 @@
 
 ## Directories
 
-- `cmd/ana/` — main package: wires global flags + config into a transport client, builds the verb map, and hands off to `cli.Dispatch`. `--version` short-circuits to the `version` verb so the banner goes through the same code path regardless of entry shape.
+- `cmd/ana/` — main package: builds the root `*cli.Group` (whose persistent flags own `--json`/`--endpoint`/`--token-file`/`--profile`), wires lazy transport-client + config closures into each verb's Deps, then runs `cli.Resolve` + `Resolved.Execute`. `--version` short-circuits to the `version` verb so the banner goes through the same code path regardless of entry shape.
 - `internal/` — verb packages (one per top-level noun) plus the shared `cli`, `config`, and `transport` primitives. Each verb package owns its Connect-RPC service prefix and its narrow `Deps` struct; nothing here imports `internal/transport` or `internal/config` except `cli` and `profile`.
 - `e2e/` — live smoke tests that run real RPCs against `app.textql.com` via the harness in `e2e/harness/`. Opt-in; require `ANA_E2E_*` env vars.
 - `docs/` — human-readable planning docs. `features.md` catalogs TextQL surfaces; `cli-readiness.md` grades CLI coverage per surface.

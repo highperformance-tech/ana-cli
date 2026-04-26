@@ -45,13 +45,7 @@ func (c *databricksOAuthIndividualCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *databricksOAuthIndividualCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector create databricks oauth-individual")
-	c.Flags(fs)
-	cli.ApplyAncestorFlags(ctx, fs)
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	if err := cli.RequireFlags(fs, "connector create databricks oauth-individual",
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create databricks oauth-individual",
 		"name", "host", "http-path", "catalog", "schema", "client-id"); err != nil {
 		return err
 	}

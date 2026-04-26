@@ -8,8 +8,9 @@ import (
 
 // newSnowflakeCreateGroup returns the Snowflake create-dialect Group. Flags
 // common to every Snowflake auth-mode leaf are declared on the Group's
-// inheritable Flags closure; each auth-mode leaf declares its own
-// credential-specific flags and reads the Group's via cli.ApplyAncestorFlags.
+// persistent Flags closure; each auth-mode leaf declares its own
+// credential-specific flags via Flagger. The resolver merges them onto the
+// leaf's parsed FlagSet automatically.
 //
 // "locator" is TextQL's wire name for what Snowflake's own docs call
 // `account` (e.g. `abc12345.us-east-1`); the CLI flag uses --locator to
@@ -27,12 +28,12 @@ func newSnowflakeCreateGroup(deps Deps) *cli.Group {
 	return &cli.Group{
 		Summary: "Create a Snowflake connector. Pick an auth mode.",
 		Flags: func(fs *flag.FlagSet) {
-			cli.DeclareString(fs, &name, "name", "", "connector name (required)")
-			cli.DeclareString(fs, &locator, "locator", "", "Snowflake account locator, e.g. abc12345.us-east-1 (required)")
-			cli.DeclareString(fs, &database, "database", "", "database name (required)")
-			cli.DeclareString(fs, &warehouse, "warehouse", "", "default warehouse (optional)")
-			cli.DeclareString(fs, &schema, "schema", "", "default schema (optional)")
-			cli.DeclareString(fs, &role, "role", "", "default role (optional)")
+			fs.StringVar(&name, "name", "", "connector name (required)")
+			fs.StringVar(&locator, "locator", "", "Snowflake account locator, e.g. abc12345.us-east-1 (required)")
+			fs.StringVar(&database, "database", "", "database name (required)")
+			fs.StringVar(&warehouse, "warehouse", "", "default warehouse (optional)")
+			fs.StringVar(&schema, "schema", "", "default schema (optional)")
+			fs.StringVar(&role, "role", "", "default role (optional)")
 		},
 		Children: map[string]cli.Command{
 			"password": &snowflakePasswordCmd{
