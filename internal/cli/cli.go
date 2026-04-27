@@ -16,6 +16,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -101,9 +102,8 @@ func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 			renderResolvedHelp(res, g, stdio)
 			return ErrHelp
 		}
-		fmt.Fprintln(stdio.Stderr, err)
-		fmt.Fprintln(stdio.Stderr, g.Help())
-		return err
+		ReportUsageError(res, g, err, stdio.Stderr)
+		return errors.Join(err, ErrReported)
 	}
 	if grp, ok := res.Leaf.(*Group); ok {
 		fmt.Fprintln(stdio.Stdout, grp.Help())
@@ -114,7 +114,12 @@ func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 	if existing := FlagSetFrom(ctx); existing == nil {
 		ctx = WithFlagSet(ctx, res.MergedFS)
 	}
-	return res.Leaf.Run(ctx, res.Args, stdio)
+	runErr := res.Leaf.Run(ctx, res.Args, stdio)
+	if shouldAttachUsageHelp(runErr) {
+		ReportUsageError(res, g, runErr, stdio.Stderr)
+		return errors.Join(runErr, ErrReported)
+	}
+	return runErr
 }
 
 // isHelpErr is errors.Is(err, ErrHelp) without an import cycle.

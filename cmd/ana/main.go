@@ -102,8 +102,9 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 			cli.RenderResolvedHelp(res, root, stdio.Stdout)
 			return cli.ErrHelp
 		}
-		fmt.Fprintln(stdio.Stderr, err)
-		fmt.Fprintln(stdio.Stderr, cli.RootHelp(root))
+		// Modern-CLI convention: error first, then the help for the deepest
+		// scope the resolver reached so the user sees relevant syntax.
+		cli.ReportUsageError(res, root, err, stdio.Stderr)
 		return errors.Join(err, cli.ErrReported)
 	}
 
@@ -119,6 +120,13 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	// round-trip overlaps the verb's work. drainNudge picks it up after.
 	nudgeCh := startNudge(env, global)
 	runErr := res.Execute(ctx, stdio)
+	// Annotate bare leaf-internal usage errors (RequireFlags, RequireStringID,
+	// UsageErrf) with the leaf's help so the user sees the syntax they got
+	// wrong. Already-reported errors and non-usage errors pass through.
+	if errors.Is(runErr, cli.ErrUsage) && !errors.Is(runErr, cli.ErrReported) {
+		cli.ReportUsageError(res, root, runErr, stdio.Stderr)
+		runErr = errors.Join(runErr, cli.ErrReported)
+	}
 	drainCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 	drainNudge(drainCtx, nudgeCh, runErr, firstVerb(args), stdio.Stderr)

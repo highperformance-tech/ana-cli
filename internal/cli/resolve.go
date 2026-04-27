@@ -47,8 +47,12 @@ type Resolved struct {
 // class of bug structurally impossible.
 //
 // Errors:
-//   - unknown verb name during walk → usage-wrapped error.
+//   - unknown verb name during walk → usage-wrapped error. Resolved is
+//     non-nil with Leaf set to the deepest *Group reached so callers can
+//     render that group's help alongside the error.
 //   - parse failure of a flag token → ParseFlags' wrapped usage error.
+//     Resolved is non-nil with Leaf+MergedFS already populated so callers can
+//     render the resolved leaf's help (with its merged Flags block).
 //   - presence of `--help` / `-h` anywhere → returns Resolved with ErrHelp;
 //     callers (Dispatch) render help instead of running the leaf.
 func Resolve(root *Group, args []string) (*Resolved, error) {
@@ -123,7 +127,8 @@ func Resolve(root *Group, args []string) (*Resolved, error) {
 				i++
 				continue
 			}
-			return nil, fmt.Errorf("unknown subcommand %q: %w", tok, ErrUsage)
+			return &Resolved{Leaf: cur, Path: path},
+				fmt.Errorf("unknown subcommand %q: %w", tok, ErrUsage)
 		}
 		leafArgs = append(leafArgs, tok)
 		i++
@@ -139,7 +144,9 @@ func Resolve(root *Group, args []string) (*Resolved, error) {
 
 	if len(flagTokens) > 0 {
 		if err := ParseFlags(merged, flagTokens); err != nil {
-			return nil, err
+			// Return the partial Resolved so callers can render the resolved
+			// leaf's help (and its merged Flags block) alongside the error.
+			return &Resolved{Leaf: leaf, Path: path, MergedFS: merged, Args: leafArgs}, err
 		}
 		// ParseFlags' internal loop reseeds positional remainder via `--`.
 		leafArgs = append(leafArgs, merged.Args()...)

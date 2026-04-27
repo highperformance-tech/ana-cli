@@ -264,8 +264,22 @@ func TestDispatchUnknownVerb(t *testing.T) {
 	if !errors.Is(err, ErrReported) {
 		t.Errorf("err should carry ErrReported: %v", err)
 	}
-	if !strings.Contains(errb.String(), "zzz") {
-		t.Errorf("stderr missing unknown msg: %q", errb.String())
+	s := errb.String()
+	// Modern-CLI convention: error message on the first line, then a blank
+	// separator, then the help for the deepest scope reached (root in this
+	// case — the walk failed at the very first token).
+	firstLine, rest, ok := strings.Cut(s, "\n")
+	if !ok {
+		t.Fatalf("stderr missing newline-separated header: %q", s)
+	}
+	if !strings.Contains(firstLine, "zzz") {
+		t.Errorf("first line should describe the bad token: %q", firstLine)
+	}
+	if strings.HasSuffix(firstLine, ": usage") {
+		t.Errorf("first line should not leak the ErrUsage sentinel suffix: %q", firstLine)
+	}
+	if !strings.Contains(rest, "Commands:") {
+		t.Errorf("stderr should include the root help body: %q", s)
 	}
 }
 
@@ -775,8 +789,145 @@ func TestGroupRun_BadFlagPropagates(t *testing.T) {
 	if !errors.Is(err, ErrUsage) {
 		t.Fatalf("err=%v want ErrUsage", err)
 	}
-	if errb.Len() == 0 {
-		t.Errorf("stderr should describe error")
+	if !errors.Is(err, ErrReported) {
+		t.Errorf("err should carry ErrReported: %v", err)
+	}
+	s := errb.String()
+	// Bad flag at a leaf: stderr begins with the parse error, then a blank
+	// separator, then the leaf's help (with --known visible in the merged
+	// Flags block) so the user sees the syntax for the verb they invoked.
+	if !strings.Contains(s, "flag provided but not defined: -nope") {
+		t.Errorf("first line should describe the parse error: %q", s)
+	}
+	if !strings.Contains(s, "leaf help line") {
+		t.Errorf("stderr should include the resolved leaf's help: %q", s)
+	}
+	if !strings.Contains(s, "--known") {
+		t.Errorf("stderr should include leaf's --known flag in the Flags block: %q", s)
+	}
+}
+
+func TestDispatchLeafReturnsUsageErrorAddsHelp(t *testing.T) {
+	t.Parallel()
+	// A leaf that returns a bare ErrUsage from Run (the RequireFlags /
+	// RequireStringID / UsageErrf path). Dispatch must annotate it with the
+	// leaf's help and wrap with ErrReported.
+	want := UsageErrf("run: <id> required")
+	leaf := &fakeCmd{err: want, help: "run leaf usage line"}
+	root := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, errb := testIO()
+	err := Dispatch(context.Background(), root, []string{"run"}, stdio)
+	if !errors.Is(err, ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
+	}
+	if !errors.Is(err, ErrReported) {
+		t.Errorf("err should carry ErrReported so main() does not double-print: %v", err)
+	}
+	s := errb.String()
+	if !strings.HasPrefix(s, "run: <id> required\n") {
+		t.Errorf("first line should be the bare error message: %q", s)
+	}
+	if strings.Contains(s, ": usage\n") {
+		t.Errorf("first line should not leak the ErrUsage sentinel: %q", s)
+	}
+	if !strings.Contains(s, "run leaf usage line") {
+		t.Errorf("stderr should include the resolved leaf's help: %q", s)
+	}
+}
+
+func TestDispatchLeafAlreadyReportedNoDoubleHelp(t *testing.T) {
+	t.Parallel()
+	// A leaf that has already written its own diagnostic and tagged with
+	// ErrReported — Dispatch must NOT append its help (the leaf chose to
+	// own the output).
+	want := errors.Join(UsageErrf("custom: pre-reported"), ErrReported)
+	leaf := &fakeCmd{err: want, help: "leaf help"}
+	root := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, errb := testIO()
+	err := Dispatch(context.Background(), root, []string{"run"}, stdio)
+	if !errors.Is(err, ErrUsage) || !errors.Is(err, ErrReported) {
+		t.Fatalf("err=%v", err)
+	}
+	if strings.Contains(errb.String(), "leaf help") {
+		t.Errorf("stderr should not contain leaf help when leaf already reported: %q", errb.String())
+	}
+}
+
+func TestDispatchLeafNonUsageErrorPassesThrough(t *testing.T) {
+	t.Parallel()
+	// A leaf that returns a non-usage runtime error: Dispatch must pass it
+	// through unchanged — no help annotation, no ErrReported wrap (main()
+	// owns the stderr write for non-usage errors).
+	want := errors.New("network: timeout")
+	leaf := &fakeCmd{err: want, help: "leaf help"}
+	root := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, errb := testIO()
+	err := Dispatch(context.Background(), root, []string{"run"}, stdio)
+	if !errors.Is(err, want) {
+		t.Fatalf("err=%v want %v", err, want)
+	}
+	if errors.Is(err, ErrUsage) || errors.Is(err, ErrReported) {
+		t.Errorf("non-usage error must not be wrapped: %v", err)
+	}
+	if errb.Len() != 0 {
+		t.Errorf("stderr should be empty: %q", errb.String())
+	}
+}
+
+func TestGroupRunLeafReturnsUsageErrorAddsHelp(t *testing.T) {
+	t.Parallel()
+	want := UsageErrf("c: <id> required")
+	child := &fakeCmd{err: want, help: "c usage line"}
+	g := &Group{Children: map[string]Command{"c": child}}
+	stdio, _, errb := testIO()
+	err := g.Run(context.Background(), []string{"c"}, stdio)
+	if !errors.Is(err, ErrUsage) || !errors.Is(err, ErrReported) {
+		t.Fatalf("err=%v", err)
+	}
+	if !strings.Contains(errb.String(), "c: <id> required") {
+		t.Errorf("stderr missing error: %q", errb.String())
+	}
+	if !strings.Contains(errb.String(), "c usage line") {
+		t.Errorf("stderr missing leaf help: %q", errb.String())
+	}
+}
+
+func TestShouldAttachUsageHelp(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil", nil, false},
+		{"plain usage", UsageErrf("v: bad"), true},
+		{"already reported", errors.Join(UsageErrf("v: bad"), ErrReported), false},
+		{"help", ErrHelp, false},
+		{"non-usage", errors.New("boom"), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := shouldAttachUsageHelp(tc.err); got != tc.want {
+				t.Errorf("shouldAttachUsageHelp(%v)=%v want %v", tc.err, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestTrimUsageSuffix(t *testing.T) {
+	t.Parallel()
+	// An ErrUsage-wrapped error ends in ": usage"; trimUsageSuffix strips
+	// only that exact tail. A message that happens to mention "usage"
+	// elsewhere is left intact.
+	if got := trimUsageSuffix("v: bad: usage"); got != "v: bad" {
+		t.Errorf("got=%q", got)
+	}
+	if got := trimUsageSuffix("plain message"); got != "plain message" {
+		t.Errorf("trim should be a no-op without suffix: %q", got)
+	}
+	if got := trimUsageSuffix(""); got != "" {
+		t.Errorf("empty should round-trip: %q", got)
 	}
 }
 
