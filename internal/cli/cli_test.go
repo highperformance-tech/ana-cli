@@ -571,6 +571,25 @@ func (l *flagLeaf) Run(ctx context.Context, args []string, _ IO) error {
 	return nil
 }
 
+func TestGroupRunPropagatesGlobalToLeaf(t *testing.T) {
+	t.Parallel()
+	// Group.Run is reachable as a self-contained dispatcher (not just as a
+	// child Group walked by Resolve). When invoked that way it must mirror
+	// Dispatch and stash the parsed root persistent flags on ctx so the
+	// leaf's GlobalFrom(ctx) read works the same as under the binary.
+	leaf := &fakeCmd{}
+	g := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, _ := testIO()
+	args := []string{"--endpoint", "https://api", "--profile", "prod", "--json", "run"}
+	if err := g.Run(context.Background(), args, stdio); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	want := Global{JSON: true, Endpoint: "https://api", Profile: "prod"}
+	if leaf.gotGlobal != want {
+		t.Errorf("gotGlobal=%+v want %+v", leaf.gotGlobal, want)
+	}
+}
+
 func TestGroupFlagsPropagateToLeaf(t *testing.T) {
 	t.Parallel()
 	var leafFoo string

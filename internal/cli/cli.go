@@ -105,6 +105,14 @@ func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 		ReportUsageError(res, g, err, stdio.Stderr)
 		return errors.Join(err, ErrReported)
 	}
+	// Mirror Dispatch: stash Global from the merged FlagSet so a leaf calling
+	// GlobalFrom(ctx) sees the parsed root persistent flags. Only install if
+	// the caller hasn't already supplied one — Group.Run is reachable from
+	// tests that pre-seed Global on ctx, and overwriting their value would
+	// change behavior the existing FlagSet-preservation contract codifies.
+	if GlobalFrom(ctx) == (Global{}) {
+		ctx = WithGlobal(ctx, globalFromFlagSet(res.MergedFS))
+	}
 	// Resolved.Execute owns group-prefix help, leaf invocation, and
 	// leaf-internal-usage-error annotation in one place — Group.Run delegates
 	// to it so the convention can't drift between dispatch entry points.
