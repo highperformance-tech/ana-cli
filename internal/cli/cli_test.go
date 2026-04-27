@@ -31,6 +31,28 @@ func (f *fakeCmd) Run(ctx context.Context, args []string, _ IO) error {
 
 func (f *fakeCmd) Help() string { return f.help }
 
+// assertUsageLayout verifies the modern-CLI error layout: an error line, a
+// blank separator line, then a help body containing helpSubstr. Returns the
+// first line so callers can run further substring checks on the error itself
+// (e.g. "must mention the bad flag name", "must not leak ': usage'"). The
+// blank-separator assertion is what stops the layout from silently regressing
+// into single-newline output that satisfies "error first, help present" but
+// breaks the contract.
+func assertUsageLayout(t *testing.T, s, helpSubstr string) string {
+	t.Helper()
+	firstLine, rest, ok := strings.Cut(s, "\n")
+	if !ok {
+		t.Fatalf("stderr missing newline-separated header: %q", s)
+	}
+	if !strings.HasPrefix(rest, "\n") {
+		t.Errorf("stderr missing blank separator between error and help: %q", s)
+	}
+	if !strings.Contains(rest, helpSubstr) {
+		t.Errorf("help body missing %q: %q", helpSubstr, s)
+	}
+	return firstLine
+}
+
 // testIO builds an IO with in-memory streams for assertions.
 func testIO() (IO, *bytes.Buffer, *bytes.Buffer) {
 	var out, errb bytes.Buffer
@@ -264,22 +286,15 @@ func TestDispatchUnknownVerb(t *testing.T) {
 	if !errors.Is(err, ErrReported) {
 		t.Errorf("err should carry ErrReported: %v", err)
 	}
-	s := errb.String()
-	// Modern-CLI convention: error message on the first line, then a blank
-	// separator, then the help for the deepest scope reached (root in this
-	// case — the walk failed at the very first token).
-	firstLine, rest, ok := strings.Cut(s, "\n")
-	if !ok {
-		t.Fatalf("stderr missing newline-separated header: %q", s)
-	}
+	// Modern-CLI convention: error first line, blank separator, then the
+	// help for the deepest scope reached (root in this case — the walk
+	// failed at the very first token).
+	firstLine := assertUsageLayout(t, errb.String(), "Commands:")
 	if !strings.Contains(firstLine, "zzz") {
 		t.Errorf("first line should describe the bad token: %q", firstLine)
 	}
 	if strings.HasSuffix(firstLine, ": usage") {
 		t.Errorf("first line should not leak the ErrUsage sentinel suffix: %q", firstLine)
-	}
-	if !strings.Contains(rest, "Commands:") {
-		t.Errorf("stderr should include the root help body: %q", s)
 	}
 }
 
@@ -811,16 +826,12 @@ func TestGroupRun_BadFlagPropagates(t *testing.T) {
 	if !errors.Is(err, ErrReported) {
 		t.Errorf("err should carry ErrReported: %v", err)
 	}
+	// Bad flag at a leaf: error first, blank separator, leaf help (with
+	// --known visible in the merged Flags block).
 	s := errb.String()
-	// Bad flag at a leaf: stderr begins with the parse error, then a blank
-	// separator, then the leaf's help (with --known visible in the merged
-	// Flags block) so the user sees the syntax for the verb they invoked.
-	// Don't pin stdlib flag wording — just confirm the bad flag name surfaces.
-	if !strings.Contains(s, "-nope") {
-		t.Errorf("first line should mention the bad flag: %q", s)
-	}
-	if !strings.Contains(s, "leaf help line") {
-		t.Errorf("stderr should include the resolved leaf's help: %q", s)
+	firstLine := assertUsageLayout(t, s, "leaf help line")
+	if !strings.Contains(firstLine, "-nope") {
+		t.Errorf("first line should mention the bad flag: %q", firstLine)
 	}
 	if !strings.Contains(s, "--known") {
 		t.Errorf("stderr should include leaf's --known flag in the Flags block: %q", s)
@@ -844,14 +855,12 @@ func TestDispatchLeafReturnsUsageErrorAddsHelp(t *testing.T) {
 		t.Errorf("err should carry ErrReported so main() does not double-print: %v", err)
 	}
 	s := errb.String()
-	if !strings.HasPrefix(s, "run: <id> required\n") {
-		t.Errorf("first line should be the bare error message: %q", s)
+	firstLine := assertUsageLayout(t, s, "run leaf usage line")
+	if firstLine != "run: <id> required" {
+		t.Errorf("first line should be the bare error message: %q", firstLine)
 	}
 	if strings.Contains(s, ": usage\n") {
-		t.Errorf("first line should not leak the ErrUsage sentinel: %q", s)
-	}
-	if !strings.Contains(s, "run leaf usage line") {
-		t.Errorf("stderr should include the resolved leaf's help: %q", s)
+		t.Errorf("stderr should not leak the ErrUsage sentinel anywhere: %q", s)
 	}
 }
 
@@ -904,11 +913,9 @@ func TestGroupRunLeafReturnsUsageErrorAddsHelp(t *testing.T) {
 	if !errors.Is(err, ErrUsage) || !errors.Is(err, ErrReported) {
 		t.Fatalf("err=%v", err)
 	}
-	if !strings.Contains(errb.String(), "c: <id> required") {
-		t.Errorf("stderr missing error: %q", errb.String())
-	}
-	if !strings.Contains(errb.String(), "c usage line") {
-		t.Errorf("stderr missing leaf help: %q", errb.String())
+	firstLine := assertUsageLayout(t, errb.String(), "c usage line")
+	if firstLine != "c: <id> required" {
+		t.Errorf("first line should be the bare error message: %q", firstLine)
 	}
 }
 
