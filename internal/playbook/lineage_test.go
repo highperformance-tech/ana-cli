@@ -152,7 +152,7 @@ func TestLineageRejectsExtraPositionals(t *testing.T) {
 	cmd := &lineageCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"pb1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want strict-arity ErrUsage", err)
 	}
 	if f.lastPath != "" {

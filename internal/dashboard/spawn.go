@@ -36,8 +36,8 @@ type spawnResp struct {
 // response (--json) or the refreshedAt field. If refreshedAt is absent we
 // fall back to raw JSON so we never lose information.
 func (c *spawnCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("dashboard spawn: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("dashboard spawn", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("dashboard spawn", args)
 	if err != nil {

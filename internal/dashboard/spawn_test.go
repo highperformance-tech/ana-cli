@@ -82,7 +82,7 @@ func TestSpawnRejectsExtraPositionals(t *testing.T) {
 	cmd := &spawnCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want strict-arity ErrUsage", err)
 	}
 	if f.lastPath != "" {

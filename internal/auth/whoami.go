@@ -39,8 +39,8 @@ type getOrganizationResp struct {
 }
 
 func (c *whoamiCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("auth whoami: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("auth whoami", args); err != nil {
+		return err
 	}
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {

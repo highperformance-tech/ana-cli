@@ -44,8 +44,8 @@ type listApiKeysResp struct {
 }
 
 func (c *keysListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("auth keys list: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("auth keys list", args); err != nil {
+		return err
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListApiKeys", struct{}{}, &raw); err != nil {
@@ -101,8 +101,8 @@ type createApiKeyResp struct {
 }
 
 func (c *keysCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("auth keys create: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("auth keys create", args); err != nil {
+		return err
 	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "auth keys create", "name"); err != nil {
 		return err
@@ -143,8 +143,8 @@ type rotateApiKeyReq struct {
 }
 
 func (c *keysRotateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("auth keys rotate: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("auth keys rotate", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("auth keys rotate", args)
 	if err != nil {
@@ -173,8 +173,8 @@ type revokeApiKeyReq struct {
 }
 
 func (c *keysRevokeCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("auth keys revoke: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("auth keys revoke", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("auth keys revoke", args)
 	if err != nil {

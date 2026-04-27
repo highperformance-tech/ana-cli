@@ -113,7 +113,7 @@ func TestRenameRejectsExtraPositionals(t *testing.T) {
 	cmd := &renameCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "title", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly two") {
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want strict-arity ErrUsage", err)
 	}
 	if f.lastPath != "" {
@@ -158,7 +158,7 @@ func TestBookmarkRejectsExtraPositionals(t *testing.T) {
 	cmd := &bookmarkCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want strict-arity ErrUsage", err)
 	}
 	if f.lastPath != "" {
@@ -309,7 +309,7 @@ func TestDeleteRejectsExtraPositionals(t *testing.T) {
 	cmd := &deleteCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want strict-arity ErrUsage", err)
 	}
 	if f.lastPath != "" {
@@ -402,7 +402,7 @@ func TestDuplicateRejectsExtraPositionals(t *testing.T) {
 	cmd := &duplicateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one") {
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want strict-arity ErrUsage", err)
 	}
 	if f.lastPath != "" {

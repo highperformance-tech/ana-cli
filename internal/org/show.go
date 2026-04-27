@@ -31,8 +31,8 @@ type getOrganizationResp struct {
 // JSON payload. The two-column layout uses tabwriter with a small gutter so
 // field: value pairs stay visually aligned even if names grow.
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("org show: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("org show", args); err != nil {
+		return err
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/GetOrganization", struct{}{}, &raw); err != nil {

@@ -50,8 +50,8 @@ func (c *databricksOAuthSSOCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *databricksOAuthSSOCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("connector create databricks oauth-sso: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("connector create databricks oauth-sso", args); err != nil {
+		return err
 	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create databricks oauth-sso",
 		"name", "host", "http-path", "catalog", "schema", "client-id"); err != nil {

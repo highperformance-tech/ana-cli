@@ -40,8 +40,8 @@ type listServiceAccountsResp struct {
 }
 
 func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("auth service-accounts list: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("auth service-accounts list", args); err != nil {
+		return err
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListServiceAccounts", struct{}{}, &raw); err != nil {
@@ -95,8 +95,8 @@ type createServiceAccountResp struct {
 }
 
 func (c *saCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("auth service-accounts create: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("auth service-accounts create", args); err != nil {
+		return err
 	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "auth service-accounts create", "name"); err != nil {
 		return err
@@ -135,8 +135,8 @@ type deleteServiceAccountReq struct {
 }
 
 func (c *saDeleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("auth service-accounts delete: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("auth service-accounts delete", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("auth service-accounts delete", args)
 	if err != nil {

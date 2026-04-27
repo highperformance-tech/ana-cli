@@ -36,8 +36,8 @@ type reportsResp struct {
 }
 
 func (c *reportsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("playbook reports: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("playbook reports", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("playbook reports", args)
 	if err != nil {

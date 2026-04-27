@@ -36,8 +36,8 @@ type listResp struct {
 // ID/NAME/FOLDER table. FOLDER prefers a human-readable folderName, falls
 // back to folderId, and renders an em-dash when neither is set.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("dashboard list: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("dashboard list", args); err != nil {
+		return err
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, servicePath+"/ListDashboards", struct{}{}, &raw); err != nil {

@@ -70,8 +70,8 @@ func (h historyCell) kindAndContent() (string, string) {
 }
 
 func (c *historyCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("chat history: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("chat history", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("chat history", args)
 	if err != nil {

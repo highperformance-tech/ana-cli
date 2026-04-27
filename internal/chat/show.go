@@ -37,8 +37,8 @@ type showResp struct {
 }
 
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("chat show: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("chat show", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("chat show", args)
 	if err != nil {

@@ -44,8 +44,8 @@ func (c *snowflakeOAuthIndividualCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *snowflakeOAuthIndividualCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("connector create snowflake oauth-individual: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("connector create snowflake oauth-individual", args); err != nil {
+		return err
 	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create snowflake oauth-individual",
 		"name", "locator", "database", "oauth-client-id"); err != nil {

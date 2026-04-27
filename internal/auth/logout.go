@@ -18,8 +18,8 @@ func (c *logoutCmd) Help() string {
 }
 
 func (c *logoutCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("auth logout: unexpected arguments")
+	if err := cli.RequireNoPositionals("auth logout", args); err != nil {
+		return err
 	}
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {

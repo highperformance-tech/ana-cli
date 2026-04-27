@@ -45,8 +45,8 @@ func (c *databricksOAuthIndividualCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *databricksOAuthIndividualCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("connector create databricks oauth-individual: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("connector create databricks oauth-individual", args); err != nil {
+		return err
 	}
 	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create databricks oauth-individual",
 		"name", "host", "http-path", "catalog", "schema", "client-id"); err != nil {

@@ -31,8 +31,8 @@ type listResp struct {
 // Empty CronString cells render as "-" so tabwriter keeps the column aligned
 // for playbooks without a schedule.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("playbook list: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("playbook list", args); err != nil {
+		return err
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, playbookServicePath+"/GetPlaybooks", struct{}{}, &raw); err != nil {

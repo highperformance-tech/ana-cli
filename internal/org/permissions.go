@@ -42,8 +42,8 @@ type listPermissionsResp struct {
 // or the raw JSON payload under --json. A row missing both resource and
 // action falls back to "-" so the column stays aligned.
 func (c *permissionsListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("org permissions list: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("org permissions list", args); err != nil {
+		return err
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/ListPermissions", struct{}{}, &raw); err != nil {

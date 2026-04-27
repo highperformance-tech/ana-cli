@@ -36,8 +36,8 @@ func (c *renameCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 	if len(args) < 2 || args[1] == "" {
 		return cli.UsageErrf("chat rename: <title> positional argument required")
 	}
-	if len(args) > 2 {
-		return cli.UsageErrf("chat rename: exactly two positional arguments required (<id> <title>); quote titles with spaces")
+	if err := cli.RequireMaxPositionals("chat rename", 2, args); err != nil {
+		return err
 	}
 	title := args[1]
 	var raw map[string]any
@@ -96,8 +96,8 @@ func (c *deleteCmd) Help() string {
 }
 
 func (c *deleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("chat delete: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("chat delete", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("chat delete", args)
 	if err != nil {
@@ -132,8 +132,8 @@ type duplicateResp struct {
 }
 
 func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("chat duplicate: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("chat duplicate", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("chat duplicate", args)
 	if err != nil {
@@ -156,8 +156,8 @@ func (c *duplicateCmd) Run(ctx context.Context, args []string, stdio cli.IO) err
 // simpleAck is the bookmark/unbookmark path — positional id, no-body
 // response, prints `ok`. Extracted so the two verbs aren't literal copies.
 func simpleAck(ctx context.Context, args []string, stdio cli.IO, deps Deps, verb, suffix string) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("%s: exactly one <id> positional argument required", verb)
+	if err := cli.RequireMaxPositionals(verb, 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID(verb, args)
 	if err != nil {

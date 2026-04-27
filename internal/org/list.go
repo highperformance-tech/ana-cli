@@ -42,8 +42,8 @@ type listOrganizationsResp struct {
 // or the raw payload under --json. The --json branch preserves server order
 // since callers piping JSON may rely on it.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) != 0 {
-		return cli.UsageErrf("org list: unexpected positional arguments: %v", args)
+	if err := cli.RequireNoPositionals("org list", args); err != nil {
+		return err
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.auth.PublicAuthService/ListOrganizations", struct{}{}, &raw); err != nil {

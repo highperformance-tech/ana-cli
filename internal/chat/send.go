@@ -139,8 +139,8 @@ func (c *sendCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if err != nil {
 		return err
 	}
-	if len(args) > 2 {
-		return cli.UsageErrf("chat send: exactly one positional <message> is allowed; quote messages with spaces or use --message-file")
+	if err := cli.RequireMaxPositionals("chat send", 2, args); err != nil {
+		return err
 	}
 	positional := ""
 	if len(args) >= 2 {

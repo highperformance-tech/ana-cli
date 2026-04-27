@@ -47,8 +47,8 @@ type lineageResp struct {
 }
 
 func (c *lineageCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	if len(args) > 1 {
-		return cli.UsageErrf("playbook lineage: exactly one <id> positional argument required")
+	if err := cli.RequireMaxPositionals("playbook lineage", 1, args); err != nil {
+		return err
 	}
 	id, err := cli.RequireStringID("playbook lineage", args)
 	if err != nil {
