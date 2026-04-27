@@ -439,12 +439,15 @@ func TestStartNudge_SkipConditions(t *testing.T) {
 	})
 }
 
-// TestDrainNudge covers every branch.
+// TestDrainNudge covers every branch. The cancellation arm is exercised by
+// passing an already-canceled context; the receive arm by pre-loading the
+// buffered channel and passing context.Background(). Both shapes resolve
+// deterministically — no wall-clock waits, no select races.
 func TestDrainNudge(t *testing.T) {
 	t.Parallel()
 	t.Run("nil channel is a no-op", func(t *testing.T) {
 		var buf bytes.Buffer
-		drainNudge(nil, time.Millisecond, nil, "", &buf)
+		drainNudge(context.Background(), nil, nil, "", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -453,7 +456,7 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- "should not print"
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, cli.ErrHelp, "", &buf)
+		drainNudge(context.Background(), ch, cli.ErrHelp, "", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -462,7 +465,7 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- "stale nudge from pre-swap version"
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, nil, "update", &buf)
+		drainNudge(context.Background(), ch, nil, "update", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -471,7 +474,7 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- "retry hint"
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, errors.New("permission denied"), "update", &buf)
+		drainNudge(context.Background(), ch, errors.New("permission denied"), "update", &buf)
 		if !strings.Contains(buf.String(), "retry hint") {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -480,7 +483,7 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- "hello"
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, nil, "", &buf)
+		drainNudge(context.Background(), ch, nil, "", &buf)
 		if !strings.Contains(buf.String(), "hello") {
 			t.Fatalf("stderr: %q", buf.String())
 		}
@@ -489,15 +492,17 @@ func TestDrainNudge(t *testing.T) {
 		ch := make(chan string, 1)
 		ch <- ""
 		var buf bytes.Buffer
-		drainNudge(ch, time.Millisecond, nil, "", &buf)
+		drainNudge(context.Background(), ch, nil, "", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}
 	})
-	t.Run("timeout", func(t *testing.T) {
-		ch := make(chan string)
+	t.Run("ctx canceled before message", func(t *testing.T) {
+		ch := make(chan string) // unbuffered; never written
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
 		var buf bytes.Buffer
-		drainNudge(ch, 10*time.Millisecond, nil, "", &buf)
+		drainNudge(ctx, ch, nil, "", &buf)
 		if buf.Len() != 0 {
 			t.Fatalf("stderr: %q", buf.String())
 		}

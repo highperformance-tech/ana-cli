@@ -119,7 +119,9 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	// round-trip overlaps the verb's work. drainNudge picks it up after.
 	nudgeCh := startNudge(env, global)
 	runErr := res.Execute(ctx, stdio)
-	drainNudge(nudgeCh, 500*time.Millisecond, runErr, firstVerb(args), stdio.Stderr)
+	drainCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	drainNudge(drainCtx, nudgeCh, runErr, firstVerb(args), stdio.Stderr)
 	return runErr
 }
 
@@ -225,15 +227,17 @@ func startNudge(env func(string) string, global cli.Global) chan string {
 	return ch
 }
 
-// drainNudge waits up to timeout for startNudge's goroutine to report. When
-// it produces a non-empty message and the verb did not return a help/usage
-// error, the message is written to stderr — we intentionally suppress the
-// nudge on help/usage paths so help text doesn't get crowded by an upgrade
-// prompt. A successful `ana update` is also suppressed: the goroutine
-// captured the pre-swap version at process start and can't know the binary
-// was just replaced. A failed `ana update` still nudges. A nil ch (check
-// was skipped) or a timeout is a clean no-op.
-func drainNudge(ch chan string, timeout time.Duration, verbErr error, verb string, stderr io.Writer) {
+// drainNudge waits for startNudge's goroutine to report or for ctx to be
+// done, whichever comes first. When the goroutine produces a non-empty
+// message and the verb did not return a help/usage error, the message is
+// written to stderr — we intentionally suppress the nudge on help/usage
+// paths so help text doesn't get crowded by an upgrade prompt. A successful
+// `ana update` is also suppressed: the goroutine captured the pre-swap
+// version at process start and can't know the binary was just replaced. A
+// failed `ana update` still nudges. A nil ch (check was skipped) or a
+// canceled ctx is a clean no-op. Production callers wrap with a
+// context.WithTimeout so a slow update check can't make the verb hang.
+func drainNudge(ctx context.Context, ch chan string, verbErr error, verb string, stderr io.Writer) {
 	if ch == nil {
 		return
 	}
@@ -243,14 +247,12 @@ func drainNudge(ch chan string, timeout time.Duration, verbErr error, verb strin
 	if verb == "update" && verbErr == nil {
 		return
 	}
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
 	select {
 	case msg := <-ch:
 		if msg != "" {
 			fmt.Fprintln(stderr, msg)
 		}
-	case <-timer.C:
+	case <-ctx.Done():
 	}
 }
 
