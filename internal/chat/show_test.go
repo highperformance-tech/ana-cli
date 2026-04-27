@@ -106,10 +106,14 @@ func TestShowMissingPositional(t *testing.T) {
 
 func TestShowBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"show", "chat-x", "--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"show", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 

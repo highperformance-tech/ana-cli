@@ -127,6 +127,9 @@ func TestReportsBadFlag(t *testing.T) {
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
 	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
+	}
 }
 
 func TestReportsRemarshalErr(t *testing.T) {

@@ -64,12 +64,16 @@ func TestRenameEmptyTitle(t *testing.T) {
 
 func TestRenameBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
 	// Include the required <id> <title> positionals so missing-arg isn't the
 	// failure path; this isolates the unknown-flag (--nope) parse error.
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"rename", "chat-x", "new title", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	err := New(f.deps()).Run(context.Background(), []string{"rename", "chat-x", "new title", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -168,12 +172,16 @@ func TestBookmarkRejectsExtraPositionals(t *testing.T) {
 
 func TestBookmarkBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
 	// Include the required <id> positional so missing-arg isn't the failure
 	// path; this isolates the unknown-flag (--nope) parse error.
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"bookmark", "chat-x", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	err := New(f.deps()).Run(context.Background(), []string{"bookmark", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -233,12 +241,16 @@ func TestUnbookmarkMissingID(t *testing.T) {
 
 func TestUnbookmarkBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
 	// Include the required <id> positional so missing-arg isn't the failure
 	// path; this isolates the unknown-flag (--nope) parse error.
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"unbookmark", "chat-x", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	err := New(f.deps()).Run(context.Background(), []string{"unbookmark", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -319,12 +331,16 @@ func TestDeleteRejectsExtraPositionals(t *testing.T) {
 
 func TestDeleteBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
 	// Include the required <id> positional so missing-arg isn't the failure
 	// path; this isolates the unknown-flag (--nope) parse error.
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"delete", "chat-x", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	err := New(f.deps()).Run(context.Background(), []string{"delete", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -412,12 +428,16 @@ func TestDuplicateRejectsExtraPositionals(t *testing.T) {
 
 func TestDuplicateBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
 	// Include the required <id> positional so missing-arg isn't the failure
 	// path; this isolates the unknown-flag (--nope) parse error.
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"duplicate", "chat-x", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	err := New(f.deps()).Run(context.Background(), []string{"duplicate", "chat-x", "--nope"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
