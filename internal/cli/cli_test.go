@@ -815,8 +815,9 @@ func TestGroupRun_BadFlagPropagates(t *testing.T) {
 	// Bad flag at a leaf: stderr begins with the parse error, then a blank
 	// separator, then the leaf's help (with --known visible in the merged
 	// Flags block) so the user sees the syntax for the verb they invoked.
-	if !strings.Contains(s, "flag provided but not defined: -nope") {
-		t.Errorf("first line should describe the parse error: %q", s)
+	// Don't pin stdlib flag wording — just confirm the bad flag name surfaces.
+	if !strings.Contains(s, "-nope") {
+		t.Errorf("first line should mention the bad flag: %q", s)
 	}
 	if !strings.Contains(s, "leaf help line") {
 		t.Errorf("stderr should include the resolved leaf's help: %q", s)
