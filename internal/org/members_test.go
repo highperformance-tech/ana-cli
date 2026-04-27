@@ -149,7 +149,12 @@ func TestMembersListCallErr(t *testing.T) {
 // trailing tokens after the verb path must yield ErrUsage before the RPC fires.
 func TestMembersListRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
-	f := &fakeDeps{}
+	f := &fakeDeps{
+		unaryFn: func(_ context.Context, path string, _, _ any) error {
+			t.Errorf("Unary should not fire on positional-arity failure: path=%q", path)
+			return nil
+		},
+	}
 	stdio, _, _ := testcli.NewIO(nil)
 	err := New(f.deps()).Run(context.Background(), []string{"members", "list", "unexpected"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {

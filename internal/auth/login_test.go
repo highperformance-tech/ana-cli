@@ -128,7 +128,7 @@ func TestLoginConfigPathError(t *testing.T) {
 func TestLoginRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	stdio, _, _ := testcli.NewIO(strings.NewReader("tok\n"))
+	stdio, _, _ := testcli.NewIO(errReader{err: errors.New("stdin must not be read")})
 	err := New(f.deps()).Run(context.Background(), []string{"login", "unexpected"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want positional ErrUsage", err)
@@ -148,6 +148,12 @@ func TestLoginBadFlag(t *testing.T) {
 	err := New(f.deps()).Run(context.Background(), []string{"login", "--no-such"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.saved != nil {
+		t.Errorf("Save should not be called on bad-flag failure: saved=%+v", f.saved)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 

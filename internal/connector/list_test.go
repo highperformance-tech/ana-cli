@@ -97,10 +97,14 @@ func TestListRejectsExtraPositionals(t *testing.T) {
 
 func TestListBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"list", "--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"list", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 

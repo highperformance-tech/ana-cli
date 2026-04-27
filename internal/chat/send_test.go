@@ -221,10 +221,9 @@ func TestSendNoMessage(t *testing.T) {
 func TestSendRejectsExtraPositionals(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &sendCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"id1", "msg1", "extra-msg"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "exactly one positional <message>") {
+	err := New(f.deps()).Run(context.Background(), []string{"send", "id1", "msg1", "extra-msg"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
 		t.Errorf("err=%v want strict-arity ErrUsage", err)
 	}
 	if f.lastPath != "" || f.streamPth != "" {
