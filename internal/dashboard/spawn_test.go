@@ -113,10 +113,14 @@ func TestSpawnUnaryErr(t *testing.T) {
 
 func TestSpawnBadFlag(t *testing.T) {
 	t.Parallel()
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"spawn", "d-1", "--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"spawn", "d-1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
