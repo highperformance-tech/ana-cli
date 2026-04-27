@@ -30,8 +30,7 @@ type listResp struct {
 }
 
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat list")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("chat list", args); err != nil {
 		return err
 	}
 	var raw map[string]any

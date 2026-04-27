@@ -90,11 +90,25 @@ func TestListRemarshalErr(t *testing.T) {
 	}
 }
 
+// TestListRejectsExtraPositionals pins the no-positional contract: trailing
+// tokens after the verb path must yield ErrUsage before the RPC fires.
+func TestListRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(f.deps()).Run(context.Background(), []string{"list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestListBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &listCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"list", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

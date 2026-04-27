@@ -82,7 +82,7 @@ func TestCreateDatabricksOAuthSSOCustomEndpoint(t *testing.T) {
 		},
 	}
 	deps := f.deps()
-	deps.Endpoint = "https://staging.example.com"
+	deps.Endpoint = func() string { return "https://staging.example.com" }
 	g := newCreateGroup(deps)
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
 	if err := g.Run(context.Background(), databricksOAuthSSOArgs(), stdio); err != nil {
@@ -214,6 +214,24 @@ func TestCreateDatabricksOAuthSSORenderWriteErr(t *testing.T) {
 	err := g.Run(context.Background(), databricksOAuthSSOArgs(), testcli.FailingIO())
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v want boom", err)
+	}
+}
+
+// TestCreateDatabricksOAuthSSORejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires. Use the
+// happy-path argv plus a trailing positional so the assertion would fail
+// loudly if the leaf's positional check ever moved AFTER RequireFlags.
+func TestCreateDatabricksOAuthSSORejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	args := append(databricksOAuthSSOArgs(), "extra")
+	_, err := runDatabricksOAuthSSO(t, f.deps(), args, "")
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 

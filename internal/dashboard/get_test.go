@@ -85,6 +85,22 @@ func TestGetNoDashboardKeyFallback(t *testing.T) {
 	}
 }
 
+// TestGetRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestGetRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &getCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestGetMissingPositional(t *testing.T) {
 	t.Parallel()
 	cmd := &getCmd{deps: (&fakeDeps{}).deps()}
@@ -108,9 +124,8 @@ func TestGetUnaryErr(t *testing.T) {
 
 func TestGetBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &getCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"get", "d-1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

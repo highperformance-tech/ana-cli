@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 
@@ -13,11 +14,20 @@ import (
 // connectorIds inside paradigm.options.universal and has no `title` field at
 // all — summaries are derived server-side and renamed later via UpdateChat.
 // The catalog wins over the brief per project convention; we follow it here.
-type newCmd struct{ deps Deps }
+type newCmd struct {
+	deps  Deps
+	ids   []int
+	title string
+}
 
 func (c *newCmd) Help() string {
 	return "new   Create a new chat bound to one or more connectors.\n" +
 		"Usage: ana chat new --connector <id[,id...]> [--title <str>]"
+}
+
+func (c *newCmd) Flags(fs *flag.FlagSet) {
+	fs.Var(cli.IntListFlag(&c.ids, ","), "connector", "connector id(s), comma-separated (required)")
+	fs.StringVar(&c.title, "title", "", "optional chat summary/title")
 }
 
 // universalOptions mirrors the observed `paradigm.options.universal` block.
@@ -67,14 +77,10 @@ type newResp struct {
 }
 
 func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat new")
-	var ids []int
-	fs.Var(cli.IntListFlag(&ids, ","), "connector", "connector id(s), comma-separated (required)")
-	title := fs.String("title", "", "optional chat summary/title")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("chat new", args); err != nil {
 		return err
 	}
-	if err := cli.RequireFlags(fs, "chat new", "connector"); err != nil {
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "chat new", "connector"); err != nil {
 		return err
 	}
 	req := newReq{
@@ -83,7 +89,7 @@ func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 			Version: 1,
 			Options: paradigmOptions{
 				Universal: universalOptions{
-					ConnectorIDs:     ids,
+					ConnectorIDs:     c.ids,
 					WebSearchEnabled: true,
 					SQLEnabled:       true,
 					PythonEnabled:    true,
@@ -92,7 +98,7 @@ func (c *newCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 		},
 		Model:       "MODEL_DEFAULT",
 		Methodology: "METHODOLOGY_ADAPTIVE",
-		Summary:     *title,
+		Summary:     c.title,
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, chatServicePath+"/CreateChat", req, &raw); err != nil {

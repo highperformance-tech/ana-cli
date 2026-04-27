@@ -31,8 +31,7 @@ type getOrganizationResp struct {
 // JSON payload. The two-column layout uses tabwriter with a small gutter so
 // field: value pairs stay visually aligned even if names grow.
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("org show")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("org show", args); err != nil {
 		return err
 	}
 	var raw map[string]any

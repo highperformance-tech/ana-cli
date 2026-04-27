@@ -10,7 +10,7 @@ Multi-file verb packages use one `<source>_test.go` per source file (e.g. `list.
 
 | Path | What lives here |
 |------|-----------------|
-| `cli/` | Dispatch core: `Command` interface, `Group`, `ParseFlags`, `ParseGlobal`, `Dispatch`, exit-code mapping. |
+| `cli/` | Dispatch core: `Command` interface, `Group`, `Flagger`, `Resolve` + `Dispatch` (resolve-then-parse, Cobra-style), `Global`, exit-code mapping. |
 | `testcli/` | Test helpers for verb packages (stdlib `httptest` analogue): `FailingWriter`, `FailingIO`, `NewIO`. |
 | `config/` | Multi-profile config file reader/writer. XDG path resolution, `Resolve` precedence. |
 | `transport/` | Connect-RPC HTTP client. Unary JSON + server-streaming JSON framing + `DoRaw` passthrough. Bearer + User-Agent applied via RoundTripper middleware. |

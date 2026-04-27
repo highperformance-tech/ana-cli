@@ -75,6 +75,22 @@ func TestHistoryJSON(t *testing.T) {
 	}
 }
 
+// TestHistoryRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestHistoryRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &historyCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestHistoryMissingPositional(t *testing.T) {
 	t.Parallel()
 	cmd := &historyCmd{deps: (&fakeDeps{}).deps()}
@@ -87,9 +103,8 @@ func TestHistoryMissingPositional(t *testing.T) {
 
 func TestHistoryBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &historyCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"history", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

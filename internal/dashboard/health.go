@@ -47,11 +47,10 @@ type healthResp struct {
 // contains no matching entry we surface an error rather than silently
 // succeeding.
 func (c *healthCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("dashboard health")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireMaxPositionals("dashboard health", 1, args); err != nil {
 		return err
 	}
-	id, err := cli.RequireStringID("dashboard health", fs.Args())
+	id, err := cli.RequireStringID("dashboard health", args)
 	if err != nil {
 		return err
 	}

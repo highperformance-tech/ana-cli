@@ -351,3 +351,45 @@ func TestRequireFlags_MissingReportsSorted(t *testing.T) {
 		t.Errorf("err=%q", got)
 	}
 }
+
+func TestRequireNoPositionals_Empty(t *testing.T) {
+	t.Parallel()
+	if err := RequireNoPositionals("verb", nil); err != nil {
+		t.Errorf("err=%v want nil", err)
+	}
+	if err := RequireNoPositionals("verb", []string{}); err != nil {
+		t.Errorf("err=%v want nil", err)
+	}
+}
+
+func TestRequireNoPositionals_NonEmpty(t *testing.T) {
+	t.Parallel()
+	err := RequireNoPositionals("verb", []string{"x", "y"})
+	if !errors.Is(err, ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
+	}
+	if got := err.Error(); got != "verb: unexpected positional arguments: [x y]: "+ErrUsage.Error() {
+		t.Errorf("err=%q", got)
+	}
+}
+
+func TestRequireMaxPositionals_WithinLimit(t *testing.T) {
+	t.Parallel()
+	if err := RequireMaxPositionals("verb", 1, []string{"only"}); err != nil {
+		t.Errorf("err=%v want nil", err)
+	}
+	if err := RequireMaxPositionals("verb", 2, nil); err != nil {
+		t.Errorf("err=%v want nil", err)
+	}
+}
+
+func TestRequireMaxPositionals_OverLimit(t *testing.T) {
+	t.Parallel()
+	err := RequireMaxPositionals("verb", 1, []string{"id", "extra1", "extra2"})
+	if !errors.Is(err, ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
+	}
+	if got := err.Error(); got != "verb: unexpected positional arguments: [extra1 extra2]: "+ErrUsage.Error() {
+		t.Errorf("err=%q", got)
+	}
+}

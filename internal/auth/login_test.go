@@ -33,11 +33,10 @@ func TestLoginLineMode(t *testing.T) {
 func TestLoginTokenStdinFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &loginCmd{deps: f.deps()}
 	// Multi-line token (JWT style) + trailing newline. --token-stdin should
 	// consume the whole stream and trim.
 	stdio, _, _ := testcli.NewIO(strings.NewReader("line1\nline2\n  \n"))
-	err := cmd.Run(context.Background(), []string{"--token-stdin"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"login", "--token-stdin"}, stdio)
 	if err != nil {
 		t.Fatalf("unexpected: %v", err)
 	}
@@ -123,14 +122,38 @@ func TestLoginConfigPathError(t *testing.T) {
 	}
 }
 
+// TestLoginRejectsExtraPositionals pins the no-positional contract: any
+// trailing token after the verb path must yield ErrUsage before stdin is
+// consulted.
+func TestLoginRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(errReader{err: errors.New("stdin must not be read")})
+	err := New(f.deps()).Run(context.Background(), []string{"login", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.saved != nil {
+		t.Errorf("Save should not be called on positional-arity failure: saved=%+v", f.saved)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestLoginBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &loginCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--no-such"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"login", "--no-such"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.saved != nil {
+		t.Errorf("Save should not be called on bad-flag failure: saved=%+v", f.saved)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -142,9 +165,8 @@ func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 func TestLoginStdinReadError_TokenStdin(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &loginCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(errReader{err: errors.New("read fail")})
-	err := cmd.Run(context.Background(), []string{"--token-stdin"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"login", "--token-stdin"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "read fail") {
 		t.Errorf("err=%v", err)
 	}

@@ -38,11 +38,10 @@ type shareResp struct {
 }
 
 func (c *shareCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat share")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireMaxPositionals("chat share", 1, args); err != nil {
 		return err
 	}
-	id, err := cli.RequireStringID("chat share", fs.Args())
+	id, err := cli.RequireStringID("chat share", args)
 	if err != nil {
 		return err
 	}

@@ -24,21 +24,25 @@ const defaultEndpoint = "https://app.textql.com"
 // path, and JSON-decodes the response into *resp. A concrete wiring layer
 // adapts transport.Client to this function field; tests pass a recording fake.
 //
-// Endpoint is the resolved API base URL (after --endpoint / profile / env
-// precedence), used by OAuth leaves whose success notes direct users at the
-// correct TextQL web app to complete the browser handshake. Empty is
-// tolerated — resolveEndpoint falls back to defaultEndpoint.
+// Endpoint is a closure that returns the resolved API base URL (after
+// --endpoint / profile / env precedence), used by OAuth leaves whose success
+// notes direct users at the correct TextQL web app to complete the browser
+// handshake. The closure form lets the wiring layer defer config-load until
+// the OAuth verb actually runs (so non-OAuth verbs never trigger it). A nil
+// closure or an empty return value falls back to defaultEndpoint.
 type Deps struct {
 	Unary    func(ctx context.Context, path string, req, resp any) error
-	Endpoint string
+	Endpoint func() string
 }
 
-// resolveEndpoint returns d.Endpoint when non-empty, else defaultEndpoint.
+// resolveEndpoint returns d.Endpoint() when non-empty, else defaultEndpoint.
 // OAuth success notes call this so self-hosted and non-prod profiles point
 // users at the right web app instead of always echoing app.textql.com.
 func (d Deps) resolveEndpoint() string {
-	if d.Endpoint != "" {
-		return d.Endpoint
+	if d.Endpoint != nil {
+		if e := d.Endpoint(); e != "" {
+			return e
+		}
 	}
 	return defaultEndpoint
 }

@@ -47,11 +47,10 @@ type lineageResp struct {
 }
 
 func (c *lineageCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("playbook lineage")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireMaxPositionals("playbook lineage", 1, args); err != nil {
 		return err
 	}
-	id, err := cli.RequireStringID("playbook lineage", fs.Args())
+	id, err := cli.RequireStringID("playbook lineage", args)
 	if err != nil {
 		return err
 	}

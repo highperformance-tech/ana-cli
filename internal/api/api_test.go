@@ -38,6 +38,15 @@ func (f *fakeDeps) deps() Deps {
 	}
 }
 
+// runAPI wraps the api leaf in a minimal Group so the resolve-then-parse
+// pipeline runs (flag tokens get parsed, positionals get separated). The api
+// package's New returns a leaf rather than a *cli.Group, so tests that want
+// flag parsing must dispatch through a wrapper Group.
+func runAPI(ctx context.Context, deps Deps, args []string, stdio cli.IO) error {
+	g := &cli.Group{Children: map[string]cli.Command{"api": New(deps)}}
+	return g.Run(ctx, append([]string{"api"}, args...), stdio)
+}
+
 // --- New / leaf surface ---
 
 func TestNewReturnsLeaf(t *testing.T) {

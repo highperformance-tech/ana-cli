@@ -29,14 +29,10 @@ type tablesResp struct {
 }
 
 func (c *tablesCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector tables")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	if fs.NArg() != 1 {
+	if len(args) != 1 {
 		return cli.UsageErrf("connector tables: <id> positional argument required")
 	}
-	id, err := cli.RequireIntID("connector tables", fs.Args())
+	id, err := cli.RequireIntID("connector tables", args)
 	if err != nil {
 		return err
 	}

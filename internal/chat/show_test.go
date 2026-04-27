@@ -78,6 +78,22 @@ func TestShowNoChatFallback(t *testing.T) {
 	}
 }
 
+// TestShowRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestShowRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &showCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestShowMissingPositional(t *testing.T) {
 	t.Parallel()
 	cmd := &showCmd{deps: (&fakeDeps{}).deps()}
@@ -90,11 +106,14 @@ func TestShowMissingPositional(t *testing.T) {
 
 func TestShowBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &showCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"show", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 

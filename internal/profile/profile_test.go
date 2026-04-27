@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"io"
 	"os"
 	"path/filepath"
@@ -146,9 +147,30 @@ func TestList_JSON(t *testing.T) {
 func TestList_BadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := (&listCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(newDeps(tmpCfg(t))).Run(context.Background(), []string{"list", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+// TestList_RejectsExtraPositionals pins the no-positional contract: trailing
+// tokens after the verb path must yield ErrUsage before the config is loaded.
+func TestList_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cfgPath := tmpCfg(t)
+	loaded := 0
+	d := Deps{
+		LoadCfg:    func() (config.Config, error) { loaded++; return config.Load(cfgPath) },
+		SaveCfg:    func(c config.Config) error { return config.Save(cfgPath, c) },
+		ConfigPath: func() (string, error) { return cfgPath, nil },
+	}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(d).Run(context.Background(), []string{"list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Fatalf("err=%v want positional ErrUsage", err)
+	}
+	if loaded != 0 {
+		t.Errorf("LoadCfg should not be called on positional-arity failure: loaded=%d", loaded)
 	}
 }
 
@@ -178,8 +200,8 @@ func TestAdd_CreatesProfile(t *testing.T) {
 	t.Parallel()
 	cfgPath := tmpCfg(t)
 	stdio, out, _ := testcli.NewIO(strings.NewReader("secret-token\n"))
-	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
-		[]string{"--endpoint", "https://custom", "--org", "Acme", "newprof"}, stdio)
+	err := New(newDeps(cfgPath)).Run(context.Background(),
+		[]string{"add", "--endpoint", "https://custom", "--org", "Acme", "newprof"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -212,8 +234,8 @@ func TestAdd_RegressionPositionalBeforeFlags(t *testing.T) {
 	t.Parallel()
 	cfgPath := tmpCfg(t)
 	stdio, _, _ := testcli.NewIO(strings.NewReader("secret\n"))
-	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
-		[]string{"newprof", "--endpoint", "https://custom", "--org", "Acme"}, stdio)
+	err := New(newDeps(cfgPath)).Run(context.Background(),
+		[]string{"add", "newprof", "--endpoint", "https://custom", "--org", "Acme"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -254,8 +276,8 @@ func TestAdd_TokenStdin_FullStream(t *testing.T) {
 	t.Parallel()
 	cfgPath := tmpCfg(t)
 	stdio, _, _ := testcli.NewIO(strings.NewReader("line1\nline2\n"))
-	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
-		[]string{"--token-stdin", "p"}, stdio)
+	err := New(newDeps(cfgPath)).Run(context.Background(),
+		[]string{"add", "--token-stdin", "p"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -270,8 +292,8 @@ func TestAdd_OverwritesExisting(t *testing.T) {
 	cfgPath := tmpCfg(t)
 	seed(t, cfgPath)
 	stdio, _, _ := testcli.NewIO(strings.NewReader("new-token\n"))
-	err := (&addCmd{deps: newDeps(cfgPath)}).Run(context.Background(),
-		[]string{"--endpoint", "https://rewritten", "default"}, stdio)
+	err := New(newDeps(cfgPath)).Run(context.Background(),
+		[]string{"add", "--endpoint", "https://rewritten", "default"}, stdio)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -306,10 +328,47 @@ func TestAdd_EmptyName(t *testing.T) {
 	}
 }
 
+// TestAdd_EndpointSurvivesDispatch is the regression test for the
+// "ana profile add NAME --endpoint URL stored the default URL" bug.
+// Calls cli.Dispatch end-to-end against a root group whose Flags closure
+// declares the same `--endpoint` global the bug shadowed; asserts the
+// resolver routes the value to the leaf (which writes it to the saved
+// profile) instead of consuming it as the global override.
+func TestAdd_EndpointSurvivesDispatch(t *testing.T) {
+	t.Parallel()
+	cfgPath := tmpCfg(t)
+	root := &cli.Group{
+		Flags: func(fs *flag.FlagSet) {
+			fs.Bool("json", false, "")
+			fs.String("endpoint", "", "")
+			fs.String("token-file", "", "")
+			fs.String("profile", "", "")
+		},
+		Children: map[string]cli.Command{"profile": New(newDeps(cfgPath))},
+	}
+	stdio, _, _ := testcli.NewIO(strings.NewReader("dummy-token\n"))
+	err := cli.Dispatch(context.Background(), root,
+		[]string{"profile", "add", "myprof", "--endpoint", "https://custom.example.com"}, stdio)
+	if err != nil {
+		t.Fatalf("Dispatch: %v", err)
+	}
+	c, err := config.Load(cfgPath)
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	p, ok := c.Profiles["myprof"]
+	if !ok {
+		t.Fatalf("myprof missing: %+v", c)
+	}
+	if p.Endpoint != "https://custom.example.com" {
+		t.Fatalf("endpoint = %q, want https://custom.example.com (leaf flag should shadow root --endpoint)", p.Endpoint)
+	}
+}
+
 func TestAdd_BadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(strings.NewReader("t\n"))
-	err := (&addCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope", "p"}, stdio)
+	err := New(newDeps(tmpCfg(t))).Run(context.Background(), []string{"add", "--nope", "p"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
 	}
@@ -473,10 +532,31 @@ func TestUse_EmptyArg(t *testing.T) {
 	}
 }
 
+// TestUse_RejectsExtraPositionals pins the strict-arity contract for
+// `profile use`: any token after the single <name> must yield ErrUsage.
+func TestUse_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cfgPath := tmpCfg(t)
+	saved := 0
+	d := Deps{
+		LoadCfg:    func() (config.Config, error) { return config.Load(cfgPath) },
+		SaveCfg:    func(c config.Config) error { saved++; return config.Save(cfgPath, c) },
+		ConfigPath: func() (string, error) { return cfgPath, nil },
+	}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := (&useCmd{deps: d}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Fatalf("err=%v want positional ErrUsage", err)
+	}
+	if saved != 0 {
+		t.Errorf("SaveCfg should not be called on positional-arity failure: saved=%d", saved)
+	}
+}
+
 func TestUse_BadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := (&useCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(newDeps(tmpCfg(t))).Run(context.Background(), []string{"use", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
 	}
@@ -593,10 +673,31 @@ func TestRemove_EmptyArg(t *testing.T) {
 	}
 }
 
+// TestRemove_RejectsExtraPositionals pins the strict-arity contract for
+// `profile remove`: any token after the single <name> must yield ErrUsage.
+func TestRemove_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cfgPath := tmpCfg(t)
+	saved := 0
+	d := Deps{
+		LoadCfg:    func() (config.Config, error) { return config.Load(cfgPath) },
+		SaveCfg:    func(c config.Config) error { saved++; return config.Save(cfgPath, c) },
+		ConfigPath: func() (string, error) { return cfgPath, nil },
+	}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := (&removeCmd{deps: d}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Fatalf("err=%v want positional ErrUsage", err)
+	}
+	if saved != 0 {
+		t.Errorf("SaveCfg should not be called on positional-arity failure: saved=%d", saved)
+	}
+}
+
 func TestRemove_BadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := (&removeCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(newDeps(tmpCfg(t))).Run(context.Background(), []string{"remove", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
 	}
@@ -772,10 +873,26 @@ func TestShow_EmptyArgFallsBackToActive(t *testing.T) {
 	}
 }
 
+// TestShow_RejectsExtraPositionals pins the strict-arity contract for
+// `profile show`: any trailing token beyond the optional <name> must yield
+// ErrUsage. show is read-only so there's no save side-effect to assert; we
+// pin the precise error message instead so missing-config or other unrelated
+// failures can't satisfy this test.
+func TestShow_RejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	cfgPath := tmpCfg(t)
+	seed(t, cfgPath)
+	stdio, _, _ := testcli.NewIO(nil)
+	err := (&showCmd{deps: newDeps(cfgPath)}).Run(context.Background(), []string{"name1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "accepts at most one optional") {
+		t.Fatalf("err=%v want strict-arity ErrUsage", err)
+	}
+}
+
 func TestShow_BadFlag(t *testing.T) {
 	t.Parallel()
 	stdio, _, _ := testcli.NewIO(nil)
-	err := (&showCmd{deps: newDeps(tmpCfg(t))}).Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(newDeps(tmpCfg(t))).Run(context.Background(), []string{"show", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Fatalf("err = %v", err)
 	}

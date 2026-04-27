@@ -79,9 +79,8 @@ func TestSendWaitAll(t *testing.T) {
 		{"id": "Y", "lifecycle": "LIFECYCLE_EXECUTED", "statusCell": map[string]any{"status": "s"}},
 	}}
 	f, _ := sendFake("X", stream)
-	cmd := &sendCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"c", "hi", "--wait-all"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"send", "c", "hi", "--wait-all"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if stream.i != 4 {
@@ -178,9 +177,8 @@ func TestSendRegressionPositionalBeforeFlags(t *testing.T) {
 		{"id": "Y", "lifecycle": "LIFECYCLE_EXECUTED", "mdCell": map[string]any{"content": "d"}},
 	}}
 	f, _ := sendFake("X", stream)
-	cmd := &sendCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"chat-id", "hello?", "--wait-all"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"send", "chat-id", "hello?", "--wait-all"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if stream.i != 4 {
@@ -190,9 +188,8 @@ func TestSendRegressionPositionalBeforeFlags(t *testing.T) {
 
 func TestSendBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"send", "--nope", "chat-x", "msg"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -218,6 +215,22 @@ func TestSendNoMessage(t *testing.T) {
 	}
 }
 
+// TestSendRejectsExtraPositionals exercises the `len(args) > 2` branch:
+// extra trailing tokens beyond `<id> <message>` must yield ErrUsage so the
+// operator quotes multi-word messages instead of having them silently dropped.
+func TestSendRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := New(f.deps()).Run(context.Background(), []string{"send", "id1", "msg1", "extra-msg"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" || f.streamPth != "" {
+		t.Errorf("Unary/Stream should not be called on positional-arity failure: path=%q stream=%q", f.lastPath, f.streamPth)
+	}
+}
+
 func TestSendMessageFilePath(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -229,9 +242,8 @@ func TestSendMessageFilePath(t *testing.T) {
 		{"id": "X", "lifecycle": "LIFECYCLE_EXECUTED", "mdCell": map[string]any{"content": "ok"}},
 	}}
 	f, _ := sendFake("X", stream)
-	cmd := &sendCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"c", "--message-file", p}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"send", "c", "--message-file", p}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if !strings.Contains(string(f.lastRaw), `"message":"hello from file"`) {
@@ -241,9 +253,8 @@ func TestSendMessageFilePath(t *testing.T) {
 
 func TestSendMessageFileMissing(t *testing.T) {
 	t.Parallel()
-	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"c", "--message-file", "/nope/does-not-exist-12345"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"send", "c", "--message-file", "/nope/does-not-exist-12345"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "read message file") {
 		t.Errorf("err=%v", err)
 	}
@@ -255,9 +266,8 @@ func TestSendMessageFileStdin(t *testing.T) {
 		{"id": "X", "lifecycle": "LIFECYCLE_EXECUTED", "mdCell": map[string]any{"content": "ok"}},
 	}}
 	f, _ := sendFake("X", stream)
-	cmd := &sendCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader("from-stdin-input"))
-	if err := cmd.Run(context.Background(), []string{"c", "--message-file", "-"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"send", "c", "--message-file", "-"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if !strings.Contains(string(f.lastRaw), `"message":"from-stdin-input"`) {
@@ -267,9 +277,8 @@ func TestSendMessageFileStdin(t *testing.T) {
 
 func TestSendStdinEmpty(t *testing.T) {
 	t.Parallel()
-	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"c", "--message-file", "-"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"send", "c", "--message-file", "-"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -282,9 +291,8 @@ func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 
 func TestSendStdinReadErr(t *testing.T) {
 	t.Parallel()
-	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(errReader{err: errors.New("read-fail")})
-	err := cmd.Run(context.Background(), []string{"c", "--message-file", "-"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"send", "c", "--message-file", "-"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "read-fail") {
 		t.Errorf("err=%v", err)
 	}
@@ -301,9 +309,8 @@ func TestSendStdinNilReader(t *testing.T) {
 
 func TestSendBothPositionalAndFile(t *testing.T) {
 	t.Parallel()
-	cmd := &sendCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"c", "positional", "--message-file", "/tmp/anything"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"send", "c", "positional", "--message-file", "/tmp/anything"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

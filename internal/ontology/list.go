@@ -31,8 +31,7 @@ type listResp struct {
 
 // Run issues GetOntologies and prints either a table or the raw payload.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("ontology list")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("ontology list", args); err != nil {
 		return err
 	}
 	var raw map[string]any

@@ -18,15 +18,13 @@ func (c *useCmd) Help() string {
 }
 
 func (c *useCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("profile use")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	rest := fs.Args()
-	if len(rest) == 0 || rest[0] == "" {
+	if len(args) == 0 || args[0] == "" {
 		return cli.UsageErrf("profile use: name is required")
 	}
-	name := rest[0]
+	if len(args) > 1 {
+		return cli.UsageErrf("profile use: unexpected positional arguments: %v", args[1:])
+	}
+	name := args[0]
 
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {

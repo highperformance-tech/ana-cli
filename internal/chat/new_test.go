@@ -19,9 +19,8 @@ func TestNewHappy(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &newCmd{deps: f.deps()}
 	stdio, out, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"--connector", "1,2", "--title", "hi"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"new", "--connector", "1,2", "--title", "hi"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if strings.TrimSpace(out.String()) != "new-id" {
@@ -45,9 +44,8 @@ func TestNewHappy(t *testing.T) {
 func TestNewOmitTitleWhenEmpty(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return nil }}
-	cmd := &newCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	if err := cmd.Run(context.Background(), []string{"--connector", "1"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"new", "--connector", "1"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if strings.Contains(string(f.lastRaw), `"summary"`) {
@@ -64,10 +62,9 @@ func TestNewJSONBypass(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &newCmd{deps: f.deps()}
 	ctx := cli.WithGlobal(context.Background(), cli.Global{JSON: true})
 	stdio, out, _ := testcli.NewIO(nil)
-	if err := cmd.Run(ctx, []string{"--connector", "1"}, stdio); err != nil {
+	if err := New(f.deps()).Run(ctx, []string{"new", "--connector", "1"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if !strings.Contains(out.String(), "\"chat\"") {
@@ -97,9 +94,8 @@ func TestNewBadConnector(t *testing.T) {
 
 func TestNewBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &newCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"new", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -108,9 +104,8 @@ func TestNewBadFlag(t *testing.T) {
 func TestNewUnaryErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
-	cmd := &newCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--connector", "1"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"new", "--connector", "1"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v", err)
 	}
@@ -125,9 +120,8 @@ func TestNewRemarshalErr(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &newCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--connector", "1"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"new", "--connector", "1"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "decode response") {
 		t.Errorf("err=%v", err)
 	}

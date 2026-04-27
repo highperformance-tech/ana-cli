@@ -5,69 +5,102 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 )
 
-// Dispatch is the root entry point. It parses global flags, stashes them in
-// ctx, then routes to the matching verb. An explicit help token returns
-// ErrHelp (exit 0); an empty verb or parse error returns ErrUsage (exit 1).
-func Dispatch(ctx context.Context, verbs map[string]Command, args []string, stdio IO) error {
-	// A bare help token anywhere up front short-circuits flag parsing so users
-	// can discover commands without first fixing any flag validation errors.
-	if len(args) > 0 && IsHelpArg(args[0]) {
-		RootHelp(stdio.Stdout, verbs)
+// Dispatch is the root entry point. It walks args against the verb tree under
+// root, parses every flag token (root persistent + intermediate group
+// persistent + leaf local) against a single merged FlagSet, stashes the
+// resulting Global in ctx, and hands off to the resolved leaf.
+//
+// A bare help token (`help` / `-h` / `--help`) at the very front prints the
+// root group's help and returns ErrHelp; deeper help tokens are handled by
+// Resolve and rendered against the resolved leaf or group.
+//
+// Errors:
+//   - ErrHelp (exit 0): help was requested.
+//   - usage errors (exit 1): unknown verb or unknown / malformed flag, also
+//     wrapped with ErrReported so main() doesn't double-print.
+//   - any error returned by leaf.Run: passed through unchanged.
+func Dispatch(ctx context.Context, root *Group, args []string, stdio IO) error {
+	if root == nil {
+		return fmt.Errorf("dispatch: nil root group")
+	}
+	// Bare help token at the front is the historical fast path. We could let
+	// Resolve handle it, but printing root help directly keeps the empty-args
+	// case and the explicit help-token case symmetrical.
+	if len(args) == 0 {
+		fmt.Fprintln(stdio.Stdout, RootHelp(root))
 		return ErrHelp
 	}
-	// StripGlobals instead of ParseGlobal: globals may appear before, after,
-	// or interleaved with the verb path. Anything unrecognised is passed
-	// through to rest so the leaf's own FlagSet reports the usage error.
-	global, rest, err := StripGlobals(args)
+	if IsHelpArg(args[0]) {
+		fmt.Fprintln(stdio.Stdout, RootHelp(root))
+		return ErrHelp
+	}
+
+	res, err := Resolve(root, args)
 	if err != nil {
+		if errors.Is(err, ErrHelp) {
+			renderResolvedHelp(res, root, stdio)
+			return ErrHelp
+		}
+		// Print to stderr and append root help so the user can recover.
 		fmt.Fprintln(stdio.Stderr, err)
-		RootHelp(stdio.Stderr, verbs)
-		return errors.Join(fmt.Errorf("%w: %w", ErrUsage, err), ErrReported)
+		fmt.Fprintln(stdio.Stderr, RootHelp(root))
+		return errors.Join(err, ErrReported)
 	}
-	ctx = WithGlobal(ctx, global)
 
-	if len(rest) == 0 {
-		RootHelp(stdio.Stdout, verbs)
-		return ErrHelp
-	}
-	if IsHelpArg(rest[0]) {
-		RootHelp(stdio.Stdout, verbs)
+	// User typed only a group prefix (e.g. `ana profile`) — render that
+	// group's help instead of trying to Run a *Group.
+	if g, ok := res.Leaf.(*Group); ok {
+		fmt.Fprintln(stdio.Stdout, g.Help())
 		return ErrHelp
 	}
 
-	name := rest[0]
-	verb, ok := verbs[name]
-	if !ok {
-		fmt.Fprintf(stdio.Stderr, "unknown command: %s\n", name)
-		RootHelp(stdio.Stderr, verbs)
-		return errors.Join(fmt.Errorf("unknown command %q: %w", name, ErrUsage), ErrReported)
-	}
-	return dispatchChild(ctx, verb, rest[1:], stdio)
+	ctx = WithGlobal(ctx, globalFromFlagSet(res.MergedFS))
+	ctx = WithFlagSet(ctx, res.MergedFS)
+	return res.Leaf.Run(ctx, res.Args, stdio)
 }
 
-// RootHelp writes a sorted listing of the top-level verbs to w, each followed
-// by the first line of its own Help(), then the canonical Global Flags block.
-func RootHelp(w io.Writer, verbs map[string]Command) {
-	names := make([]string, 0, len(verbs))
-	for name := range verbs {
-		names = append(names, name)
+// renderResolvedHelp prints the help text appropriate for whatever the
+// resolver landed on when a `--help` / `-h` / `help` token appeared in argv.
+// Thin wrapper that targets stdio.Stdout; the exported RenderResolvedHelp
+// has the writer-injection signature for cmd/ana.
+func renderResolvedHelp(res *Resolved, root *Group, stdio IO) {
+	RenderResolvedHelp(res, root, stdio.Stdout)
+}
+
+// RenderResolvedHelp is the exported variant of renderResolvedHelp so
+// cmd/ana can render leaf+ancestor help without duplicating the merged-FS
+// formatting logic. For a Group leaf the group's Help is printed (which
+// already contains the Commands listing + persistent Flags block); for a
+// non-Group leaf the leaf's Help is printed followed by the merged-FS Flags
+// block (every flag in scope — leaf + ancestor persistent). A nil res falls
+// back to RootHelp(root).
+func RenderResolvedHelp(res *Resolved, root *Group, w io.Writer) {
+	if res == nil {
+		fmt.Fprintln(w, RootHelp(root))
+		return
 	}
-	slices.Sort(names)
-	width := 0
-	for _, n := range names {
-		if len(n) > width {
-			width = len(n)
+	if g, ok := res.Leaf.(*Group); ok {
+		fmt.Fprintln(w, g.Help())
+		return
+	}
+	fmt.Fprintln(w, res.Leaf.Help())
+	if res.MergedFS != nil {
+		if block := renderFlagsAsText(res.MergedFS); block != "" {
+			fmt.Fprintln(w)
+			fmt.Fprintln(w, "Flags:")
+			fmt.Fprint(w, block)
 		}
 	}
-	fmt.Fprintln(w, "Usage: ana [global flags] <command> [args]")
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Commands:")
-	for _, n := range names {
-		fmt.Fprintf(w, "  %-*s   %s\n", width, n, FirstLine(verbs[n].Help()))
+}
+
+// RootHelp renders the root group's help — the sorted listing of top-level
+// verbs each followed by its summary line, plus the trailing Flags block
+// describing the four root persistent flags.
+func RootHelp(root *Group) string {
+	if root == nil {
+		return ""
 	}
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, globalFlagsHelp())
+	return root.Help()
 }

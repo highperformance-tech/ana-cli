@@ -12,20 +12,14 @@ import (
 // the file — acceptable because SaveCfg is idempotent.
 type logoutCmd struct{ deps Deps }
 
-// Help is fixed and self-contained.
 func (c *logoutCmd) Help() string {
 	return "logout   Clear the saved API token.\n" +
 		"Usage: ana auth logout"
 }
 
-// Run loads the config, zeroes the token, and saves.
 func (c *logoutCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("auth logout")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("auth logout", args); err != nil {
 		return err
-	}
-	if fs.NArg() != 0 {
-		return cli.UsageErrf("auth logout: unexpected arguments")
 	}
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"flag"
 	"fmt"
 
 	"github.com/highperformance-tech/ana-cli/internal/cli"
@@ -10,10 +11,11 @@ import (
 // loginCmd persists a token to the config file. The token may come from
 // stdin (single line or full stream, controlled by --token-stdin). Endpoint
 // precedence: --endpoint global > already-loaded config > DefaultEndpoint.
-type loginCmd struct{ deps Deps }
+type loginCmd struct {
+	deps       Deps
+	tokenStdin bool
+}
 
-// Help is fixed text; flag names and behavior live here rather than in
-// auth.go so the command file is self-contained.
 func (c *loginCmd) Help() string {
 	return "login   Save an API token to the active config profile.\n" +
 		"Usage: ana auth login [--token-stdin]\n" +
@@ -26,16 +28,15 @@ func (c *loginCmd) Help() string {
 		"the global --profile flag or `ana profile use <name>`."
 }
 
-// Run reads a token from stdio.Stdin, merges endpoint precedence, and saves
-// via deps.SaveCfg. On success it prints `saved to <path>` to stdout.
+func (c *loginCmd) Flags(fs *flag.FlagSet) {
+	fs.BoolVar(&c.tokenStdin, "token-stdin", false, "read entire stdin as the token (trimmed)")
+}
+
 func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("auth login")
-	tokenStdin := fs.Bool("token-stdin", false, "read entire stdin as the token (trimmed)")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("auth login", args); err != nil {
 		return err
 	}
-
-	token, err := cli.ReadToken(stdio.Stdin, *tokenStdin)
+	token, err := cli.ReadToken(stdio.Stdin, c.tokenStdin)
 	if err != nil {
 		return fmt.Errorf("auth login: %w", err)
 	}
@@ -58,8 +59,6 @@ func (c *loginCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 
 	path, err := c.deps.ConfigPath()
 	if err != nil {
-		// Save succeeded; emit a softer message so the user still gets
-		// feedback. We still return the error for visibility.
 		fmt.Fprintln(stdio.Stdout, "saved")
 		return fmt.Errorf("auth login: config path: %w", err)
 	}

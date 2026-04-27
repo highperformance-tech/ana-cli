@@ -1,7 +1,17 @@
 // Package cli provides argument-dispatch glue for the ana CLI. It defines the
-// Command interface, an IO struct carrying stdio/env/clock dependencies, and a
-// Group helper that dispatches to named child Commands. The package is pure
-// dispatch logic — it has no dependency on transport or config.
+// Command interface, an IO struct carrying stdio/env/clock dependencies, the
+// Group helper that stitches together a verb tree, and the resolve-then-parse
+// pipeline (Resolve + Dispatch) that walks argv against that tree, parses
+// every flag against a single merged FlagSet, and hands off to the resolved
+// leaf. The package is pure dispatch logic — it has no dependency on
+// transport or config.
+//
+// The flag pipeline mirrors mainstream "scoped flag set" CLIs (Cobra, Click,
+// urfave-cli, clap): each *Group may declare persistent flags via its Flags
+// closure that descendant leaves inherit, and each leaf may declare local
+// flags by implementing Flagger. Names a leaf re-declares automatically
+// SHADOW the ancestor declaration of the same name — see internal/cli/resolve.go
+// for the mechanism.
 package cli
 
 import (
@@ -39,90 +49,90 @@ func DefaultIO() IO {
 }
 
 // Command is the consumer interface implemented by every verb or subcommand.
-// Run receives the args remaining after its own name has been consumed.
+// Run receives the args remaining after the verb path has been consumed —
+// pure positionals (the resolver has already routed every flag token to its
+// rightful FlagSet target).
 type Command interface {
 	Run(ctx context.Context, args []string, io IO) error
 	Help() string
 }
 
-// Group is a Command that dispatches its first argument to a named child
-// Command. A Group can itself be registered as a child, enabling nested verbs
-// (e.g. `ana chat send ...`).
+// Flagger is the opt-in declaration interface for leaves with flags. The
+// resolver calls Flags(fs) on the resolved leaf BEFORE walking the ancestor
+// path, so a name a leaf declares automatically shadows the same name in any
+// ancestor Group's Flags closure (the resolver merges ancestor declarations
+// onto fs only if the name isn't already present).
 //
-// Flags, if set, declares group-level flags that every descendant leaf
-// inherits via the ctx-carried registrar stack (see WithAncestorFlags in
-// root.go). The closure runs on a leaf's *flag.FlagSet AFTER the leaf has
-// declared its own flags, so use DeclareString / DeclareBool (or an
-// equivalent Lookup guard) to avoid the stdlib flag-redeclaration panic — the
-// guard lets the leaf override a name when it wants to.
+// A leaf without flags simply omits this method.
+type Flagger interface {
+	Flags(fs *flag.FlagSet)
+}
+
+// Group is a verb-tree node. Children dispatches its leading positional
+// argument to a named child Command (which may itself be a *Group, enabling
+// nested verbs like `ana chat send …`).
+//
+// Flags, if set, declares persistent flags that every descendant leaf
+// inherits. The closure runs against the resolver's merged FlagSet via a
+// shadow set so a leaf that re-declares the same name wins automatically —
+// callers can use raw fs.StringVar / fs.BoolVar / fs.IntVar without
+// worrying about the stdlib redeclaration panic.
 type Group struct {
 	Summary  string
 	Flags    func(*flag.FlagSet)
 	Children map[string]Command
 }
 
-// Run dispatches to a child command. With no args or an explicit help flag it
-// prints Help() to stdout and returns ErrHelp (exit 0). An unknown child name
-// writes to stderr and returns ErrUsage (exit 1).
+// Run dispatches as a Command — the path used when a Group is registered as
+// a child of another Group. Resolve handles the descent walk; Run is a thin
+// wrapper that re-enters the resolver rooted at this Group so callers (and
+// tests) can treat any Group as a self-contained dispatcher.
 //
-// If Flags is non-nil, Run appends it to the ctx-carried ancestor-flag stack
-// before delegating so every descendant leaf can ApplyAncestorFlags and pick
-// up the group's declared flags.
+// Empty args or an explicit help token prints the group's help and returns
+// ErrHelp. An unknown child name returns ErrUsage.
 func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 	if len(args) == 0 || IsHelpArg(args[0]) {
 		fmt.Fprintln(stdio.Stdout, g.Help())
 		return ErrHelp
 	}
-	if g.Flags != nil {
-		ctx = WithAncestorFlags(ctx, g.Flags)
-	}
-	name := args[0]
-	child, ok := g.Children[name]
-	if !ok {
-		fmt.Fprintf(stdio.Stderr, "unknown subcommand: %s\n", name)
+	res, err := Resolve(g, args)
+	if err != nil {
+		if isHelpErr(err) {
+			renderResolvedHelp(res, g, stdio)
+			return ErrHelp
+		}
+		fmt.Fprintln(stdio.Stderr, err)
 		fmt.Fprintln(stdio.Stderr, g.Help())
-		return fmt.Errorf("unknown subcommand %q: %w", name, ErrUsage)
+		return err
 	}
-	return dispatchChild(ctx, child, args[1:], stdio)
+	if grp, ok := res.Leaf.(*Group); ok {
+		fmt.Fprintln(stdio.Stdout, grp.Help())
+		return ErrHelp
+	}
+	// Preserve any global already on ctx (Group.Run is reachable from tests
+	// that don't go through Dispatch). Don't clobber what's already there.
+	if existing := FlagSetFrom(ctx); existing == nil {
+		ctx = WithFlagSet(ctx, res.MergedFS)
+	}
+	return res.Leaf.Run(ctx, res.Args, stdio)
 }
 
-// dispatchChild calls cmd.Run unless cmd is a leaf (non-Group) and args
-// contains a help flag (`--help`/`-h`), in which case it renders cmd.Help()
-// and returns ErrHelp. For Groups we defer to Group.Run so the flag reaches
-// the deepest resolved leaf instead of short-circuiting at an ancestor.
-//
-// Only the `--help`/`-h` flag forms short-circuit here. The bare word `help`
-// is deliberately left alone so a leaf can receive it as a positional
-// argument (e.g. `ana chat send <id> help` sends the literal message "help");
-// Group.Run keeps its own `args[0] == "help"` check to handle `ana <group>
-// help`.
-//
-// Positional passthrough caveat: `ana verb -- --help` will still short-circuit
-// here because the scan is positional and ignores `--`. No current leaf takes a
-// positional value that could legitimately be `--help`, so this is acceptable.
-func dispatchChild(ctx context.Context, cmd Command, args []string, stdio IO) error {
-	if _, isGroup := cmd.(*Group); !isGroup {
-		for _, a := range args {
-			if a == "-h" || a == "--help" {
-				fmt.Fprintln(stdio.Stdout, cmd.Help())
-				if fl, ok := cmd.(Flagger); ok {
-					fs := flag.NewFlagSet("help", flag.ContinueOnError)
-					fs.SetOutput(io.Discard)
-					fl.Flags(fs)
-					ApplyAncestorFlags(ctx, fs)
-					if block := renderFlagsAsText(fs); block != "" {
-						fmt.Fprintln(stdio.Stdout)
-						fmt.Fprintln(stdio.Stdout, "Flags:")
-						fmt.Fprint(stdio.Stdout, block)
-					}
-				}
-				fmt.Fprintln(stdio.Stdout)
-				fmt.Fprintln(stdio.Stdout, globalFlagsHelp())
-				return ErrHelp
-			}
+// isHelpErr is errors.Is(err, ErrHelp) without an import cycle.
+func isHelpErr(err error) bool {
+	for ; err != nil; err = unwrap(err) {
+		if err == ErrHelp { //nolint:errorlint
+			return true
 		}
 	}
-	return cmd.Run(ctx, args, stdio)
+	return false
+}
+
+func unwrap(err error) error {
+	type unwrapper interface{ Unwrap() error }
+	if u, ok := err.(unwrapper); ok {
+		return u.Unwrap()
+	}
+	return nil
 }
 
 // renderFlagsAsText enumerates fs's flags sorted by name and renders one

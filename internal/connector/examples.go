@@ -37,14 +37,10 @@ type examplesResp struct {
 }
 
 func (c *examplesCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector examples")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	if fs.NArg() != 1 {
+	if len(args) != 1 {
 		return cli.UsageErrf("connector examples: <id> positional argument required")
 	}
-	id, err := cli.RequireIntID("connector examples", fs.Args())
+	id, err := cli.RequireIntID("connector examples", args)
 	if err != nil {
 		return err
 	}

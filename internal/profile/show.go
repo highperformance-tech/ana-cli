@@ -30,20 +30,17 @@ type showPayload struct {
 }
 
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("profile show")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {
 		return fmt.Errorf("profile show: %w", err)
 	}
 
+	if len(args) > 1 {
+		return cli.UsageErrf("profile show: accepts at most one optional <name> argument")
+	}
 	var name string
-	rest := fs.Args()
-	if len(rest) > 0 && rest[0] != "" {
-		name = rest[0]
+	if len(args) == 1 && args[0] != "" {
+		name = args[0]
 	} else {
 		name = cfg.Active
 	}

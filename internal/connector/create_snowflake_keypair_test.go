@@ -268,6 +268,25 @@ func TestCreateSnowflakeKeypairRenderWriteErr(t *testing.T) {
 	}
 }
 
+// TestCreateSnowflakeKeypairRejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires. Use the
+// happy-path argv plus a trailing positional so the assertion would fail
+// loudly if the leaf's positional check ever moved AFTER RequireFlags.
+func TestCreateSnowflakeKeypairRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	keyPath := writeKeyFile(t, samplePEM)
+	f := &fakeDeps{}
+	args := append(snowflakeKeypairArgs(keyPath), "extra")
+	_, err := runSnowflakeKeypair(t, f.deps(), args, "")
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestCreateSnowflakeKeypairBadFlag(t *testing.T) {
 	t.Parallel()
 	_, err := runSnowflakeKeypair(t, (&fakeDeps{}).deps(), []string{"snowflake", "keypair", "--nope"}, "")

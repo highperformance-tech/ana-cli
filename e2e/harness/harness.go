@@ -16,13 +16,14 @@ import (
 )
 
 // H is the per-test live-smoke harness. Construct via Begin; the returned H
-// holds a transport.Client plus a verb map bound to a temp config. Every
-// mutation registered with the helpers gets reverted in LIFO order by End.
+// holds a transport.Client plus a root *cli.Group (the verb tree) bound to
+// a temp config. Every mutation registered with the helpers gets reverted
+// in LIFO order by End.
 type H struct {
 	t        *testing.T
 	env      envSpec
 	client   *transport.Client
-	verbs    map[string]cli.Command
+	root     *cli.Group
 	envFn    func(string) string
 	cfgPath  string
 	Prefix   string
@@ -62,13 +63,13 @@ func Begin(t *testing.T) *H {
 
 	client := buildTransport(env.endpoint, env.token)
 	envFn := makeEnv(dir)
-	verbs := buildVerbs(client, envFn, cfgPath, env.endpoint)
+	root := buildRoot(client, envFn, cfgPath, env.endpoint)
 
 	h := &H{
 		t:         t,
 		env:       env,
 		client:    client,
-		verbs:     verbs,
+		root:      root,
 		envFn:     envFn,
 		cfgPath:   cfgPath,
 		Prefix:    fmt.Sprintf("anacli-e2e-%d-%s", time.Now().Unix(), shortRand()),
@@ -201,7 +202,7 @@ func (h *H) RunStdin(stdin string, args ...string) (string, string, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	err := cli.Dispatch(ctx, h.verbs, args, stdio)
+	err := cli.Dispatch(ctx, h.root, args, stdio)
 	return stdout.String(), stderr.String(), err
 }
 

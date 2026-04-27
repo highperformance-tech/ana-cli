@@ -42,13 +42,10 @@ func (c *snowflakePasswordCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *snowflakePasswordCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector create snowflake password")
-	c.Flags(fs)
-	cli.ApplyAncestorFlags(ctx, fs)
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("connector create snowflake password", args); err != nil {
 		return err
 	}
-	if err := cli.RequireFlags(fs, "connector create snowflake password",
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create snowflake password",
 		"name", "locator", "database", "user"); err != nil {
 		return err
 	}

@@ -61,6 +61,21 @@ func TestSAListJSON(t *testing.T) {
 	}
 }
 
+// TestSAListRejectsExtraPositionals pins the no-positional contract: trailing
+// tokens after the verb path must yield ErrUsage before the RPC fires.
+func TestSAListRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "list", "unexpected"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestSAListUnaryErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
@@ -92,9 +107,8 @@ func TestSAListRemarshalErr(t *testing.T) {
 func TestSAListBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &saListCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "list", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -112,9 +126,8 @@ func TestSACreateHappy(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &saCreateCmd{deps: f.deps()}
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "probe", "--description", "d"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--name", "probe", "--description", "d"}, stdio)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
@@ -139,9 +152,8 @@ func TestSACreateNoRespName(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &saCreateCmd{deps: f.deps()}
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
-	if err := cmd.Run(context.Background(), []string{"--name", "probe"}, stdio); err != nil {
+	if err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--name", "probe"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if !strings.Contains(out.String(), "probe") {
@@ -163,20 +175,34 @@ func TestSACreateMissingName(t *testing.T) {
 func TestSACreateEmptyName(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &saCreateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", ""}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--name", ""}, stdio)
 	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "empty") {
 		t.Errorf("err=%v", err)
+	}
+}
+
+// TestSACreateRejectsExtraPositionals pins the no-positional contract for
+// `auth service-accounts create`: any trailing token must yield ErrUsage
+// before RequireFlags or any RPC fires.
+func TestSACreateRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--name", "n", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 
 func TestSACreateUnaryErr(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
-	cmd := &saCreateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "n"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--name", "n"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v", err)
 	}
@@ -185,9 +211,8 @@ func TestSACreateUnaryErr(t *testing.T) {
 func TestSACreateBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &saCreateCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "create", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -237,9 +262,8 @@ func TestSADeleteUnaryErr(t *testing.T) {
 func TestSADeleteBadFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &saDeleteCmd{deps: f.deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"service-accounts", "delete", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}

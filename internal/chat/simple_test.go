@@ -64,11 +64,16 @@ func TestRenameEmptyTitle(t *testing.T) {
 
 func TestRenameBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &renameCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	// Include the required <id> <title> positionals so missing-arg isn't the
+	// failure path; this isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"rename", "chat-x", "new title", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -103,6 +108,23 @@ func TestRenameJSON(t *testing.T) {
 	}
 }
 
+// TestRenameRejectsExtraPositionals exercises the `len(args) > 2` branch:
+// trailing tokens beyond `<id> <title>` must yield ErrUsage so the operator
+// quotes multi-word titles instead of having them silently dropped.
+func TestRenameRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &renameCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "title", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 // --- bookmark / unbookmark -----------------------------------------------
 
 func TestBookmarkHappy(t *testing.T) {
@@ -131,13 +153,35 @@ func TestBookmarkMissingID(t *testing.T) {
 	}
 }
 
+// TestBookmarkRejectsExtraPositionals exercises the simpleAck strict-arity
+// branch: bookmark/unbookmark share a helper, so this also covers
+// simpleAck's `len(args) > 1` rejection path for both verbs.
+func TestBookmarkRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &bookmarkCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestBookmarkBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &bookmarkCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"bookmark", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -197,11 +241,16 @@ func TestUnbookmarkMissingID(t *testing.T) {
 
 func TestUnbookmarkBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &unbookmarkCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"unbookmark", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -264,13 +313,34 @@ func TestDeleteMissingID(t *testing.T) {
 	}
 }
 
+// TestDeleteRejectsExtraPositionals pins the strict-arity contract for
+// `chat delete`: trailing tokens beyond the single <id> must yield ErrUsage.
+func TestDeleteRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &deleteCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestDeleteBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &deleteCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"delete", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 
@@ -339,13 +409,35 @@ func TestDuplicateMissingID(t *testing.T) {
 	}
 }
 
+// TestDuplicateRejectsExtraPositionals pins the strict-arity contract for
+// `chat duplicate`: trailing tokens beyond the single <id> must yield
+// ErrUsage.
+func TestDuplicateRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &duplicateCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(nil)
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestDuplicateBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &duplicateCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(nil)
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	// Include the required <id> positional so missing-arg isn't the failure
+	// path; this isolates the unknown-flag (--nope) parse error.
+	err := New(f.deps()).Run(context.Background(), []string{"duplicate", "chat-x", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
-		t.Errorf("err=%v", err)
+		t.Errorf("err=%v want ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 

@@ -31,8 +31,8 @@ func TestUpdateHappyPartial(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &updateCmd{deps: f.deps()}
-	args := []string{"--name", "renamed", "1"}
+	cmd := New(f.deps())
+	args := []string{"update", "--name", "renamed", "1"}
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
 	if err := cmd.Run(context.Background(), args, stdio); err != nil {
 		t.Fatalf("err=%v", err)
@@ -83,10 +83,10 @@ func TestUpdateRegressionPositionalBeforeFlags(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &updateCmd{deps: f.deps()}
+	cmd := New(f.deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	// Positional FIRST (the ordering that broke profile add in prod).
-	args := []string{"9", "--name", "renamed", "--host", "h2"}
+	args := []string{"update", "9", "--name", "renamed", "--host", "h2"}
 	if err := cmd.Run(context.Background(), args, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
@@ -116,8 +116,8 @@ func TestUpdateDialectFields(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &updateCmd{deps: f.deps()}
-	args := []string{"--host", "newhost", "--port", "6543", "--ssl=true", "7"}
+	cmd := New(f.deps())
+	args := []string{"update", "--host", "newhost", "--port", "6543", "--ssl=true", "7"}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	if err := cmd.Run(context.Background(), args, stdio); err != nil {
 		t.Fatalf("err=%v", err)
@@ -140,8 +140,8 @@ func TestUpdateDialectFields(t *testing.T) {
 func TestUpdatePasswordStdin(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &updateCmd{deps: f.deps()}
-	args := []string{"--password-stdin", "42"}
+	cmd := New(f.deps())
+	args := []string{"update", "--password-stdin", "42"}
 	stdio, _, _ := testcli.NewIO(strings.NewReader("new-pw\n"))
 	if err := cmd.Run(context.Background(), args, stdio); err != nil {
 		t.Fatalf("err=%v", err)
@@ -154,8 +154,8 @@ func TestUpdatePasswordStdin(t *testing.T) {
 func TestUpdatePasswordFlag(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &updateCmd{deps: f.deps()}
-	args := []string{"--password", "inline-pw", "42"}
+	cmd := New(f.deps())
+	args := []string{"update", "--password", "inline-pw", "42"}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
 	if err := cmd.Run(context.Background(), args, stdio); err != nil {
 		t.Fatalf("err=%v", err)
@@ -167,9 +167,9 @@ func TestUpdatePasswordFlag(t *testing.T) {
 
 func TestUpdatePasswordStdinReadErr(t *testing.T) {
 	t.Parallel()
-	cmd := &updateCmd{deps: (&fakeDeps{}).deps()}
+	cmd := New((&fakeDeps{}).deps())
 	stdio, _, _ := testcli.NewIO(errReader{err: errors.New("read fail")})
-	err := cmd.Run(context.Background(), []string{"--password-stdin", "1"}, stdio)
+	err := cmd.Run(context.Background(), []string{"update", "--password-stdin", "1"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "read fail") {
 		t.Errorf("err=%v", err)
 	}
@@ -178,9 +178,9 @@ func TestUpdatePasswordStdinReadErr(t *testing.T) {
 func TestUpdateTypeAloneSetsConnectorType(t *testing.T) {
 	t.Parallel()
 	f := &fakeDeps{}
-	cmd := &updateCmd{deps: f.deps()}
+	cmd := New(f.deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	if err := cmd.Run(context.Background(), []string{"--type", "postgres", "1"}, stdio); err != nil {
+	if err := cmd.Run(context.Background(), []string{"update", "--type", "postgres", "1"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if !strings.Contains(string(f.lastRawReq), `"connectorType":"POSTGRES"`) {
@@ -193,9 +193,9 @@ func TestUpdateUserAndDatabaseOnly(t *testing.T) {
 	// Exercises the --user / --database flag-visited branches that the dialect
 	// tests above didn't touch.
 	f := &fakeDeps{}
-	cmd := &updateCmd{deps: f.deps()}
+	cmd := New(f.deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	args := []string{"--user", "newu", "--database", "newdb", "1"}
+	args := []string{"update", "--user", "newu", "--database", "newdb", "1"}
 	if err := cmd.Run(context.Background(), args, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
@@ -207,9 +207,9 @@ func TestUpdateUserAndDatabaseOnly(t *testing.T) {
 
 func TestUpdateWrongType(t *testing.T) {
 	t.Parallel()
-	cmd := &updateCmd{deps: (&fakeDeps{}).deps()}
+	cmd := New((&fakeDeps{}).deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--type", "mysql", "1"}, stdio)
+	err := cmd.Run(context.Background(), []string{"update", "--type", "mysql", "1"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -217,9 +217,9 @@ func TestUpdateWrongType(t *testing.T) {
 
 func TestUpdateMissingPositional(t *testing.T) {
 	t.Parallel()
-	cmd := &updateCmd{deps: (&fakeDeps{}).deps()}
+	cmd := New((&fakeDeps{}).deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "n"}, stdio)
+	err := cmd.Run(context.Background(), []string{"update", "--name", "n"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -227,9 +227,9 @@ func TestUpdateMissingPositional(t *testing.T) {
 
 func TestUpdateNonIntPositional(t *testing.T) {
 	t.Parallel()
-	cmd := &updateCmd{deps: (&fakeDeps{}).deps()}
+	cmd := New((&fakeDeps{}).deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "n", "abc"}, stdio)
+	err := cmd.Run(context.Background(), []string{"update", "--name", "n", "abc"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -237,9 +237,9 @@ func TestUpdateNonIntPositional(t *testing.T) {
 
 func TestUpdateNoFieldsProvided(t *testing.T) {
 	t.Parallel()
-	cmd := &updateCmd{deps: (&fakeDeps{}).deps()}
+	cmd := New((&fakeDeps{}).deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"1"}, stdio)
+	err := cmd.Run(context.Background(), []string{"update", "1"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -247,9 +247,8 @@ func TestUpdateNoFieldsProvided(t *testing.T) {
 
 func TestUpdateBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &updateCmd{deps: (&fakeDeps{}).deps()}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope", "1"}, stdio)
+	err := New((&fakeDeps{}).deps()).Run(context.Background(), []string{"update", "1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
 	}
@@ -259,9 +258,9 @@ func TestUpdateUnaryErr(t *testing.T) {
 	t.Parallel()
 	// GetConnector pre-fetch fails — the "fetch current" branch.
 	f := &fakeDeps{unaryFn: func(_ context.Context, _ string, _, _ any) error { return errors.New("boom") }}
-	cmd := &updateCmd{deps: f.deps()}
+	cmd := New(f.deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "n", "1"}, stdio)
+	err := cmd.Run(context.Background(), []string{"update", "--name", "n", "1"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "fetch current") {
 		t.Errorf("err=%v", err)
 	}
@@ -280,9 +279,9 @@ func TestUpdateCallErr(t *testing.T) {
 			return errors.New("update-boom")
 		},
 	}
-	cmd := &updateCmd{deps: f.deps()}
+	cmd := New(f.deps())
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--name", "n", "1"}, stdio)
+	err := cmd.Run(context.Background(), []string{"update", "--name", "n", "1"}, stdio)
 	if err == nil || !strings.Contains(err.Error(), "update-boom") {
 		t.Errorf("err=%v", err)
 	}
@@ -302,10 +301,10 @@ func TestUpdateJSONBypass(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &updateCmd{deps: f.deps()}
+	cmd := New(f.deps())
 	ctx := cli.WithGlobal(context.Background(), cli.Global{JSON: true})
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
-	if err := cmd.Run(ctx, []string{"--name", "n", "1"}, stdio); err != nil {
+	if err := cmd.Run(ctx, []string{"update", "--name", "n", "1"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if !strings.Contains(out.String(), "\"connector\"") {
@@ -327,8 +326,8 @@ func TestUpdateWriteErr(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &updateCmd{deps: f.deps()}
-	err := cmd.Run(context.Background(), []string{"--name", "n", "1"}, testcli.FailingIO())
+	cmd := New(f.deps())
+	err := cmd.Run(context.Background(), []string{"update", "--name", "n", "1"}, testcli.FailingIO())
 	if err == nil || !strings.Contains(err.Error(), "connector update") {
 		t.Errorf("err=%v", err)
 	}
@@ -349,9 +348,9 @@ func TestUpdateNoConnectorKey(t *testing.T) {
 			return nil
 		},
 	}
-	cmd := &updateCmd{deps: f.deps()}
+	cmd := New(f.deps())
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
-	if err := cmd.Run(context.Background(), []string{"--name", "n", "1"}, stdio); err != nil {
+	if err := cmd.Run(context.Background(), []string{"update", "--name", "n", "1"}, stdio); err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if !strings.Contains(out.String(), "\"weird\"") {

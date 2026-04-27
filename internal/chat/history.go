@@ -70,11 +70,10 @@ func (h historyCell) kindAndContent() (string, string) {
 }
 
 func (c *historyCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat history")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireMaxPositionals("chat history", 1, args); err != nil {
 		return err
 	}
-	id, err := cli.RequireStringID("chat history", fs.Args())
+	id, err := cli.RequireStringID("chat history", args)
 	if err != nil {
 		return err
 	}

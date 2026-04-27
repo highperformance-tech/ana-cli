@@ -33,9 +33,8 @@ type listPayload struct {
 }
 
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("profile list")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
+	if len(args) != 0 {
+		return cli.UsageErrf("profile list: unexpected positional arguments: %v", args)
 	}
 	cfg, err := c.deps.LoadCfg()
 	if err != nil {

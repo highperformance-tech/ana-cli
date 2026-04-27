@@ -74,6 +74,22 @@ func TestSpawnNoRefreshedAtFallback(t *testing.T) {
 	}
 }
 
+// TestSpawnRejectsExtraPositionals pins the strict-arity contract: trailing
+// tokens beyond the single <id> must yield ErrUsage before the RPC fires.
+func TestSpawnRejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	cmd := &spawnCmd{deps: f.deps()}
+	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
+	err := cmd.Run(context.Background(), []string{"id1", "extra"}, stdio)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want strict-arity ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
+	}
+}
+
 func TestSpawnMissingPositional(t *testing.T) {
 	t.Parallel()
 	cmd := &spawnCmd{deps: (&fakeDeps{}).deps()}
@@ -97,11 +113,14 @@ func TestSpawnUnaryErr(t *testing.T) {
 
 func TestSpawnBadFlag(t *testing.T) {
 	t.Parallel()
-	cmd := &spawnCmd{deps: (&fakeDeps{}).deps()}
+	f := &fakeDeps{}
 	stdio, _, _ := testcli.NewIO(strings.NewReader(""))
-	err := cmd.Run(context.Background(), []string{"--nope"}, stdio)
+	err := New(f.deps()).Run(context.Background(), []string{"spawn", "d-1", "--nope"}, stdio)
 	if !errors.Is(err, cli.ErrUsage) {
 		t.Errorf("err=%v", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on bad-flag failure: path=%q", f.lastPath)
 	}
 }
 

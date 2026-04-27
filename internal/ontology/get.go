@@ -36,11 +36,10 @@ type getResp struct {
 }
 
 func (c *getCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("ontology get")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireMaxPositionals("ontology get", 1, args); err != nil {
 		return err
 	}
-	raw, err := cli.RequireStringID("ontology get", fs.Args())
+	raw, err := cli.RequireStringID("ontology get", args)
 	if err != nil {
 		return err
 	}

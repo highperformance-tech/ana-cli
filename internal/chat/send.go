@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -13,11 +14,20 @@ import (
 // It first POSTs SendMessage to get the bot's target cellId, then opens
 // StreamChat and renders incoming frames one line each until the target cell
 // (or, with --wait-all, every cell ever seen) reaches LIFECYCLE_EXECUTED.
-type sendCmd struct{ deps Deps }
+type sendCmd struct {
+	deps        Deps
+	messageFile string
+	waitAll     bool
+}
 
 func (c *sendCmd) Help() string {
 	return "send   Send a message to a chat and stream the response.\n" +
 		"Usage: ana chat send <id> <message> | --message-file PATH | --message-file -  [--wait-all]"
+}
+
+func (c *sendCmd) Flags(fs *flag.FlagSet) {
+	fs.StringVar(&c.messageFile, "message-file", "", "read message from PATH (or - for stdin)")
+	fs.BoolVar(&c.waitAll, "wait-all", false, "wait for ALL cells to reach LIFECYCLE_EXECUTED (default: just ours)")
 }
 
 // sendMessageReq matches the captured SendMessage wire shape 1:1. `messageId`
@@ -125,22 +135,18 @@ func resolveMessage(positional string, messageFile string, stdin io.Reader) (str
 }
 
 func (c *sendCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat send")
-	messageFile := fs.String("message-file", "", "read message from PATH (or - for stdin)")
-	waitAll := fs.Bool("wait-all", false, "wait for ALL cells to reach LIFECYCLE_EXECUTED (default: just ours)")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	rest := fs.Args()
-	id, err := cli.RequireStringID("chat send", rest)
+	id, err := cli.RequireStringID("chat send", args)
 	if err != nil {
 		return err
 	}
-	positional := ""
-	if len(rest) >= 2 {
-		positional = rest[1]
+	if err := cli.RequireMaxPositionals("chat send", 2, args); err != nil {
+		return err
 	}
-	msg, err := resolveMessage(positional, *messageFile, stdio.Stdin)
+	positional := ""
+	if len(args) >= 2 {
+		positional = args[1]
+	}
+	msg, err := resolveMessage(positional, c.messageFile, stdio.Stdin)
 	if err != nil {
 		return err
 	}
@@ -204,7 +210,7 @@ func (c *sendCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 			}
 		}
 
-		if *waitAll {
+		if c.waitAll {
 			// Terminate only when every cellId we've rendered has at least
 			// one EXECUTED frame. Edge case: zero seen means we must keep
 			// reading (happens if the server opens the stream with non-cell

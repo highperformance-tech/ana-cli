@@ -19,8 +19,8 @@ import (
 //	--data-stdin  read the request body from stdin (mutually exclusive with --data).
 //	--raw         emit the response body verbatim (skip json.Indent).
 //
-// The global --json flag is a no-op here — the default output IS pretty JSON;
-// --raw is the opposite. Documented in Help().
+// The global --json flag is a no-op here — the default output IS pretty
+// JSON; --raw is the opposite. Documented in Help().
 type callCmd struct {
 	deps Deps
 
@@ -43,8 +43,9 @@ func (c *callCmd) Help() string {
 		"Note: the global --json flag is ignored here; output is JSON by default."
 }
 
-// Flags declares this leaf's flags. Implementing cli.Flagger lets dispatchChild
-// render a `Flags:` block under --help so the four knobs are discoverable.
+// Flags declares this leaf's flags. Implementing cli.Flagger lets the
+// resolver register them on its merged FlagSet so they parse alongside any
+// ancestor persistent flags.
 func (c *callCmd) Flags(fs *flag.FlagSet) {
 	fs.StringVar(&c.method, "method", "POST", "HTTP method (default POST)")
 	fs.StringVar(&c.data, "data", "", "literal JSON request body")
@@ -53,23 +54,13 @@ func (c *callCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *callCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("api")
-	c.Flags(fs)
-	cli.ApplyAncestorFlags(ctx, fs)
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-
-	if fs.NArg() == 0 {
+	if len(args) == 0 {
 		return cli.UsageErrf("api: <path> positional argument required")
 	}
-	if fs.NArg() > 1 {
-		return cli.UsageErrf("api: unexpected positional arguments: %v", fs.Args()[1:])
+	if len(args) > 1 {
+		return cli.UsageErrf("api: unexpected positional arguments: %v", args[1:])
 	}
-	// Trim once and reuse — otherwise a whitespace-padded arg like
-	// `" /v1/things "` passes the blank check but gets forwarded to the
-	// transport verbatim, which joinURL would then stitch into a malformed URL.
-	path := strings.TrimSpace(fs.Arg(0))
+	path := strings.TrimSpace(args[0])
 	if path == "" {
 		return cli.UsageErrf("api: <path> positional argument required")
 	}
@@ -77,12 +68,11 @@ func (c *callCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 	if c.method == "" {
 		return cli.UsageErrf("api: --method must not be empty")
 	}
-	dataSet := cli.FlagWasSet(fs, "data")
+	dataSet := cli.FlagWasSet(cli.FlagSetFrom(ctx), "data")
 	if dataSet && c.dataStdin {
 		return cli.UsageErrf("api: --data and --data-stdin are mutually exclusive")
 	}
 
-	// Path dispatch: leading slash → verbatim; otherwise Connect-RPC short form.
 	resolvedPath := path
 	if !strings.HasPrefix(path, "/") {
 		resolvedPath = connectRPCPrefix + path
@@ -107,8 +97,7 @@ func (c *callCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
 // resolveBody picks the outbound body bytes. Precedence (after the
 // --data/--data-stdin mutual-exclusion check in the caller):
 //
-//   - --data-stdin: io.ReadAll so the bytes round-trip exactly (ReadToken
-//     would trim whitespace, which matters for binary-ish JSON payloads).
+//   - --data-stdin: io.ReadAll so the bytes round-trip exactly.
 //   - --data set (even to ""): use the literal bytes.
 //   - neither: nil for GET/HEAD (no body), `{}` otherwise so Connect-RPC's
 //     required-body contract is still satisfied.
@@ -129,11 +118,6 @@ func resolveBody(c *callCmd, dataSet bool, stdin io.Reader) ([]byte, error) {
 	return []byte("{}"), nil
 }
 
-// emitError writes the server's error body to stderr (so stdout stays empty
-// for `| jq`) and returns a summary error. Main's fallback printer adds the
-// `api: HTTP <status>` line on its own stderr write — body + status together.
-// A trailing newline is appended if the body didn't already end with one so
-// the status line doesn't get glued to the last byte of the response.
 func (c *callCmd) emitError(stdio cli.IO, status int, body []byte) error {
 	if len(body) > 0 {
 		if _, werr := stdio.Stderr.Write(body); werr != nil {
@@ -148,10 +132,6 @@ func (c *callCmd) emitError(stdio cli.IO, status int, body []byte) error {
 	return fmt.Errorf("api: HTTP %d", status)
 }
 
-// emitSuccess writes the 2xx body. With --raw (or when the body is empty)
-// the bytes are passed through verbatim; otherwise json.Indent pretty-prints.
-// A body that isn't valid JSON (e.g. 204 empty, or some future text endpoint)
-// falls through to the raw path so we don't fail an otherwise-successful call.
 func (c *callCmd) emitSuccess(stdio cli.IO, body []byte) error {
 	if c.raw || len(body) == 0 {
 		if _, werr := stdio.Stdout.Write(body); werr != nil {

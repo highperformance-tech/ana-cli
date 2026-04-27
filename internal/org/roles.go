@@ -41,8 +41,7 @@ type listRolesResp struct {
 // Run issues ListRoles with an empty body and renders a two-column table or
 // the raw JSON payload under --json.
 func (c *rolesListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("org roles list")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("org roles list", args); err != nil {
 		return err
 	}
 	var raw map[string]any

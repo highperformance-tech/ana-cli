@@ -45,13 +45,10 @@ func (c *databricksClientCredentialsCmd) Flags(fs *flag.FlagSet) {
 }
 
 func (c *databricksClientCredentialsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector create databricks client-credentials")
-	c.Flags(fs)
-	cli.ApplyAncestorFlags(ctx, fs)
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("connector create databricks client-credentials", args); err != nil {
 		return err
 	}
-	if err := cli.RequireFlags(fs, "connector create databricks client-credentials",
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "connector create databricks client-credentials",
 		"name", "host", "http-path", "catalog", "schema", "client-id"); err != nil {
 		return err
 	}

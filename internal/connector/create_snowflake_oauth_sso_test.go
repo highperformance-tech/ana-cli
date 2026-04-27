@@ -77,7 +77,7 @@ func TestCreateSnowflakeOAuthSSOCustomEndpoint(t *testing.T) {
 		},
 	}
 	deps := f.deps()
-	deps.Endpoint = "https://staging.example.com"
+	deps.Endpoint = func() string { return "https://staging.example.com" }
 	g := newCreateGroup(deps)
 	stdio, out, _ := testcli.NewIO(strings.NewReader(""))
 	if err := g.Run(context.Background(), snowflakeOAuthSSOArgs(), stdio); err != nil {
@@ -243,6 +243,24 @@ func TestCreateSnowflakeOAuthSSORenderWriteErr(t *testing.T) {
 	err := g.Run(context.Background(), snowflakeOAuthSSOArgs(), testcli.FailingIO())
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("err=%v want boom", err)
+	}
+}
+
+// TestCreateSnowflakeOAuthSSORejectsExtraPositionals pins the no-positional
+// contract for the deeply-nested leaf: trailing tokens after the verb path
+// must yield ErrUsage before RequireFlags or any RPC fires. Use the
+// happy-path argv plus a trailing positional so the assertion would fail
+// loudly if the leaf's positional check ever moved AFTER RequireFlags.
+func TestCreateSnowflakeOAuthSSORejectsExtraPositionals(t *testing.T) {
+	t.Parallel()
+	f := &fakeDeps{}
+	args := append(snowflakeOAuthSSOArgs(), "extra")
+	_, err := runSnowflakeOAuthSSO(t, f.deps(), args, "")
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "unexpected positional arguments") {
+		t.Errorf("err=%v want positional ErrUsage", err)
+	}
+	if f.lastPath != "" {
+		t.Errorf("Unary should not be called on positional-arity failure: path=%q", f.lastPath)
 	}
 }
 

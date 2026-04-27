@@ -31,8 +31,7 @@ type listResp struct {
 // Empty CronString cells render as "-" so tabwriter keeps the column aligned
 // for playbooks without a schedule.
 func (c *listCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("playbook list")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("playbook list", args); err != nil {
 		return err
 	}
 	var raw map[string]any

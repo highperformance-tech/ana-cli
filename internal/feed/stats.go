@@ -32,9 +32,8 @@ type statsResp struct {
 }
 
 func (c *statsCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("feed stats")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
+	if len(args) != 0 {
+		return cli.UsageErrf("feed stats: unexpected positional arguments: %v", args)
 	}
 	var raw map[string]any
 	if err := c.deps.Unary(ctx, feedServicePath+"/GetFeedStats", struct{}{}, &raw); err != nil {

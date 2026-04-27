@@ -6,4 +6,4 @@ Module entry points for every binary this repo produces. Today there is exactly 
 
 | Path | Contents |
 |------|----------|
-| `ana/` | `ana` CLI main package — reads globals + config, builds the verb map, dispatches. |
+| `ana/` | `ana` CLI main package — declares the root verb tree with persistent flags, wires lazy transport+config closures, runs `cli.Resolve` + `Resolved.Execute`. |

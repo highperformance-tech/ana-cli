@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -83,22 +84,33 @@ func makeEnv(configHome string) func(string) string {
 	}
 }
 
-// buildVerbs duplicates cmd/ana/main.go:buildVerbs. The logic is kept in sync
-// by hand; TestBuildVerbs_Shape in cmd/ana/main_test.go guards the verb set.
-// `endpoint` is threaded through (rather than re-read from the environment)
-// so the connector verb sees the same value the harness already resolved.
-func buildVerbs(client *transport.Client, env func(string) string, cfgPath, endpoint string) map[string]cli.Command {
-	return map[string]cli.Command{
-		"auth":      auth.New(authDeps(client, env, cfgPath)),
-		"profile":   profile.New(profileDeps(env, cfgPath)),
-		"org":       org.New(org.Deps{Unary: client.Unary}),
-		"connector": connector.New(connector.Deps{Unary: client.Unary, Endpoint: endpoint}),
-		"chat":      chat.New(chatDeps(client)),
-		"dashboard": dashboard.New(dashboard.Deps{Unary: client.Unary}),
-		"playbook":  playbook.New(playbook.Deps{Unary: client.Unary}),
-		"ontology":  ontology.New(ontology.Deps{Unary: client.Unary}),
-		"feed":      feed.New(feed.Deps{Unary: client.Unary}),
-		"audit":     audit.New(audit.Deps{Unary: client.Unary, Now: time.Now}),
+// buildRoot duplicates cmd/ana/main.go's root *cli.Group construction (verb
+// children + persistent flags). TestBuildVerbs_Shape in cmd/ana/main_test.go
+// guards the verb set. `endpoint` is threaded through (rather than re-read
+// from the environment) so the connector verb sees the same value the
+// harness already resolved.
+func buildRoot(client *transport.Client, env func(string) string, cfgPath, endpoint string) *cli.Group {
+	endpointFn := func() string { return endpoint }
+	return &cli.Group{
+		Summary: "Manage TextQL via the public Connect-RPC API.",
+		Flags: func(fs *flag.FlagSet) {
+			fs.Bool("json", false, "emit JSON output")
+			fs.String("endpoint", "", "override API endpoint URL")
+			fs.String("token-file", "", "path to bearer-token file")
+			fs.String("profile", "", "config profile to use")
+		},
+		Children: map[string]cli.Command{
+			"auth":      auth.New(authDeps(client, env, cfgPath)),
+			"profile":   profile.New(profileDeps(env, cfgPath)),
+			"org":       org.New(org.Deps{Unary: client.Unary}),
+			"connector": connector.New(connector.Deps{Unary: client.Unary, Endpoint: endpointFn}),
+			"chat":      chat.New(chatDeps(client)),
+			"dashboard": dashboard.New(dashboard.Deps{Unary: client.Unary}),
+			"playbook":  playbook.New(playbook.Deps{Unary: client.Unary}),
+			"ontology":  ontology.New(ontology.Deps{Unary: client.Unary}),
+			"feed":      feed.New(feed.Deps{Unary: client.Unary}),
+			"audit":     audit.New(audit.Deps{Unary: client.Unary, Now: time.Now}),
+		},
 	}
 }
 

@@ -37,11 +37,10 @@ type showResp struct {
 }
 
 func (c *showCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("chat show")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireMaxPositionals("chat show", 1, args); err != nil {
 		return err
 	}
-	id, err := cli.RequireStringID("chat show", fs.Args())
+	id, err := cli.RequireStringID("chat show", args)
 	if err != nil {
 		return err
 	}

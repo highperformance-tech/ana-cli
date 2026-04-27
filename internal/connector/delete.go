@@ -21,14 +21,10 @@ type deleteReq struct {
 }
 
 func (c *deleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("connector delete")
-	if err := cli.ParseFlags(fs, args); err != nil {
-		return err
-	}
-	if fs.NArg() != 1 {
+	if len(args) != 1 {
 		return cli.UsageErrf("connector delete: <id> positional argument required")
 	}
-	id, err := cli.RequireIntID("connector delete", fs.Args())
+	id, err := cli.RequireIntID("connector delete", args)
 	if err != nil {
 		return err
 	}

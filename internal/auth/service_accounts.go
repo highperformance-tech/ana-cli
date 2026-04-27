@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 
@@ -9,7 +10,6 @@ import (
 )
 
 // newServiceAccountsGroup wires `auth service-accounts` (list/create/delete).
-// The group summary is short because root-level help already disambiguates.
 func newServiceAccountsGroup(deps Deps) *cli.Group {
 	return &cli.Group{
 		Summary: "Manage service accounts.",
@@ -30,9 +30,6 @@ func (c *saListCmd) Help() string {
 		"Usage: ana auth service-accounts list"
 }
 
-// listServiceAccountsResp narrows the fields we render. The catalog exposes
-// memberId (not a separate serviceAccountId) as the primary id, along with a
-// displayName and email; we show those as ID/NAME/DESCRIPTION respectively.
 type listServiceAccountsResp struct {
 	ServiceAccounts []struct {
 		MemberID    string `json:"memberId"`
@@ -42,12 +39,8 @@ type listServiceAccountsResp struct {
 	} `json:"serviceAccounts"`
 }
 
-// Run issues ListServiceAccounts and prints a table (or JSON under --json).
-// Description in the response isn't always populated; we fall back to the
-// auto-generated email so the third column isn't blank in practice.
 func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("auth service-accounts list")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("auth service-accounts list", args); err != nil {
 		return err
 	}
 	var raw map[string]any
@@ -74,54 +67,51 @@ func (c *saListCmd) Run(ctx context.Context, args []string, stdio cli.IO) error 
 
 // ---- create ----
 
-type saCreateCmd struct{ deps Deps }
+type saCreateCmd struct {
+	deps Deps
+	name string
+	desc string
+}
 
 func (c *saCreateCmd) Help() string {
 	return "service-accounts create   Create a service account.\n" +
 		"Usage: ana auth service-accounts create --name <name> [--description <text>]"
 }
 
-// createServiceAccountReq. Description is send-only (omitempty) because the
-// captured sample doesn't include it; the server tolerates extra camelCase
-// fields as long as they aren't snake_case duplicates.
+func (c *saCreateCmd) Flags(fs *flag.FlagSet) {
+	fs.StringVar(&c.name, "name", "", "human-readable name (required)")
+	fs.StringVar(&c.desc, "description", "", "optional description")
+}
+
 type createServiceAccountReq struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 }
 
-// createServiceAccountResp mirrors the captured sample: memberId + email.
 type createServiceAccountResp struct {
 	MemberID string `json:"memberId"`
 	Email    string `json:"email"`
 	Name     string `json:"name"`
 }
 
-// Run enforces --name, issues the RPC, and prints `<memberId> <name>` as the
-// minimal human-readable confirmation. The task spec says "print
-// {serviceAccountId, name}" — the server returns memberId for that role.
 func (c *saCreateCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("auth service-accounts create")
-	name := fs.String("name", "", "human-readable name (required)")
-	desc := fs.String("description", "", "optional description")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireNoPositionals("auth service-accounts create", args); err != nil {
 		return err
 	}
-	if err := cli.RequireFlags(fs, "auth service-accounts create", "name"); err != nil {
+	if err := cli.RequireFlags(cli.FlagSetFrom(ctx), "auth service-accounts create", "name"); err != nil {
 		return err
 	}
-	if *name == "" {
+	if c.name == "" {
 		return cli.UsageErrf("auth service-accounts create: --name must not be empty")
 	}
-	req := createServiceAccountReq{Name: *name, Description: *desc}
+	req := createServiceAccountReq{Name: c.name, Description: c.desc}
 	var resp createServiceAccountResp
 	if err := c.deps.Unary(ctx, "/rpc/public/textql.rpc.public.rbac.RBACService/CreateServiceAccount", req, &resp); err != nil {
 		return fmt.Errorf("auth service-accounts create: %w", translateErr(err))
 	}
-	// Name is echoed from the request if the response omits it, so users see
-	// something meaningful even if the server keeps its reply minimal.
 	echoed := resp.Name
 	if echoed == "" {
-		echoed = *name
+		echoed = c.name
 	}
 	fmt.Fprintf(stdio.Stdout, "%s %s\n", resp.MemberID, echoed)
 	return nil
@@ -140,23 +130,15 @@ func (c *saDeleteCmd) Help() string {
 		"cascades to revoke all API keys issued by the account."
 }
 
-// deleteServiceAccountReq uses `memberId` per the catalog's DeleteServiceAccount
-// sample — note the task spec's `serviceAccountId` name is inaccurate.
 type deleteServiceAccountReq struct {
 	MemberID string `json:"memberId"`
 }
 
 func (c *saDeleteCmd) Run(ctx context.Context, args []string, stdio cli.IO) error {
-	fs := cli.NewFlagSet("auth service-accounts delete")
-	if err := cli.ParseFlags(fs, args); err != nil {
+	if err := cli.RequireMaxPositionals("auth service-accounts delete", 1, args); err != nil {
 		return err
 	}
-	// Delete is destructive and cascades to key revocation; reject trailing
-	// positionals so a typo can't execute against an unintended target.
-	if fs.NArg() > 1 {
-		return cli.UsageErrf("auth service-accounts delete: exactly one <id> positional argument required")
-	}
-	id, err := cli.RequireStringID("auth service-accounts delete", fs.Args())
+	id, err := cli.RequireStringID("auth service-accounts delete", args)
 	if err != nil {
 		return err
 	}
