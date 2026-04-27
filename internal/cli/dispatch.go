@@ -51,21 +51,12 @@ func Dispatch(ctx context.Context, root *Group, args []string, stdio IO) error {
 		return errors.Join(err, ErrReported)
 	}
 
-	// User typed only a group prefix (e.g. `ana profile`) — render that
-	// group's help instead of trying to Run a *Group.
-	if g, ok := res.Leaf.(*Group); ok {
-		fmt.Fprintln(stdio.Stdout, g.Help())
-		return ErrHelp
-	}
-
 	ctx = WithGlobal(ctx, globalFromFlagSet(res.MergedFS))
 	ctx = WithFlagSet(ctx, res.MergedFS)
-	runErr := res.Leaf.Run(ctx, res.Args, stdio)
-	if shouldAttachUsageHelp(runErr) {
-		ReportUsageError(res, root, runErr, stdio.Stderr)
-		return errors.Join(runErr, ErrReported)
-	}
-	return runErr
+	// Resolved.Execute is the single chokepoint that handles both group-prefix
+	// help rendering and leaf-internal-usage-error annotation; Dispatch never
+	// calls Leaf.Run directly so the modern-CLI convention can't drift.
+	return res.Execute(ctx, stdio)
 }
 
 // shouldAttachUsageHelp reports whether a verb-returned error is a bare
@@ -96,13 +87,15 @@ func ReportUsageError(res *Resolved, root *Group, err error, w io.Writer) {
 	RenderResolvedHelp(res, root, w)
 }
 
-// trimUsageSuffix removes the trailing ": usage" tag that wrapping with
-// ErrUsage adds to err.Error() — both `fmt.Errorf("%w", ErrUsage)` and the
-// `%w: %w` form ParseFlags uses.
+// trimUsageSuffix removes every trailing ": usage" tag that wrapping with
+// ErrUsage adds to err.Error(). The double-wrap case happens for custom
+// flag.Value.Set methods that return UsageErrf — stdlib flag flattens the
+// inner error via %v (preserving its ": usage" text) and then ParseFlags
+// wraps the result with ErrUsage again, producing two trailing tags.
 func trimUsageSuffix(s string) string {
 	const suffix = ": " + "usage" // string literal so refactors of ErrUsage's text are caught at test time
-	if strings.HasSuffix(s, suffix) {
-		return s[:len(s)-len(suffix)]
+	for strings.HasSuffix(s, suffix) {
+		s = s[:len(s)-len(suffix)]
 	}
 	return s
 }

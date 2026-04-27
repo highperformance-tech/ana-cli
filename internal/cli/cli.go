@@ -98,46 +98,17 @@ func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 	}
 	res, err := Resolve(g, args)
 	if err != nil {
-		if isHelpErr(err) {
+		if errors.Is(err, ErrHelp) {
 			renderResolvedHelp(res, g, stdio)
 			return ErrHelp
 		}
 		ReportUsageError(res, g, err, stdio.Stderr)
 		return errors.Join(err, ErrReported)
 	}
-	if grp, ok := res.Leaf.(*Group); ok {
-		fmt.Fprintln(stdio.Stdout, grp.Help())
-		return ErrHelp
-	}
-	// Preserve any global already on ctx (Group.Run is reachable from tests
-	// that don't go through Dispatch). Don't clobber what's already there.
-	if existing := FlagSetFrom(ctx); existing == nil {
-		ctx = WithFlagSet(ctx, res.MergedFS)
-	}
-	runErr := res.Leaf.Run(ctx, res.Args, stdio)
-	if shouldAttachUsageHelp(runErr) {
-		ReportUsageError(res, g, runErr, stdio.Stderr)
-		return errors.Join(runErr, ErrReported)
-	}
-	return runErr
-}
-
-// isHelpErr is errors.Is(err, ErrHelp) without an import cycle.
-func isHelpErr(err error) bool {
-	for ; err != nil; err = unwrap(err) {
-		if err == ErrHelp { //nolint:errorlint
-			return true
-		}
-	}
-	return false
-}
-
-func unwrap(err error) error {
-	type unwrapper interface{ Unwrap() error }
-	if u, ok := err.(unwrapper); ok {
-		return u.Unwrap()
-	}
-	return nil
+	// Resolved.Execute owns group-prefix help, leaf invocation, and
+	// leaf-internal-usage-error annotation in one place — Group.Run delegates
+	// to it so the convention can't drift between dispatch entry points.
+	return res.Execute(ctx, stdio)
 }
 
 // renderFlagsAsText enumerates fs's flags sorted by name and renders one

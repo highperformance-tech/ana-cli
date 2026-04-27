@@ -119,14 +119,11 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	// Kick the passive update-check BEFORE the verb runs so the HTTP
 	// round-trip overlaps the verb's work. drainNudge picks it up after.
 	nudgeCh := startNudge(env, global)
+	// Resolved.Execute is the single chokepoint that owns leaf invocation
+	// AND the modern-CLI-convention annotation for any leaf-internal usage
+	// error (RequireFlags / RequireStringID / UsageErrf / etc.). Anything
+	// extra here would be a parallel implementation that could drift.
 	runErr := res.Execute(ctx, stdio)
-	// Annotate bare leaf-internal usage errors (RequireFlags, RequireStringID,
-	// UsageErrf) with the leaf's help so the user sees the syntax they got
-	// wrong. Already-reported errors and non-usage errors pass through.
-	if errors.Is(runErr, cli.ErrUsage) && !errors.Is(runErr, cli.ErrReported) {
-		cli.ReportUsageError(res, root, runErr, stdio.Stderr)
-		runErr = errors.Join(runErr, cli.ErrReported)
-	}
 	drainCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 	drainNudge(drainCtx, nudgeCh, runErr, firstVerb(args), stdio.Stderr)

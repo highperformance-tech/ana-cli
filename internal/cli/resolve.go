@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -257,6 +258,13 @@ func globalFromFlagSet(fs *flag.FlagSet) Global {
 // it for cli.RequireFlags / FlagWasSet) and Run is invoked with the leaf's
 // positional args.
 //
+// Execute is the single chokepoint for the modern-CLI-convention guarantee:
+// any error from the leaf that wraps ErrUsage but is NOT yet tagged
+// ErrReported is rewritten to "<error>\n\n<help>" on stdio.Stderr (using the
+// resolved leaf's own help block) and re-tagged with ErrReported so main()'s
+// fallback printer does not double-emit. Callers therefore never need to
+// repeat that wrap themselves.
+//
 // Execute does NOT call WithGlobal — the caller (Dispatch or cmd/ana) owns
 // that decision so it can route any ancestor-bound Global pointer it cares
 // to read.
@@ -268,7 +276,14 @@ func (r *Resolved) Execute(ctx context.Context, stdio IO) error {
 	if FlagSetFrom(ctx) == nil {
 		ctx = WithFlagSet(ctx, r.MergedFS)
 	}
-	return r.Leaf.Run(ctx, r.Args, stdio)
+	err := r.Leaf.Run(ctx, r.Args, stdio)
+	if shouldAttachUsageHelp(err) {
+		// Path[0] is the resolver's original root; Resolve always seeds it,
+		// so the lookup is safe without a guard.
+		ReportUsageError(r, r.Path[0], err, stdio.Stderr)
+		return errors.Join(err, ErrReported)
+	}
+	return err
 }
 
 // flagSetKey is the unexported ctx key for a parsed FlagSet. Leaves that
