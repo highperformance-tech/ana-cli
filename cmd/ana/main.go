@@ -191,13 +191,21 @@ func isKnownValueGlobal(tok string) bool {
 // or custom durations are honored. Both DefaultPath and Load errors are
 // swallowed here (unlike lazyState.initConfig) — the nudge is best-effort
 // background work, and a missing/unreadable config simply falls back to
-// ParseInterval(nil) → (4h, true).
+// ParseInterval(nil) → (4h, true). Mirrors lazyState.initConfig's path
+// precedence so --token-file selects the same config the rest of the
+// command reads from.
 func startNudge(env func(string) string, global cli.Global) chan string {
 	if version == "dev" || global.JSON {
 		return nil
 	}
+	path := global.TokenFile
+	if path == "" {
+		if p, err := config.DefaultPath(env); err == nil {
+			path = p
+		}
+	}
 	var interval *string
-	if path, err := config.DefaultPath(env); err == nil {
+	if path != "" {
 		if cfg, err := config.Load(path); err == nil {
 			interval = cfg.UpdateCheckInterval
 		}
@@ -331,7 +339,13 @@ func (s *lazyState) initConfig() error {
 		resolved, name, rerr := config.Resolve(s.env, loaded, s.global.Profile)
 		if rerr != nil {
 			if errors.Is(rerr, config.ErrUnknownProfile) {
-				fmt.Fprintf(s.stdio.Stderr, "ana: unknown profile %q\n", s.global.Profile)
+				// Use name (the effective profile chosen via the precedence
+				// chain in pickProfileName) rather than s.global.Profile.
+				// Today config.Resolve only returns ErrUnknownProfile when
+				// the flag was set, so the two values agree — but using name
+				// is correct under the precedence contract regardless of how
+				// Resolve's gate evolves.
+				fmt.Fprintf(s.stdio.Stderr, "ana: unknown profile %q\n", name)
 				s.cfgErr = errors.Join(fmt.Errorf("%w: %w", cli.ErrUsage, rerr), cli.ErrReported)
 				return
 			}

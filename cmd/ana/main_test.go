@@ -437,6 +437,40 @@ func TestStartNudge_SkipConditions(t *testing.T) {
 			t.Fatalf("expected nil channel for disabled interval, got %v", got)
 		}
 	})
+
+	// --token-file precedence: a disabled interval written to a non-default
+	// path is honored when global.TokenFile points at it, even if the
+	// XDG-default config would say otherwise. Pins startNudge to the same
+	// path-precedence rule as lazyState.initConfig.
+	t.Run("token-file overrides default path", func(t *testing.T) {
+		version = "1.0.0"
+		dir := t.TempDir()
+		altPath := filepath.Join(dir, "alt.json")
+		off := "0"
+		if err := config.Save(altPath, config.Config{UpdateCheckInterval: &off}); err != nil {
+			t.Fatal(err)
+		}
+		// XDG default points elsewhere with no UpdateCheckInterval — if
+		// startNudge ignored TokenFile it would fall back to ParseInterval(nil)
+		// → enabled=true and we'd get a non-nil channel.
+		xdgDir := t.TempDir()
+		defaultPath := filepath.Join(xdgDir, "ana", "config.json")
+		if err := os.MkdirAll(filepath.Dir(defaultPath), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := config.Save(defaultPath, config.Config{}); err != nil {
+			t.Fatal(err)
+		}
+		env := func(k string) string {
+			if k == "XDG_CONFIG_HOME" {
+				return xdgDir
+			}
+			return ""
+		}
+		if got := startNudge(env, cli.Global{TokenFile: altPath}); got != nil {
+			t.Fatalf("expected nil channel when --token-file points at disabled config, got %v", got)
+		}
+	})
 }
 
 // TestDrainNudge covers every branch. The cancellation arm is exercised by
