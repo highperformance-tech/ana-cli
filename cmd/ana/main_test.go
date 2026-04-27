@@ -364,8 +364,10 @@ func TestRun_EndToEnd_ConnectorList(t *testing.T) {
 }
 
 // TestRun_LeafUsageErrorReturned asserts that an unknown flag on a leaf verb
-// surfaces as an ErrUsage-wrapped error whose message names the leaf and the
-// stdlib "flag provided but not defined" cause.
+// surfaces as an ErrUsage-wrapped error and resolves to exit code 1. The
+// stdlib's "flag provided but not defined" wording is owned by flag.FlagSet
+// and is intentionally not pinned here — it can change across Go versions
+// without a behavioral regression.
 func TestRun_LeafUsageErrorReturned(t *testing.T) {
 	t.Parallel()
 	var out, errb bytes.Buffer
@@ -374,11 +376,11 @@ func TestRun_LeafUsageErrorReturned(t *testing.T) {
 	if err == nil {
 		t.Fatalf("want non-nil error")
 	}
+	if !errors.Is(err, cli.ErrUsage) {
+		t.Errorf("want ErrUsage, got %v", err)
+	}
 	if cli.ExitCode(err) != 1 {
 		t.Fatalf("exit code = %d, want 1 (err=%v)", cli.ExitCode(err), err)
-	}
-	if !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err missing stdlib message: %v", err)
 	}
 }
 
