@@ -950,6 +950,12 @@ func TestTrimUsageSuffix(t *testing.T) {
 	if got := trimUsageSuffix("v: bad: usage"); got != "v: bad" {
 		t.Errorf("got=%q", got)
 	}
+	// Double-wrap: stdlib flag.Value.Set returning UsageErrf gets ": usage"
+	// appended once by ParseFlags, and the inner error already carried one
+	// from UsageErrf. Both must be stripped.
+	if got := trimUsageSuffix("v: bad: usage: usage"); got != "v: bad" {
+		t.Errorf("double suffix should be fully trimmed, got=%q", got)
+	}
 	if got := trimUsageSuffix("plain message"); got != "plain message" {
 		t.Errorf("trim should be a no-op without suffix: %q", got)
 	}
