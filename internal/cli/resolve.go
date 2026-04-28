@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -47,8 +48,12 @@ type Resolved struct {
 // class of bug structurally impossible.
 //
 // Errors:
-//   - unknown verb name during walk → usage-wrapped error.
+//   - unknown verb name during walk → usage-wrapped error. Resolved is
+//     non-nil with Leaf set to the deepest *Group reached so callers can
+//     render that group's help alongside the error.
 //   - parse failure of a flag token → ParseFlags' wrapped usage error.
+//     Resolved is non-nil with Leaf+MergedFS already populated so callers can
+//     render the resolved leaf's help (with its merged Flags block).
 //   - presence of `--help` / `-h` anywhere → returns Resolved with ErrHelp;
 //     callers (Dispatch) render help instead of running the leaf.
 func Resolve(root *Group, args []string) (*Resolved, error) {
@@ -123,7 +128,8 @@ func Resolve(root *Group, args []string) (*Resolved, error) {
 				i++
 				continue
 			}
-			return nil, fmt.Errorf("unknown subcommand %q: %w", tok, ErrUsage)
+			return &Resolved{Leaf: cur, Path: path},
+				fmt.Errorf("unknown subcommand %q: %w", tok, ErrUsage)
 		}
 		leafArgs = append(leafArgs, tok)
 		i++
@@ -139,7 +145,9 @@ func Resolve(root *Group, args []string) (*Resolved, error) {
 
 	if len(flagTokens) > 0 {
 		if err := ParseFlags(merged, flagTokens); err != nil {
-			return nil, err
+			// Return the partial Resolved so callers can render the resolved
+			// leaf's help (and its merged Flags block) alongside the error.
+			return &Resolved{Leaf: leaf, Path: path, MergedFS: merged, Args: leafArgs}, err
 		}
 		// ParseFlags' internal loop reseeds positional remainder via `--`.
 		leafArgs = append(leafArgs, merged.Args()...)
@@ -250,6 +258,13 @@ func globalFromFlagSet(fs *flag.FlagSet) Global {
 // it for cli.RequireFlags / FlagWasSet) and Run is invoked with the leaf's
 // positional args.
 //
+// Execute is the single chokepoint for the modern-CLI-convention guarantee:
+// any error from the leaf that wraps ErrUsage but is NOT yet tagged
+// ErrReported is rewritten to "<error>\n\n<help>" on stdio.Stderr (using the
+// resolved leaf's own help block) and re-tagged with ErrReported so main()'s
+// fallback printer does not double-emit. Callers therefore never need to
+// repeat that wrap themselves.
+//
 // Execute does NOT call WithGlobal — the caller (Dispatch or cmd/ana) owns
 // that decision so it can route any ancestor-bound Global pointer it cares
 // to read.
@@ -261,7 +276,14 @@ func (r *Resolved) Execute(ctx context.Context, stdio IO) error {
 	if FlagSetFrom(ctx) == nil {
 		ctx = WithFlagSet(ctx, r.MergedFS)
 	}
-	return r.Leaf.Run(ctx, r.Args, stdio)
+	err := r.Leaf.Run(ctx, r.Args, stdio)
+	if shouldAttachUsageHelp(err) {
+		// Path[0] is the resolver's original root; Resolve always seeds it,
+		// so the lookup is safe without a guard.
+		ReportUsageError(r, r.Path[0], err, stdio.Stderr)
+		return errors.Join(err, ErrReported)
+	}
+	return err
 }
 
 // flagSetKey is the unexported ctx key for a parsed FlagSet. Leaves that

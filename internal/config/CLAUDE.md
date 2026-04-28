@@ -4,5 +4,5 @@ Reads and writes the ana CLI config file at `$XDG_CONFIG_HOME/ana/config.json` (
 
 ## Files
 
-- `config.go` — `Profile`, `Config`, `DefaultPath`, `Load`, `Save`, `ActiveProfile`, `Upsert`, `Remove`, and `Resolve` (the endpoint + token + profile-name resolver that merges env fallbacks with the loaded config). Owns `DefaultEndpoint` and `ErrUnknownProfile`. Also carries the optional `UpdateCheckInterval *string` pointer (interpreted by `internal/update.ParseInterval`) — `omitempty` so existing config files stay unchanged.
-- `config_test.go` — covers the full round-trip (Load/Save/Upsert) in a `t.TempDir`, profile resolution precedence (flag > env > config > default), and the `ErrUnknownProfile` path.
+- `config.go` — `Profile`, `Config`, the `Load`/`Save`/`Upsert`/`Remove`/`ActiveProfile` operations, and `Resolve` (flag > env > config > default precedence). Owns `DefaultEndpoint`, `ErrUnknownProfile`, and the optional `UpdateCheckInterval *string` (omitempty; consumed by `internal/update.ParseInterval`).
+- `config_test.go` — full round-trip + precedence coverage in a `t.TempDir`.

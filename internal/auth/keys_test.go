@@ -249,8 +249,8 @@ func TestKeysCreateBadFlag(t *testing.T) {
 	// Include --name so missing-required-flag isn't the failure path; this
 	// isolates the unknown-flag (--nope) parse error.
 	err := New(f.deps()).Run(context.Background(), []string{"keys", "create", "--name", "n", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "-nope") {
+		t.Errorf("err=%v want unknown-flag ErrUsage mentioning -nope", err)
 	}
 }
 
@@ -310,8 +310,8 @@ func TestKeysRotateBadFlag(t *testing.T) {
 	// Include the required <id> positional so missing-arg isn't the failure
 	// path; this isolates the unknown-flag (--nope) parse error.
 	err := New(f.deps()).Run(context.Background(), []string{"keys", "rotate", "k-id", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "-nope") {
+		t.Errorf("err=%v want unknown-flag ErrUsage mentioning -nope", err)
 	}
 }
 
@@ -380,8 +380,8 @@ func TestKeysRevokeBadFlag(t *testing.T) {
 	// Include the required <id> positional so missing-arg isn't the failure
 	// path; this isolates the unknown-flag (--nope) parse error.
 	err := New(f.deps()).Run(context.Background(), []string{"keys", "revoke", "k-id", "--nope"}, stdio)
-	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "flag provided but not defined") {
-		t.Errorf("err=%v want unknown-flag ErrUsage", err)
+	if !errors.Is(err, cli.ErrUsage) || !strings.Contains(err.Error(), "-nope") {
+		t.Errorf("err=%v want unknown-flag ErrUsage mentioning -nope", err)
 	}
 }
 

@@ -4,10 +4,9 @@ Per-test scaffolding for live smoke tests against a real TextQL endpoint. Duplic
 
 ## Files
 
-- `harness.go` — `H`, `Begin`, `End`. Per-test lifecycle with temp config, auth env, verb map, and cleanup stack. Exposes `ExpectOrgID()` and `Endpoint()` so tests that assert endpoint/org-referencing stdout (e.g. OAuth callback URLs) read validated values instead of re-querying the env.
-- `client.go` — mirrors `cmd/ana/main.go`'s verb builder so harness and binary share the same wiring shape.
-- `guard.go` — wraps mutating RPCs: records them on the ledger before invoking, aborts if the pre-flight guard fails (wrong org, missing env, etc.).
-- `ledger.go` — `ManualRevertLog` + `Record`/`Close`. Writes any unreverted mutation using `e2e/testdata/manual-revert.template.md`.
-- `resources.go` — factories for throwaway connectors, chats, profiles, etc. Every factory registers its own revert with the harness; CLI-driven tests can also pre-register name-based safety-net cleanups (`RegisterConnectorCleanupByName`, `RegisterAPIKeyCleanupByName`, `RegisterServiceAccountCleanupByName`) for the gap between create and id-extraction.
-- `snapshot.go` — captures the pre-test state of the target org (connector list, etc.) so `sweep.go` can prove nothing leaked.
-- `sweep.go` — post-test diff of snapshot vs. current state; fails the test if anything new slipped past the ledger.
+- `harness.go` — `H` + `Begin`/`End`. Per-test lifecycle (temp config, auth env, verb map, cleanup stack). Exposes `ExpectOrgID()` / `Endpoint()` for stdout assertions.
+- `client.go` — mirrors `cmd/ana/main.go`'s verb builder so harness and binary share one wiring shape.
+- `guard.go` — wraps mutating RPCs: ledger-record before invoke, abort on pre-flight failure (wrong org, missing env, etc.).
+- `ledger.go` — `ManualRevertLog` + `Record`/`Close`; renders unreverted mutations via the testdata template.
+- `resources.go` — factories for throwaway connectors/chats/profiles; each factory registers its own revert. Also: name-based safety-net cleanups (`RegisterConnectorCleanupByName`, `RegisterAPIKeyCleanupByName`, `RegisterServiceAccountCleanupByName`) for the gap between create and id-extraction.
+- `snapshot.go`, `sweep.go` — pre-test state capture + post-test diff so anything new that slipped past the ledger fails the test.
