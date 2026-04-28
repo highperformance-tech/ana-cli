@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/highperformance-tech/ana-cli/compare/v0.3.2...v0.3.3) (2026-04-28)
+
+
+### Bug Fixes
+
+* **cli:** show scope-relevant help on every syntax error ([#33](https://github.com/highperformance-tech/ana-cli/issues/33)) ([f2fe6ad](https://github.com/highperformance-tech/ana-cli/commit/f2fe6adbb52906a75ea108487761035f38311214))
+
 ## [0.3.2](https://github.com/highperformance-tech/ana-cli/compare/v0.3.1...v0.3.2) (2026-04-23)
 
 
