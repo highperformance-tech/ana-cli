@@ -16,6 +16,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -97,42 +98,25 @@ func (g *Group) Run(ctx context.Context, args []string, stdio IO) error {
 	}
 	res, err := Resolve(g, args)
 	if err != nil {
-		if isHelpErr(err) {
+		if errors.Is(err, ErrHelp) {
 			renderResolvedHelp(res, g, stdio)
 			return ErrHelp
 		}
-		fmt.Fprintln(stdio.Stderr, err)
-		fmt.Fprintln(stdio.Stderr, g.Help())
-		return err
+		ReportUsageError(res, g, err, stdio.Stderr)
+		return errors.Join(err, ErrReported)
 	}
-	if grp, ok := res.Leaf.(*Group); ok {
-		fmt.Fprintln(stdio.Stdout, grp.Help())
-		return ErrHelp
+	// Mirror Dispatch: stash Global from the merged FlagSet so a leaf calling
+	// GlobalFrom(ctx) sees the parsed root persistent flags. Only install if
+	// the caller hasn't already supplied one — Group.Run is reachable from
+	// tests that pre-seed Global on ctx, and overwriting their value would
+	// change behavior the existing FlagSet-preservation contract codifies.
+	if GlobalFrom(ctx) == (Global{}) {
+		ctx = WithGlobal(ctx, globalFromFlagSet(res.MergedFS))
 	}
-	// Preserve any global already on ctx (Group.Run is reachable from tests
-	// that don't go through Dispatch). Don't clobber what's already there.
-	if existing := FlagSetFrom(ctx); existing == nil {
-		ctx = WithFlagSet(ctx, res.MergedFS)
-	}
-	return res.Leaf.Run(ctx, res.Args, stdio)
-}
-
-// isHelpErr is errors.Is(err, ErrHelp) without an import cycle.
-func isHelpErr(err error) bool {
-	for ; err != nil; err = unwrap(err) {
-		if err == ErrHelp { //nolint:errorlint
-			return true
-		}
-	}
-	return false
-}
-
-func unwrap(err error) error {
-	type unwrapper interface{ Unwrap() error }
-	if u, ok := err.(unwrapper); ok {
-		return u.Unwrap()
-	}
-	return nil
+	// Resolved.Execute owns group-prefix help, leaf invocation, and
+	// leaf-internal-usage-error annotation in one place — Group.Run delegates
+	// to it so the convention can't drift between dispatch entry points.
+	return res.Execute(ctx, stdio)
 }
 
 // renderFlagsAsText enumerates fs's flags sorted by name and renders one

@@ -4,10 +4,10 @@ Powers the passive "new release available" nudge and the `ana update` self-updat
 
 ## Files
 
-- `update.go` — package doc, `HTTPDoer` interface, and the two package-level URL vars (`latestReleaseURL`, `releasesBaseURL`) that tests repoint at `httptest` servers.
-- `semver.go` — `CmpSemver` + `parseSemver`. Three-int semver with optional `v` prefix and `-prerelease` suffix; prerelease sorts below release at the same X.Y.Z so `prerelease: auto` beta→stable flows notify correctly. Malformed input returns 0 (never trigger a nudge on junk).
-- `check.go` — passive nudge surface: `LatestRelease`, `CacheDeps`, `CachePath` (XDG → HOME), `ParseInterval` (`nil`→4h, `"0"`/`"disable"`→off), `CachedCheck` (reads/writes `update-check.json` atomically), plus the unexported `cacheFile` / `readCache` / `writeCache` / `shouldNotify`.
-- `selfupdate.go` — `Deps` + `DefaultDeps` + `resolveDeps`, the `SelfUpdate` orchestration (resolve → compare → download → verify → extract → atomic replace), the `updateStatus` JSON shape + `emitStatus` (routes JSON through `cli.WriteJSON` for byte-compat), `atomicReplace` (Unix rename-over; Windows rename-aside + rollback), and `formatReplaceErr` (maps `fs.ErrPermission` to platform-aware sudo/Administrator guidance so EACCES isn't a dead-end for users).
-- `download.go` — HTTP helpers (`httpGet`, `downloadFile` — streams body to disk and returns the sha256 via `TeeReader`, avoiding a re-read, `downloadBody` — 1 MiB-capped for `checksums.txt`) and `verifyChecksum` (parses goreleaser's `<hex>  <filename>` or sha256sum's `<hex> *<filename>` format and compares against the caller-supplied hex).
-- `extract.go` — `extractBinary` dispatches on `archiveExt`; `extractFromTarGz` / `extractFromZip` walk the archive for the matching member and hand the reader to `writeBinary` (0755).
-- `<source>_test.go` — one test file per source; shared helpers (`fakeDoer`, `releaseServer`, `stageUpdate`, `wantErr`, `withURLs`, `fakeArchive`) live in `update_test.go` per the repo convention. 100% coverage gate.
+- `update.go` — package doc, `HTTPDoer`, and the URL package-vars tests repoint at `httptest` servers.
+- `semver.go` — `CmpSemver` + `parseSemver`. Prerelease sorts below release at the same X.Y.Z; malformed input returns 0 so junk never triggers a nudge.
+- `check.go` — passive nudge surface: `CachePath` (XDG → HOME), `ParseInterval` (`nil`→4h, `"0"`/`"disable"`→off), `CachedCheck` (atomic `update-check.json` rw).
+- `selfupdate.go` — `Deps` + `SelfUpdate` orchestration (resolve → compare → download → verify → extract → atomic replace), plus `atomicReplace` (Unix rename-over; Windows rename-aside + rollback) and `formatReplaceErr` (EACCES → platform-aware sudo/Admin guidance).
+- `download.go` — `httpGet`, `downloadFile` (streams + sha256 via `TeeReader`), `downloadBody` (1 MiB cap for checksums.txt), `verifyChecksum` (parses both goreleaser and sha256sum line formats).
+- `extract.go` — `extractBinary` dispatches on `archiveExt` to the tar.gz/zip walker, ending in `writeBinary` (0755).
+- `<source>_test.go` — one per source; shared helpers (`fakeDoer`, `releaseServer`, etc.) live in `update_test.go`. 100% coverage gate.

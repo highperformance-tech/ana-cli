@@ -31,6 +31,28 @@ func (f *fakeCmd) Run(ctx context.Context, args []string, _ IO) error {
 
 func (f *fakeCmd) Help() string { return f.help }
 
+// assertUsageLayout verifies the modern-CLI error layout: an error line, a
+// blank separator line, then a help body containing helpSubstr. Returns the
+// first line so callers can run further substring checks on the error itself
+// (e.g. "must mention the bad flag name", "must not leak ': usage'"). The
+// blank-separator assertion is what stops the layout from silently regressing
+// into single-newline output that satisfies "error first, help present" but
+// breaks the contract.
+func assertUsageLayout(t *testing.T, s, helpSubstr string) string {
+	t.Helper()
+	firstLine, rest, ok := strings.Cut(s, "\n")
+	if !ok {
+		t.Fatalf("stderr missing newline-separated header: %q", s)
+	}
+	if !strings.HasPrefix(rest, "\n") {
+		t.Errorf("stderr missing blank separator between error and help: %q", s)
+	}
+	if !strings.Contains(rest, helpSubstr) {
+		t.Errorf("help body missing %q: %q", helpSubstr, s)
+	}
+	return firstLine
+}
+
 // testIO builds an IO with in-memory streams for assertions.
 func testIO() (IO, *bytes.Buffer, *bytes.Buffer) {
 	var out, errb bytes.Buffer
@@ -264,8 +286,15 @@ func TestDispatchUnknownVerb(t *testing.T) {
 	if !errors.Is(err, ErrReported) {
 		t.Errorf("err should carry ErrReported: %v", err)
 	}
-	if !strings.Contains(errb.String(), "zzz") {
-		t.Errorf("stderr missing unknown msg: %q", errb.String())
+	// Modern-CLI convention: error first line, blank separator, then the
+	// help for the deepest scope reached (root in this case — the walk
+	// failed at the very first token).
+	firstLine := assertUsageLayout(t, errb.String(), "Commands:")
+	if !strings.Contains(firstLine, "zzz") {
+		t.Errorf("first line should describe the bad token: %q", firstLine)
+	}
+	if strings.HasSuffix(firstLine, ": usage") {
+		t.Errorf("first line should not leak the ErrUsage sentinel suffix: %q", firstLine)
 	}
 }
 
@@ -557,6 +586,25 @@ func (l *flagLeaf) Run(ctx context.Context, args []string, _ IO) error {
 	return nil
 }
 
+func TestGroupRunPropagatesGlobalToLeaf(t *testing.T) {
+	t.Parallel()
+	// Group.Run is reachable as a self-contained dispatcher (not just as a
+	// child Group walked by Resolve). When invoked that way it must mirror
+	// Dispatch and stash the parsed root persistent flags on ctx so the
+	// leaf's GlobalFrom(ctx) read works the same as under the binary.
+	leaf := &fakeCmd{}
+	g := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, _ := testIO()
+	args := []string{"--endpoint", "https://api", "--profile", "prod", "--json", "run"}
+	if err := g.Run(context.Background(), args, stdio); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	want := Global{JSON: true, Endpoint: "https://api", Profile: "prod"}
+	if leaf.gotGlobal != want {
+		t.Errorf("gotGlobal=%+v want %+v", leaf.gotGlobal, want)
+	}
+}
+
 func TestGroupFlagsPropagateToLeaf(t *testing.T) {
 	t.Parallel()
 	var leafFoo string
@@ -775,8 +823,144 @@ func TestGroupRun_BadFlagPropagates(t *testing.T) {
 	if !errors.Is(err, ErrUsage) {
 		t.Fatalf("err=%v want ErrUsage", err)
 	}
-	if errb.Len() == 0 {
-		t.Errorf("stderr should describe error")
+	if !errors.Is(err, ErrReported) {
+		t.Errorf("err should carry ErrReported: %v", err)
+	}
+	// Bad flag at a leaf: error first, blank separator, leaf help (with
+	// --known visible in the merged Flags block).
+	s := errb.String()
+	firstLine := assertUsageLayout(t, s, "leaf help line")
+	if !strings.Contains(firstLine, "-nope") {
+		t.Errorf("first line should mention the bad flag: %q", firstLine)
+	}
+	if !strings.Contains(s, "--known") {
+		t.Errorf("stderr should include leaf's --known flag in the Flags block: %q", s)
+	}
+}
+
+func TestDispatchLeafReturnsUsageErrorAddsHelp(t *testing.T) {
+	t.Parallel()
+	// A leaf that returns a bare ErrUsage from Run (the RequireFlags /
+	// RequireStringID / UsageErrf path). Dispatch must annotate it with the
+	// leaf's help and wrap with ErrReported.
+	want := UsageErrf("run: <id> required")
+	leaf := &fakeCmd{err: want, help: "run leaf usage line"}
+	root := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, errb := testIO()
+	err := Dispatch(context.Background(), root, []string{"run"}, stdio)
+	if !errors.Is(err, ErrUsage) {
+		t.Fatalf("err=%v want ErrUsage", err)
+	}
+	if !errors.Is(err, ErrReported) {
+		t.Errorf("err should carry ErrReported so main() does not double-print: %v", err)
+	}
+	s := errb.String()
+	firstLine := assertUsageLayout(t, s, "run leaf usage line")
+	if firstLine != "run: <id> required" {
+		t.Errorf("first line should be the bare error message: %q", firstLine)
+	}
+	if strings.Contains(s, ": usage\n") {
+		t.Errorf("stderr should not leak the ErrUsage sentinel anywhere: %q", s)
+	}
+}
+
+func TestDispatchLeafAlreadyReportedNoDoubleHelp(t *testing.T) {
+	t.Parallel()
+	// A leaf that has already written its own diagnostic and tagged with
+	// ErrReported — Dispatch must NOT append its help (the leaf chose to
+	// own the output).
+	want := errors.Join(UsageErrf("custom: pre-reported"), ErrReported)
+	leaf := &fakeCmd{err: want, help: "leaf help"}
+	root := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, errb := testIO()
+	err := Dispatch(context.Background(), root, []string{"run"}, stdio)
+	if !errors.Is(err, ErrUsage) || !errors.Is(err, ErrReported) {
+		t.Fatalf("err=%v", err)
+	}
+	if strings.Contains(errb.String(), "leaf help") {
+		t.Errorf("stderr should not contain leaf help when leaf already reported: %q", errb.String())
+	}
+}
+
+func TestDispatchLeafNonUsageErrorPassesThrough(t *testing.T) {
+	t.Parallel()
+	// A leaf that returns a non-usage runtime error: Dispatch must pass it
+	// through unchanged — no help annotation, no ErrReported wrap (main()
+	// owns the stderr write for non-usage errors).
+	want := errors.New("network: timeout")
+	leaf := &fakeCmd{err: want, help: "leaf help"}
+	root := withRootGlobals(map[string]Command{"run": leaf})
+	stdio, _, errb := testIO()
+	err := Dispatch(context.Background(), root, []string{"run"}, stdio)
+	if !errors.Is(err, want) {
+		t.Fatalf("err=%v want %v", err, want)
+	}
+	if errors.Is(err, ErrUsage) || errors.Is(err, ErrReported) {
+		t.Errorf("non-usage error must not be wrapped: %v", err)
+	}
+	if errb.Len() != 0 {
+		t.Errorf("stderr should be empty: %q", errb.String())
+	}
+}
+
+func TestGroupRunLeafReturnsUsageErrorAddsHelp(t *testing.T) {
+	t.Parallel()
+	want := UsageErrf("c: <id> required")
+	child := &fakeCmd{err: want, help: "c usage line"}
+	g := &Group{Children: map[string]Command{"c": child}}
+	stdio, _, errb := testIO()
+	err := g.Run(context.Background(), []string{"c"}, stdio)
+	if !errors.Is(err, ErrUsage) || !errors.Is(err, ErrReported) {
+		t.Fatalf("err=%v", err)
+	}
+	firstLine := assertUsageLayout(t, errb.String(), "c usage line")
+	if firstLine != "c: <id> required" {
+		t.Errorf("first line should be the bare error message: %q", firstLine)
+	}
+}
+
+func TestShouldAttachUsageHelp(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil", nil, false},
+		{"plain usage", UsageErrf("v: bad"), true},
+		{"already reported", errors.Join(UsageErrf("v: bad"), ErrReported), false},
+		{"help", ErrHelp, false},
+		{"non-usage", errors.New("boom"), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := shouldAttachUsageHelp(tc.err); got != tc.want {
+				t.Errorf("shouldAttachUsageHelp(%v)=%v want %v", tc.err, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestTrimUsageSuffix(t *testing.T) {
+	t.Parallel()
+	// An ErrUsage-wrapped error ends in ": usage"; trimUsageSuffix strips
+	// only that exact tail. A message that happens to mention "usage"
+	// elsewhere is left intact.
+	if got := trimUsageSuffix("v: bad: usage"); got != "v: bad" {
+		t.Errorf("got=%q", got)
+	}
+	// Double-wrap: stdlib flag.Value.Set returning UsageErrf gets ": usage"
+	// appended once by ParseFlags, and the inner error already carried one
+	// from UsageErrf. Both must be stripped.
+	if got := trimUsageSuffix("v: bad: usage: usage"); got != "v: bad" {
+		t.Errorf("double suffix should be fully trimmed, got=%q", got)
+	}
+	if got := trimUsageSuffix("plain message"); got != "plain message" {
+		t.Errorf("trim should be a no-op without suffix: %q", got)
+	}
+	if got := trimUsageSuffix(""); got != "" {
+		t.Errorf("empty should round-trip: %q", got)
 	}
 }
 

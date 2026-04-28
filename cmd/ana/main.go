@@ -102,8 +102,9 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 			cli.RenderResolvedHelp(res, root, stdio.Stdout)
 			return cli.ErrHelp
 		}
-		fmt.Fprintln(stdio.Stderr, err)
-		fmt.Fprintln(stdio.Stderr, cli.RootHelp(root))
+		// Modern-CLI convention: error first, then the help for the deepest
+		// scope the resolver reached so the user sees relevant syntax.
+		cli.ReportUsageError(res, root, err, stdio.Stderr)
 		return errors.Join(err, cli.ErrReported)
 	}
 
@@ -118,6 +119,10 @@ func run(args []string, stdio cli.IO, env func(string) string) error {
 	// Kick the passive update-check BEFORE the verb runs so the HTTP
 	// round-trip overlaps the verb's work. drainNudge picks it up after.
 	nudgeCh := startNudge(env, global)
+	// Resolved.Execute is the single chokepoint that owns leaf invocation
+	// AND the modern-CLI-convention annotation for any leaf-internal usage
+	// error (RequireFlags / RequireStringID / UsageErrf / etc.). Anything
+	// extra here would be a parallel implementation that could drift.
 	runErr := res.Execute(ctx, stdio)
 	drainCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()

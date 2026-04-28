@@ -5,6 +5,5 @@ The `ana audit` verb tree: `tail`. Wraps `AuditLogService.ListAuditLogs` with a 
 ## Files
 
 - `audit.go` — `New`, `Deps` (Unary + Now), service path constant.
-- `tail.go` — `tail` subcommand: `--since` is a `cli.SinceFlag` (relative duration or absolute RFC3339, UTC-normalised; rejects negative durations) bound to `Deps.Now`; emits audit records as JSON lines. Action strings are snake_case (`api_key.created`, etc.).
-- `audit_test.go` — shared `fakeDeps` + `TestNew*`/`TestHelp*`.
-- `tail_test.go` — tail-specific coverage: fake `Unary` + fixed `Now` drive the `--since` math plus JSON rendering.
+- `tail.go` — the `tail` subcommand. `--since` is a `cli.SinceFlag` bound to `Deps.Now`; records emit as JSON lines. Action strings are snake_case (`api_key.created`).
+- `audit_test.go`, `tail_test.go` — shared fakes + per-source coverage.
