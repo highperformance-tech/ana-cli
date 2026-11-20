@@ -49,7 +49,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: Check formatting
         run: |
@@ -60,7 +60,7 @@ jobs:
           fi
 
       - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
+        run: make deps
 
       - name: Run go vet
         run: go vet ./...
@@ -82,7 +82,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: Run tests
         run: go test -race -vet=off ./...
@@ -97,7 +97,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: Enforce 100% internal coverage
         run: make cover
@@ -112,7 +112,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: Build binary
         run: make build
@@ -127,7 +127,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0

@@ -2,7 +2,7 @@
 
 GO ?= go
 PKGS := ./...
-STATICCHECK_VERSION := 2025.1.1
+STATICCHECK_VERSION := 2026.2.2
 
 # help prints each target's leading `##` doc comment. Keep target docs on the
 # same line as the target for awk to find them.
@@ -19,7 +19,7 @@ vet: ## Run go vet.
 
 # deps installs development tools pinned for reproducibility.
 deps: ## Install pinned dev tools (staticcheck).
-	$(GO) install honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
+	GOTOOLCHAIN=auto $(GO) install honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
 
 # lint mirrors the CI lint job: gofmt check, go vet, staticcheck. Assumes
 # `make deps` has been run at least once so staticcheck is on PATH.
