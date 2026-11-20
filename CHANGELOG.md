@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/highperformance-tech/ana-cli/compare/v0.3.3...v0.3.4) (2026-11-20)
+
+
+### Bug Fixes
+
+* update Staticcheck for the Go toolchain ([#53](https://github.com/highperformance-tech/ana-cli/issues/53)) ([35a0d2a](https://github.com/highperformance-tech/ana-cli/commit/35a0d2a6a8569499bc0e257ccf917589ad954e55))
+
 ## [0.3.3](https://github.com/highperformance-tech/ana-cli/compare/v0.3.2...v0.3.3) (2026-04-28)
 
 
