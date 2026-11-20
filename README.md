@@ -1,5 +1,10 @@
 # ana-cli
 
+**This repository is archived.** TextQL provides its own CLI, `refinery`.
+See [TextQL's CLI guide](https://docs.textql.com/core/admin/cli) for installation and sign-in instructions.
+
+The documentation below describes HPT's archived `ana` client.
+
 `ana` is a command-line client for [TextQL](https://app.textql.com). It speaks
 the Connect-RPC endpoints that power the TextQL web app and exposes them as a
 scriptable CLI for automation, CI pipelines, and power-user workflows.
