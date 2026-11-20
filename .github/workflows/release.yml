@@ -100,7 +100,7 @@ jobs:
   # macOS + Linux build, Apple codesign, notarize. Runs in parallel with
   # sign-windows. Uploads its dist/ directory for the publish job to merge.
   build-unix:
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
